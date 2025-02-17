@@ -1,0 +1,8 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "passThroughEnv": ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"]
+    }
+  }
+}
