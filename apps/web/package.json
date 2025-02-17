@@ -11,10 +11,17 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "@libsql/core": "^0.14.0",
     "@repo/ui": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.48.1",
+    "lucide-react": "^0.475.0",
     "next": "^15.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "strava-v3": "^2.2.1"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^15.1.6",
