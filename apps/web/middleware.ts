@@ -4,12 +4,10 @@ import type { NextRequest } from "next/server";
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
-  console.log("---", req.nextUrl.pathname);
 
   // Protect all routes under /dashboard and /api/subscribe
   if (!req.nextUrl.pathname.startsWith("/login")) {
-    console.log("check session");
+    const supabase = createMiddlewareClient({ req, res });
     const {
       data: { session },
     } = await supabase.auth.getSession();

@@ -18,6 +18,7 @@ export default async function DashboardPage() {
               <th className="uppercase">date</th>
               <th className="uppercase">type</th>
               <th className="uppercase">event</th>
+              <th className="uppercase">activity id</th>
               <th className="uppercase">data</th>
             </tr>
           </thead>
@@ -33,6 +34,7 @@ export default async function DashboardPage() {
                 </td>
                 <td className="px-4">{webhook.object_type}</td>
                 <td className="px-4">{webhook.aspect_type}</td>
+                <td className="px-4">{webhook.object_id}</td>
                 <td className="px-4">{webhook.updates}</td>
               </tr>
             ))}

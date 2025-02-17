@@ -1,10 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui";
 import { StravaSubscriptionDelete } from "./strava-subscription-delete-button";
-import strava from "@/lib/strava";
+import { ListPushSubscriptionResponse } from "strava-v3";
 
-export async function StravaSubscriptionsList() {
-  const subscriptions = await strava.pushSubscriptions.list();
-
+export async function StravaSubscriptionsList({
+  subscriptions,
+}: {
+  subscriptions: ListPushSubscriptionResponse[];
+}) {
   return (
     <Card>
       <CardHeader>
