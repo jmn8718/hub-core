@@ -3,7 +3,7 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { createDbClient } from "./index.js";
 
 const db = createDbClient({
-  url: process.env.TURSO_DATABASE_URL,
+  url: process.env.LOCAL_DB || process.env.TURSO_DATABASE_URL,
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 

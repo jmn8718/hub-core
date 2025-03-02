@@ -8,5 +8,7 @@ namespace NodeJS {
     NEXT_PUBLIC_DOMAIN: string;
     TURSO_DATABASE_URL: string;
     TURSO_AUTH_TOKEN: string;
+    USE_LOCAL: string;
+    LOCAL_DB: string;
   }
 }
