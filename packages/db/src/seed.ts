@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { createDbClient } from "./index.js";
-import { webhooks } from "./schema.js";
+import { createDbClient } from "./index";
+import { webhooks } from "./schemas";
 
 async function run() {
   const db = createDbClient({

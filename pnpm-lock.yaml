@@ -18,11 +18,32 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
 
-  apps/app:
+  apps/admin:
     dependencies:
+      '@libsql/client':
+        specifier: ^0.14.0
+        version: 0.14.0
+      '@libsql/core':
+        specifier: ^0.14.0
+        version: 0.14.0
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@supabase/auth-helpers-nextjs':
+        specifier: ^0.10.0
+        version: 0.10.0(@supabase/supabase-js@2.48.1)
+      '@supabase/supabase-js':
+        specifier: ^2.48.1
+        version: 2.48.1
+      dayjs:
+        specifier: ^1.11.13
+        version: 1.11.13
+      lucide-react:
+        specifier: ^0.475.0
+        version: 0.475.0(react@19.0.0)
       next:
         specifier: ^15.1.6
         version: 15.1.6(react-dom@19.0.0)(react@19.0.0)
@@ -32,6 +53,9 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.0.0(react@19.0.0)
+      strava-v3:
+        specifier: ^2.2.1
+        version: 2.2.1
     devDependencies:
       '@next/eslint-plugin-next':
         specifier: ^15.1.6
@@ -70,32 +94,11 @@ importers:
         specifier: 5.7.3
         version: 5.7.3
 
-  apps/web:
+  apps/app:
     dependencies:
-      '@libsql/client':
-        specifier: ^0.14.0
-        version: 0.14.0
-      '@libsql/core':
-        specifier: ^0.14.0
-        version: 0.14.0
-      '@repo/db':
-        specifier: workspace:*
-        version: link:../../packages/db
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@supabase/auth-helpers-nextjs':
-        specifier: ^0.10.0
-        version: 0.10.0(@supabase/supabase-js@2.48.1)
-      '@supabase/supabase-js':
-        specifier: ^2.48.1
-        version: 2.48.1
-      dayjs:
-        specifier: ^1.11.13
-        version: 1.11.13
-      lucide-react:
-        specifier: ^0.475.0
-        version: 0.475.0(react@19.0.0)
       next:
         specifier: ^15.1.6
         version: 15.1.6(react-dom@19.0.0)(react@19.0.0)
@@ -105,9 +108,6 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.0.0(react@19.0.0)
-      strava-v3:
-        specifier: ^2.2.1
-        version: 2.2.1
     devDependencies:
       '@next/eslint-plugin-next':
         specifier: ^15.1.6
@@ -3516,6 +3516,7 @@ packages:
 
   /jiti@1.21.7:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
+    hasBin: true
     dev: true
 
   /jose@4.15.9:
@@ -3722,6 +3723,7 @@ packages:
   /nanoid@3.3.8:
     resolution: {integrity: sha512-WNLf5Sd8oZxOm+TzppcYk8gVOgP+l58xNy58D0nbUnOxOWRWvlcCV4kUF7ltmI6PsrLl/BgKEyS4mqsGChFN0w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
 
   /natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
@@ -4258,6 +4260,7 @@ packages:
   /resolve@1.22.10:
     resolution: {integrity: sha512-NPRy+/ncIMeDlTAsuqwKIiferiawhefFJtkNSW0qZJEqMEb+qBt/77B/jGeeek+F0uOeN05CDa6HXbbIgtVX4w==}
     engines: {node: '>= 0.4'}
+    hasBin: true
     dependencies:
       is-core-module: 2.16.1
       path-parse: 1.0.7
@@ -4327,17 +4330,10 @@ packages:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     dev: true
 
-  /semver@7.7.0:
-    resolution: {integrity: sha512-DrfFnPzblFmNrIZzg5RzHegbiRWg7KMR7btwi2yjHwx06zsUbO5g613sVwEV7FTwmzJu+Io0lJe2GJ3LxqpvBQ==}
-    engines: {node: '>=10'}
-    dev: false
-    optional: true
-
   /semver@7.7.1:
     resolution: {integrity: sha512-hlq8tAfn0m/61p4BVRcPzIGr6LKiMwo4VM6dGi6pt4qcRkmNzTcWq6eCEjEh+qXjkMDvPlOFFSGwQjoEa6gyMA==}
     engines: {node: '>=10'}
     hasBin: true
-    dev: true
 
   /set-cookie-parser@2.7.1:
     resolution: {integrity: sha512-IOc8uWeOZgnb3ptbCURJWNjWUPcO3ZnTTdzsurqERrP6nPyv+paC55vJM0LpOlT2ne+Ix+9+CRG1MNLlyZ4GjQ==}
@@ -4381,7 +4377,7 @@ packages:
     dependencies:
       color: 4.2.3
       detect-libc: 2.0.3
-      semver: 7.7.0
+      semver: 7.7.1
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.33.5
       '@img/sharp-darwin-x64': 0.33.5
@@ -4636,6 +4632,7 @@ packages:
   /sucrase@3.35.0:
     resolution: {integrity: sha512-8EbVDiu9iN/nESwxeSxDKe0dunta1GOlHufmSSXxMD2z2/tMZpDMpvXQGsc+ajGo8y2uYUmixaSRUc/QPoQ0GA==}
     engines: {node: '>=16 || 14 >=14.17'}
+    hasBin: true
     dependencies:
       '@jridgewell/gen-mapping': 0.3.8
       commander: 4.1.1

@@ -7,5 +7,5 @@ export function createDbClient(config: Config) {
   return drizzle(client);
 }
 
-export * from "./schema";
+export * from "./schemas";
 export * from "drizzle-orm";
