@@ -1,28 +1,11 @@
-## Getting Started
+## admin
 
-First, run the development server:
+This package uses nextjs to deploy the backend responsible to manage the webhooks from strava.
 
-```bash
-yarn dev
-```
+It uses supabase for authentication. You have to create an account and a project on supabase and add a user to authenticate on the dashboard.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+It uses the _db_ package to read and display the webhooks received.
 
-You can start editing the page by modifying `src/app/page.tsx`. The page auto-updates as you edit the file.
+It uses strava webhooks to configure the webhooks for the application. You need to create an application on your strava account.
 
-To create [API routes](https://nextjs.org/docs/app/building-your-application/routing/router-handlers) add an `api/` directory to the `app/` directory with a `route.ts` file. For individual endpoints, create a subfolder in the `api` directory, like `api/hello/route.ts` would map to [http://localhost:3000/api/hello](http://localhost:3000/api/hello).
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn/foundations/about-nextjs) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_source=github.com&utm_medium=referral&utm_campaign=turborepo-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+It also uses strava oauth to authorize your strava app, so it can send webhooks when there is an update on the account.
