@@ -4,8 +4,7 @@ import { type DataClient } from "@repo/types";
 import { useLoading } from "../contexts/LoadingContext.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { Container } from "../components/Container.js";
-import { MonthlyActivityChart } from "../components/MonthlyChart.js";
-import { WeeklyActivityChart } from "../components/charts/WeeklyActivity.js";
+import { MonthlyActivityChart } from "../components/charts/MonthlyChart.js";
 
 export const DashboardPage = () => {
   const { setLocalLoading } = useLoading();
@@ -30,15 +29,8 @@ export const DashboardPage = () => {
 
   return (
     <Container>
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-4 max-w-2xl min-w-full mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl min-w-full mx-auto">
         <MonthlyActivityChart data={overviewData} />
-        <WeeklyActivityChart
-          data={[
-            { week: "1", distance: 100 },
-            { week: "2", distance: 300 },
-            { week: "4", distance: 200 },
-          ]}
-        />
       </div>
     </Container>
   );
