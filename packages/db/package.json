@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "check-types": "tsc --noEmit",
-    "db:schema": "drizzle-kit generate --dialect sqlite --schema src/schema.ts",
+    "db:schema": "drizzle-kit generate --dialect sqlite --schema src/schemas/index.ts",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed": "tsx src/seed.ts"
   },
