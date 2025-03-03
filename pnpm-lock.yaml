@@ -157,12 +157,6 @@ importers:
       '@repo/app':
         specifier: workspace:*
         version: link:../../packages/app
-      '@repo/clients':
-        specifier: workspace:*
-        version: link:../../packages/clients
-      '@repo/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       react:
         specifier: ^19.0.0
         version: 19.0.0
@@ -176,9 +170,6 @@ importers:
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      '@repo/tailwind-config':
-        specifier: workspace:*
-        version: link:../../packages/tailwind-config
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -194,18 +185,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 4.3.4
         version: 4.3.4(vite@6.2.0)
-      autoprefixer:
-        specifier: ^10.4.20
-        version: 10.4.20(postcss@8.5.1)
       eslint:
         specifier: ^9.20.0
         version: 9.20.0
-      postcss:
-        specifier: ^8.5.1
-        version: 8.5.1
-      tailwindcss:
-        specifier: ^3.4.17
-        version: 3.4.17
       typescript:
         specifier: 5.7.3
         version: 5.7.3

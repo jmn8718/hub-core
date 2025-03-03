@@ -25,7 +25,6 @@ export const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({
   const { isDarkMode } = useTheme();
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    console.log(active, payload);
     if (active && payload && payload.length) {
       return (
         <div

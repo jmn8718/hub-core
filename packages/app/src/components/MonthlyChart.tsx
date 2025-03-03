@@ -25,9 +25,7 @@ export const MonthlyActivityChart: React.FC<MonthlyActivityChartProps> = ({
 }: MonthlyActivityChartProps) => {
   const { isDarkMode } = useTheme();
   if (data.length === 0) return;
-  console.log(data);
   const CustomTooltip = ({ active, payload, label }: any) => {
-    console.log(payload);
     if (active && payload && payload.length) {
       return (
         <div

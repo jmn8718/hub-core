@@ -2,8 +2,8 @@ import "@repo/app/styles.css";
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { WebClient } from "@repo/clients";
 import { App } from "@repo/app";
+import { WebClient } from "@/clients/web";
 
 const client = new WebClient();
 
