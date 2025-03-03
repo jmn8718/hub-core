@@ -38,4 +38,4 @@ dist/
 
 # db
 
-db.local*
+db.*

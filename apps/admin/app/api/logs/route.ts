@@ -2,7 +2,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import strava from "@/lib/strava";
 import db from "@/lib/db";
 import { eq, webhooks } from "@repo/db";
 

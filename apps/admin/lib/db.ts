@@ -1,7 +1,7 @@
 /* eslint-disable turbo/no-undeclared-env-vars */
 import { createDbClient } from "@repo/db";
 
-const useLocal = process.env.USE_LOCAL === "true";
+const useLocal = !!process.env.LOCAL_DB;
 
 const db = createDbClient({
   ...(useLocal
