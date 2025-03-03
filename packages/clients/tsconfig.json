@@ -1,11 +1,9 @@
 {
   "extends": "@repo/typescript-config/base.json",
   "include": ["src"],
-  "exclude": ["dist", "drizzle", "node_modules"],
+  "exclude": ["dist", "node_modules"],
   "compilerOptions": {
     "types": ["node"],
-    "module": "CommonJS",
-    "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "outDir": "dist"
