@@ -10,6 +10,7 @@
     "STRAVA",
     "SUPABASE",
     "turborepo",
-    "TURSO"
+    "TURSO",
+    "uuidv"
   ]
 }

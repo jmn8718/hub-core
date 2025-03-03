@@ -1,9 +1,506 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "45018178-e624-4f51-ba09-d0ca65817d9a",
+  "id": "bb8985e5-bf01-47f1-83d2-176ff10d0381",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "activities": {
+      "name": "activities",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "distance": {
+          "name": "distance",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
+        "duration": {
+          "name": "duration",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
+        "manufacturer": {
+          "name": "manufacturer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "location_name": {
+          "name": "location_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "location_country": {
+          "name": "location_country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "subtype": {
+          "name": "subtype",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_event": {
+          "name": "is_event",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
+        "start_latitude": {
+          "name": "start_latitude",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "start_longitude": {
+          "name": "start_longitude",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "timestamp_idx": {
+          "name": "timestamp_idx",
+          "columns": [
+            "timestamp"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "activities_connection": {
+      "name": "activities_connection",
+      "columns": {
+        "activity_id": {
+          "name": "activity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_activity_id": {
+          "name": "provider_activity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "activities_connection_activity_id_provider_activity_id_unique": {
+          "name": "activities_connection_activity_id_provider_activity_id_unique",
+          "columns": [
+            "activity_id",
+            "provider_activity_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "activities_connection_activity_id_gears_id_fk": {
+          "name": "activities_connection_activity_id_gears_id_fk",
+          "tableFrom": "activities_connection",
+          "tableTo": "gears",
+          "columnsFrom": [
+            "activity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "activities_connection_provider_activity_id_activities_id_fk": {
+          "name": "activities_connection_provider_activity_id_activities_id_fk",
+          "tableFrom": "activities_connection",
+          "tableTo": "activities",
+          "columnsFrom": [
+            "provider_activity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "activities_connection_activity_id_provider_activity_id_activities_id_id_fk": {
+          "name": "activities_connection_activity_id_provider_activity_id_activities_id_id_fk",
+          "tableFrom": "activities_connection",
+          "tableTo": "activities",
+          "columnsFrom": [
+            "activity_id",
+            "provider_activity_id"
+          ],
+          "columnsTo": [
+            "id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "activities_connection_activity_id_provider_activity_id_pk": {
+          "columns": [
+            "activity_id",
+            "provider_activity_id"
+          ],
+          "name": "activities_connection_activity_id_provider_activity_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "activity_gears": {
+      "name": "activity_gears",
+      "columns": {
+        "gear_id": {
+          "name": "gear_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "activity_id": {
+          "name": "activity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "activity_gears_gear_id_gears_id_fk": {
+          "name": "activity_gears_gear_id_gears_id_fk",
+          "tableFrom": "activity_gears",
+          "tableTo": "gears",
+          "columnsFrom": [
+            "gear_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "activity_gears_activity_id_activities_id_fk": {
+          "name": "activity_gears_activity_id_activities_id_fk",
+          "tableFrom": "activity_gears",
+          "tableTo": "activities",
+          "columnsFrom": [
+            "activity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "activity_gears_gear_id_activity_id_gears_id_id_fk": {
+          "name": "activity_gears_gear_id_activity_id_gears_id_id_fk",
+          "tableFrom": "activity_gears",
+          "tableTo": "gears",
+          "columnsFrom": [
+            "gear_id",
+            "activity_id"
+          ],
+          "columnsTo": [
+            "id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "activity_gears_gear_id_activity_id_pk": {
+          "columns": [
+            "gear_id",
+            "activity_id"
+          ],
+          "name": "activity_gears_gear_id_activity_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "gears": {
+      "name": "gears",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "brand": {
+          "name": "brand",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "date_begin": {
+          "name": "date_begin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "date_end": {
+          "name": "date_end",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "maximum_distance": {
+          "name": "maximum_distance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "gears_connection": {
+      "name": "gears_connection",
+      "columns": {
+        "gear_id": {
+          "name": "gear_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_gear_id": {
+          "name": "provider_gear_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "gears_connection_gear_id_provider_gear_id_unique": {
+          "name": "gears_connection_gear_id_provider_gear_id_unique",
+          "columns": [
+            "gear_id",
+            "provider_gear_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "gears_connection_gear_id_gears_id_fk": {
+          "name": "gears_connection_gear_id_gears_id_fk",
+          "tableFrom": "gears_connection",
+          "tableTo": "gears",
+          "columnsFrom": [
+            "gear_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "gears_connection_provider_gear_id_gears_id_fk": {
+          "name": "gears_connection_provider_gear_id_gears_id_fk",
+          "tableFrom": "gears_connection",
+          "tableTo": "gears",
+          "columnsFrom": [
+            "provider_gear_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "gears_connection_gear_id_provider_gear_id_gears_id_id_fk": {
+          "name": "gears_connection_gear_id_provider_gear_id_gears_id_id_fk",
+          "tableFrom": "gears_connection",
+          "tableTo": "gears",
+          "columnsFrom": [
+            "gear_id",
+            "provider_gear_id"
+          ],
+          "columnsTo": [
+            "id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "gears_connection_gear_id_provider_gear_id_pk": {
+          "columns": [
+            "gear_id",
+            "provider_gear_id"
+          ],
+          "name": "gears_connection_gear_id_provider_gear_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "provider_activities": {
+      "name": "provider_activities",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "data": {
+          "name": "data",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'{}'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "provider_gears": {
+      "name": "provider_gears",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "data": {
+          "name": "data",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'{}'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "webhooks": {
       "name": "webhooks",
       "columns": {
@@ -47,6 +544,13 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
+          "autoincrement": false
+        },
+        "event_time": {
+          "name": "event_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
           "autoincrement": false
         },
         "created_at": {

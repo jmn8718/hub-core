@@ -69,4 +69,13 @@ CREATE TABLE `provider_gears` (
 	`data` text DEFAULT '{}'
 );
 --> statement-breakpoint
-ALTER TABLE `webhooks` ADD `event_time` text NOT NULL;
+CREATE TABLE `webhooks` (
+	`id` integer PRIMARY KEY NOT NULL,
+	`aspect_type` text,
+	`object_type` text,
+	`updates` text,
+	`event` text,
+	`owner_id` integer,
+	`event_time` text NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL
+);

@@ -13,12 +13,14 @@
     "check-types": "tsc --noEmit",
     "db:schema": "drizzle-kit generate --dialect sqlite --schema src/schemas/index.ts",
     "db:migrate": "tsx src/migrate.ts",
-    "db:seed": "tsx src/seed.ts"
+    "db:seed:webhooks": "tsx src/seed/webhooks.ts",
+    "db:seed:users": "tsx src/seed/users.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
     "@libsql/core": "^0.14.0",
-    "drizzle-orm": "^0.39.3"
+    "drizzle-orm": "^0.39.3",
+    "uuidv7": "^1.0.2"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

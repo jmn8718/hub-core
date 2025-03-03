@@ -8,11 +8,14 @@ import {
   text,
   unique,
 } from "drizzle-orm/sqlite-core";
+import { uuidv7 } from "uuidv7";
 
 export const activities = sqliteTable(
   "activities",
   {
-    id: text("id").primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
     name: text("name").notNull(),
     timestamp: text("timestamp").notNull(),
     distance: real("distance").default(0),
@@ -37,7 +40,9 @@ export const providerActivities = sqliteTable("provider_activities", {
 });
 
 export const gears = sqliteTable("gears", {
-  id: text("id").primaryKey(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => uuidv7()),
   name: text("name").notNull(),
   code: text("code"),
   brand: text("brand"),

@@ -3,8 +3,9 @@ import { createClient } from "@libsql/client";
 import type { Config } from "@libsql/core/api";
 
 export function createDbClient(config: Config) {
+  console.log(config);
   const client = createClient(config);
-  return drizzle(client);
+  return drizzle(client, { logger: true });
 }
 
 export * from "./schemas";
