@@ -1,9 +1,10 @@
-import type { DataClient } from "@repo/types";
+import type { AppType, DataClient } from "@repo/types";
 import type React from "react";
 import { createContext, useContext } from "react";
 
 interface DataClientContextType {
   client: DataClient;
+  type: AppType;
 }
 
 const DataClientContext = createContext<DataClientContextType | undefined>(
@@ -12,10 +13,11 @@ const DataClientContext = createContext<DataClientContextType | undefined>(
 
 export const DataClientProvider: React.FC<{
   client: DataClient;
+  type: AppType;
   children: React.ReactNode;
-}> = ({ children, client }) => {
+}> = ({ children, client, type }) => {
   return (
-    <DataClientContext.Provider value={{ client }}>
+    <DataClientContext.Provider value={{ client, type }}>
       {children}
     </DataClientContext.Provider>
   );

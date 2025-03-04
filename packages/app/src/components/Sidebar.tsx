@@ -1,41 +1,58 @@
-import {
-  Home,
-  Users,
-  Settings,
-  Database,
-  Table,
-  Dumbbell,
-  PlusCircle,
-} from "lucide-react";
-import { Link } from "./Link.js";
+import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { LucideProps } from "lucide-react";
+import { cn } from "@repo/ui";
 import { useTheme } from "../contexts/ThemeContext.js";
 
-export const Sidebar = () => {
+export function Sidebar({
+  sidebarItems,
+}: {
+  sidebarItems: {
+    icon: React.ForwardRefExoticComponent<
+      Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+    >;
+    href: string;
+    label: string;
+  }[];
+}) {
   const { isDarkMode } = useTheme();
-
+  const location = useLocation();
+  const navigation = useNavigate();
   return (
-    <div
-      className={`fixed left-0 top-0 h-full w-16 ${
-        isDarkMode ? "bg-gray-800" : "bg-white"
-      } shadow-lg flex flex-col items-center py-6 transition-colors duration-200`}
+    <aside
+      className={cn(
+        "fixed left-0 top-0 h-full w-12 shadow-lg flex flex-col items-center py-6 transition-colors duration-200",
+        isDarkMode ? "bg-gray-800" : "bg-white",
+      )}
     >
-      <div className="space-y-8">
-        <Link href="/" icon={<Home size={24} />} label="Home" />
-        <Link
-          href="/connections"
-          icon={<Users size={24} />}
-          label="Connections"
-        />
-        <Link href="/data" icon={<Database size={24} />} label="Data" />
-        <Link href="/table" icon={<Table size={24} />} label="Table View" />
-        <Link href="/gear" icon={<Dumbbell size={24} />} label="Gear" />
-        <Link
-          href="/add-workout"
-          icon={<PlusCircle size={24} />}
-          label="Add Workout"
-        />
-        <Link href="/settings" icon={<Settings size={24} />} label="Settings" />
-      </div>
-    </div>
+      <nav className="flex flex-col items-center space-y-4">
+        {sidebarItems.map(({ icon: Icon, href, label }) => (
+          <button
+            key={href}
+            type="button"
+            onClick={() => navigation(href)}
+            className="relative group flex items-center justify-center w-8 h-8 rounded-[8px] hover:bg-gray-100"
+          >
+            <Icon
+              size={24}
+              color={
+                location.pathname === href
+                  ? isDarkMode
+                    ? "white"
+                    : "black"
+                  : "gray"
+              }
+            />
+            <span
+              className={`sr-only absolute left-full ml-2 px-2 py-1 ${
+                isDarkMode ? "bg-gray-700" : "bg-gray-800"
+              } text-white text-sm rounded opacity-0 group-hover:opacity-100 whitespace-nowrap`}
+            >
+              {label}
+            </span>
+          </button>
+        ))}
+      </nav>
+    </aside>
   );
-};
+}

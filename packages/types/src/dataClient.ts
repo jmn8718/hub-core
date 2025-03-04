@@ -1,13 +1,11 @@
 import type { Providers } from "./enums";
-import type { ProviderSuccessResponse } from "./types";
+import type { IOverviewData, ProviderSuccessResponse } from "./types";
 
 export abstract class DataClient {
   abstract getDataOverview(params: { limit?: number }): Promise<
-    {
-      distance: number;
-      count: number;
-      month: string;
-    }[]
+    ProviderSuccessResponse<{
+      data: IOverviewData[];
+    }>
   >;
 
   abstract getStoreValue<T = string>(key: string): Promise<T | undefined>;
@@ -18,5 +16,10 @@ export abstract class DataClient {
 
   abstract providerSync(
     providerId: Providers,
+    force?: boolean,
   ): Promise<ProviderSuccessResponse>;
+
+  abstract getFolder(
+    key: string,
+  ): Promise<ProviderSuccessResponse<{ data: string }>>;
 }

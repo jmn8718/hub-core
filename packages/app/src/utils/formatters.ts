@@ -1,14 +1,12 @@
-export const formatDistance = (meters: number): string => {
+export const formatDistance = (meters: number, addUnits = true): string => {
   const kilometers = meters / 1000;
-  return `${kilometers.toFixed(2)} km`;
+  return `${kilometers.toFixed(2)}${addUnits ? " km" : ""}`;
 };
 
-export const formatDuration = (seconds: number): string => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
+export const formatDuration = (duration: number): string => {
+  const hours = Math.floor(duration / 3600);
+  const minutes = Math.floor((duration % 3600) / 60);
+  const seconds = duration % 60;
 
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${minutes}m`;
+  return `${hours > 0 ? `${hours}h ` : ""}${minutes}'${seconds > 0 ? ` ${seconds}"` : ""}`;
 };

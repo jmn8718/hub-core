@@ -1,34 +1,46 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import type { DataClient } from "@repo/types";
+import type { AppType, DataClient } from "@repo/types";
 
-import { Layout } from "./components/Layout.js";
-import { DashboardPage } from "./pages/DashboardPage.js";
-import { StickyNotification } from "./components/StickyNotification.js";
-import { ThemeProvider } from "./contexts/ThemeContext.js";
-import { LoadingProvider } from "./contexts/LoadingContext.js";
-
+import { BottomStatus, Layout } from "./components/index.js";
 import { Routes as AppRoutes } from "./constants.js";
+import { HomePage, SettingsPage } from "./pages/index.js";
+import {
+  DataClientProvider,
+  LoadingProvider,
+  StoreProvider,
+  ThemeProvider,
+} from "./contexts/index.js";
 
-import { DataClientProvider } from "./contexts/DataClientContext.js";
-
-export function App({ client }: { client: DataClient }) {
+export function App({ client, type }: { client: DataClient; type: AppType }) {
   if (!client) {
     throw new Error("Provide valid client");
   }
   return (
-    <ThemeProvider>
-      <LoadingProvider>
-        <DataClientProvider client={client}>
-          <Router>
-            <Layout>
-              <Routes>
-                <Route path={AppRoutes.HOME} element={<DashboardPage />} />
-              </Routes>
-              <StickyNotification />
-            </Layout>
-          </Router>
-        </DataClientProvider>
-      </LoadingProvider>
-    </ThemeProvider>
+    <DataClientProvider client={client} type={type}>
+      <ThemeProvider>
+        <StoreProvider>
+          <LoadingProvider>
+            <Router>
+              <Layout>
+                <Routes>
+                  <Route path={AppRoutes.HOME} element={<HomePage />} />
+                  <Route path={AppRoutes.SETTINGS} element={<SettingsPage />} />
+                  {/* <Route path={AppRoutes.PROVIDERS} element={<ProvidersPage />} />
+                  <Route path={AppRoutes.DATA} element={<DataPage />} />
+                  <Route
+                    path={`${AppRoutes.DETAILS}/:activityId`}
+                    element={<DetailsPage />}
+                  />
+                  <Route path={AppRoutes.TABLE} element={<TablePage />} />
+                  <Route path={AppRoutes.GEAR} element={<GearPage />} />
+                  <Route path={AppRoutes.ADD} element={<AddActivityPage />} /> */}
+                </Routes>
+                <BottomStatus />
+              </Layout>
+            </Router>
+          </LoadingProvider>
+        </StoreProvider>
+      </ThemeProvider>
+    </DataClientProvider>
   );
 }
