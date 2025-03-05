@@ -13,7 +13,7 @@ export const Box: React.FC<PageBoxProps> = ({ children, classes = "" }) => {
   return (
     <div
       className={cn(
-        "rounded-[8px] shadow-md p-4 space-y-4 transition-all hover:shadow-lg relative",
+        "rounded-lg shadow-lg p-4 space-y-4 transition-all hover:shadow-lg relative",
         isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800",
         classes || "",
       )}

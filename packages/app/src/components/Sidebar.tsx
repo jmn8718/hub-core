@@ -31,7 +31,10 @@ export function Sidebar({
             key={href}
             type="button"
             onClick={() => navigation(href)}
-            className="relative group flex items-center justify-center w-8 h-8 rounded-[8px] hover:bg-gray-100"
+            className={cn(
+              "relative group flex items-center justify-center w-8 h-8 rounded-lg",
+              isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-200",
+            )}
           >
             <Icon
               size={24}

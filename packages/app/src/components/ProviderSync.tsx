@@ -127,7 +127,7 @@ export const ProviderSync: React.FC<SyncProps> = ({
           disabled={data.isSyncing || !data.hasValidData}
           onClick={onSync}
           className={cn(
-            `inline-flex items-center px-4 py-3 rounded-[8px]
+            `inline-flex items-center px-4 py-3 rounded-lg
             text-white font-medium text-sm
             focus:outline-none focus:ring-2 focus:ring-offset-2
             transition-colors duration-200

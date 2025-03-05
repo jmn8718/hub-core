@@ -24,14 +24,15 @@ export class WebClient implements DataClient {
   }
 
   async getStoreValue<T = string>(key: string): Promise<T | undefined> {
-    return key === "demo" ? ("" as T) : undefined;
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : undefined;
   }
 
   async setStoreValue(
-    _key: string,
-    _value: string | boolean | number,
+    key: string,
+    value: string | boolean | number,
   ): Promise<undefined> {
-    return undefined;
+    localStorage.setItem(key, JSON.stringify({ value }));
   }
 
   async providerSync(
@@ -47,12 +48,13 @@ export class WebClient implements DataClient {
   //   Channels.FOLDER_GET,
   //   store[storeKey] || '',
   // );
+  // on the web, this can not be implemented
   async getFolder(
     _key: string,
   ): Promise<ProviderSuccessResponse<{ data: string }>> {
     return {
       success: true,
-      data: "TODO",
+      data: "",
     };
   }
 }
