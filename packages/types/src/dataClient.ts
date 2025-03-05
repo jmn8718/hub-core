@@ -22,4 +22,6 @@ export abstract class DataClient {
   abstract getFolder(
     key: string,
   ): Promise<ProviderSuccessResponse<{ data: string }>>;
+
+  abstract signout(): Promise<undefined>;
 }

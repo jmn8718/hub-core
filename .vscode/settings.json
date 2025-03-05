@@ -8,9 +8,11 @@
     "COROS",
     "libsql",
     "STRAVA",
+    "Supa",
     "SUPABASE",
     "turborepo",
     "TURSO",
-    "uuidv"
+    "uuidv",
+    "VITE"
   ]
 }

@@ -4,6 +4,7 @@ import type {
   DataClient,
   IOverviewData,
 } from "@repo/types";
+import { supabase } from "./supabase";
 
 export class WebClient implements DataClient {
   async getDataOverview({ limit: _limit }: { limit?: number }): Promise<
@@ -56,5 +57,12 @@ export class WebClient implements DataClient {
       success: true,
       data: "",
     };
+  }
+
+  async signout(): Promise<undefined> {
+    const result = await supabase.auth.signOut();
+    if (result.error) {
+      throw result.error;
+    }
   }
 }

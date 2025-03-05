@@ -57,4 +57,8 @@ export class WebClient implements DataClient {
       data: "",
     };
   }
+
+  async signout(): Promise<undefined> {
+    return;
+  }
 }

@@ -5,6 +5,7 @@ import {
   SectionContainer,
   FolderPathSection,
   ThemeSection,
+  SignOutSection,
 } from "../components/index.js";
 import { STORE_KEYS } from "../constants.js";
 import { useDataClient, useStore } from "../contexts/index.js";
@@ -15,10 +16,7 @@ export function Settings() {
   return (
     <Container>
       <Box>
-        <SectionContainer
-          title="Theme Settings"
-          hasBorder={type === AppType.DESKTOP}
-        >
+        <SectionContainer title="Theme Settings" hasBorder>
           <ThemeSection />
         </SectionContainer>
         {type === AppType.DESKTOP && (
@@ -44,6 +42,7 @@ export function Settings() {
             />
           </SectionContainer>
         )}
+        {type === AppType.WEB && <SignOutSection />}
       </Box>
     </Container>
   );

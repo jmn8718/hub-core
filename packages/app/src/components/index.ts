@@ -1,6 +1,7 @@
 export * from "./charts/MonthlyChart.js";
 export * from "./settings/FolderPathSection.js";
 export * from "./settings/ThemeSection.js";
+export * from "./settings/SignOutSection.js";
 export * from "./BottomStatus.js";
 export * from "./Box.js";
 export * from "./Container.js";

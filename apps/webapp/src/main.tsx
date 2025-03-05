@@ -1,15 +1,12 @@
+import "@repo/ui/styles.css";
 import "@repo/app/styles.css";
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "@repo/app";
-import { WebClient } from "@/clients/web";
-import { AppType } from "@repo/types";
-
-const client = new WebClient();
+import App from "./app";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App client={client} type={AppType.WEB} />
+    <App />
   </StrictMode>,
 );
