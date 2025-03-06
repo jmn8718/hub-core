@@ -1,0 +1,59 @@
+{
+  "folders": [
+    {
+      "name": "root",
+      "path": "../"
+    },
+    {
+      "name": "admin",
+      "path": "../apps/admin"
+    },
+    {
+      "name": "app",
+      "path": "../apps/app"
+    },
+    {
+      "name": "webapp",
+      "path": "../apps/webapp"
+    },
+    {
+      "name": "packages",
+      "path": "../packages"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.DS_Store": true,
+      "**/turbo.outdir": true,
+      "**/.turbo*/**": true,
+      "**/dist": true,
+      "**/declarations": true,
+      "**/*.tsbuildinfo": true,
+      "app": true,
+      "packages": true
+    },
+    "files.watcherExclude": {
+      "**/.git/objects/**": true,
+      "**/.git/subtree-cache/**": true,
+      "**/node_modules/**": true,
+      "**/dist/**": true,
+      "**/declarations/**": true,
+      "**/.turbo*/**": true
+    },
+    "files.associations": {
+      "*.json": "jsonc"
+    },
+    "search.exclude": {
+      "**/turbo.outdir": true,
+      "**/.turbo*/**": true,
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/coverage": true,
+      "**/declarations": true,
+      "**/*.tsbuildinfo": true
+    },
+    "yaml.keyOrdering": true,
+    "turbo.useLocalTurbo": true
+  }
+}
