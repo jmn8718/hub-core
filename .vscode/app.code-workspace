@@ -54,6 +54,10 @@
       "**/*.tsbuildinfo": true
     },
     "yaml.keyOrdering": true,
-    "turbo.useLocalTurbo": true
+    "turbo.useLocalTurbo": true,
+    "cSpell.words": [
+      "Supa",
+      "supabase"
+    ]
   }
 }

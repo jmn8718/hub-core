@@ -4,7 +4,7 @@ import type {
   DataClient,
   IOverviewData,
 } from "@repo/types";
-import { supabase } from "./supabase";
+import { supabase } from "./supabase.js";
 
 export class WebClient implements DataClient {
   async getDataOverview({ limit: _limit }: { limit?: number }): Promise<
