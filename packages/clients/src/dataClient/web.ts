@@ -31,7 +31,7 @@ export class WebClient implements DataClient {
 
   async getStoreValue<T = string>(key: string): Promise<T | undefined> {
     const value = localStorage.getItem(key);
-    return value ? JSON.parse(value) : undefined;
+    return value ? (JSON.parse(value) as { value: T }).value : undefined;
   }
 
   async setStoreValue(

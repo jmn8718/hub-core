@@ -23,18 +23,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     obsidian_disabled: "",
   });
 
-  const setValue = async (key: string, value: string) => {
-    await client.setStoreValue(key, value);
+  const setValue = async (key: string, value: string, setOnClient = true) => {
+    if (setOnClient) {
+      await client.setStoreValue(key, value);
+    }
     setStore((currentStore) => ({
       ...currentStore,
       [key]: value,
     }));
   };
 
-  const getFromStore = async (key: string) => {
+  const getFromStore = async (key: string, isInitialGet = false) => {
     const storeValue = await client.getStoreValue(key);
     if (storeValue) {
-      setValue(key, storeValue);
+      setValue(key, storeValue, !isInitialGet);
     }
     return storeValue;
   };
@@ -45,8 +47,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    getFromStore(STORE_KEYS.DOWNLOAD_FOLDER);
-    getFromStore(STORE_KEYS.OBSIDIAN_FOLDER);
+    getFromStore(STORE_KEYS.DOWNLOAD_FOLDER, true);
+    getFromStore(STORE_KEYS.OBSIDIAN_FOLDER, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
