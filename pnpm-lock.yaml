@@ -102,6 +102,9 @@ importers:
       '@electron-toolkit/utils':
         specifier: ^4.0.0
         version: 4.0.0(electron@34.2.0)
+      '@repo/app':
+        specifier: workspace:*
+        version: link:../../packages/app
       '@repo/clients':
         specifier: workspace:*
         version: link:../../packages/clients

@@ -1,6 +1,7 @@
 {
   "name": "app",
   "version": "1.0.0",
+  "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
@@ -16,6 +17,7 @@
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
+    "@repo/app": "workspace:*",
     "@repo/clients": "workspace:*",
     "@repo/ui": "workspace:*",
     "@electron-toolkit/preload": "^3.0.1",
