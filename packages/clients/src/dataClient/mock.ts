@@ -1,12 +1,10 @@
 import type {
-  Providers,
   ProviderSuccessResponse,
   DataClient,
   IOverviewData,
 } from "@repo/types";
-import { supabase } from "./supabase.js";
 
-export class WebClient implements DataClient {
+export class MockClient implements DataClient {
   async getDataOverview({ limit: _limit }: { limit?: number }): Promise<
     ProviderSuccessResponse<{
       data: IOverviewData[];
@@ -36,33 +34,19 @@ export class WebClient implements DataClient {
     localStorage.setItem(key, JSON.stringify({ value }));
   }
 
-  async providerSync(
-    _providerId: Providers,
-    _force?: boolean,
-  ): Promise<ProviderSuccessResponse> {
+  async providerSync(): Promise<ProviderSuccessResponse> {
     return {
       success: true,
     };
   }
 
-  // const newPath = await window.electron.ipcRenderer.invoke(
-  //   Channels.FOLDER_GET,
-  //   store[storeKey] || '',
-  // );
   // on the web, this can not be implemented
-  async getFolder(
-    _key: string,
-  ): Promise<ProviderSuccessResponse<{ data: string }>> {
+  async getFolder(): Promise<ProviderSuccessResponse<{ data: string }>> {
     return {
       success: true,
       data: "",
     };
   }
 
-  async signout(): Promise<undefined> {
-    const result = await supabase.auth.signOut();
-    if (result.error) {
-      throw result.error;
-    }
-  }
+  async signout(): Promise<undefined> {}
 }

@@ -12,8 +12,6 @@
     "build": "tsc",
     "check-types": "tsc --noEmit"
   },
-  "dependencies": {
-  },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",

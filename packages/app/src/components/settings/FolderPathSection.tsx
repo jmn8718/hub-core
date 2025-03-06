@@ -10,11 +10,13 @@ export function FolderPathSection({
   storeKey,
   text,
   placeholder,
+  popupTitle,
 }: {
   id: string;
   storeKey: string;
   text: string;
   placeholder: string;
+  popupTitle: string;
 }) {
   const { isDarkMode } = useTheme();
   const { store, setValue } = useStore();
@@ -32,7 +34,7 @@ export function FolderPathSection({
   };
 
   const onClick = async () => {
-    const result = await client.getFolder(store[storeKey] || "");
+    const result = await client.getFolder(store[storeKey] || "", popupTitle);
     if (result.success) {
       if (result.data && result.data !== store[storeKey]) {
         saveNewPath(result.data);

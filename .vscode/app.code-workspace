@@ -29,9 +29,7 @@
       "**/.turbo*/**": true,
       "**/dist": true,
       "**/declarations": true,
-      "**/*.tsbuildinfo": true,
-      "app": true,
-      "packages": true
+      "**/*.tsbuildinfo": true
     },
     "files.watcherExclude": {
       "**/.git/objects/**": true,

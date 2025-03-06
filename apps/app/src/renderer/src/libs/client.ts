@@ -1,8 +1,9 @@
-import type {
-  Providers,
-  ProviderSuccessResponse,
-  DataClient,
-  IOverviewData,
+import {
+  type Providers,
+  type ProviderSuccessResponse,
+  type DataClient,
+  type IOverviewData,
+  Channels,
 } from "@repo/types";
 
 export class Client implements DataClient {
@@ -44,17 +45,20 @@ export class Client implements DataClient {
     };
   }
 
-  // const newPath = await window.electron.ipcRenderer.invoke(
-  //   Channels.FOLDER_GET,
-  //   store[storeKey] || '',
-  // );
-  // on the web, this can not be implemented
   async getFolder(
-    _key: string,
+    defaultPath: string,
+    title: string,
   ): Promise<ProviderSuccessResponse<{ data: string }>> {
+    const selectedPath = await window.electron.ipcRenderer.invoke(
+      Channels.FOLDER_GET,
+      {
+        defaultPath,
+        title,
+      },
+    );
     return {
       success: true,
-      data: "",
+      data: selectedPath,
     };
   }
 

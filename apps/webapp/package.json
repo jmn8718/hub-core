@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@repo/app": "workspace:*",
+    "@repo/clients": "workspace:*",
     "@repo/ui": "workspace:*",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",

@@ -1,11 +1,7 @@
 {
   "extends": "@repo/typescript-config/react-library.json",
   "compilerOptions": {
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "outDir": "build",
     "paths": {
       "@/*": ["./src/*"]
     }
@@ -13,9 +9,7 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    "next-env.d.ts",
-    "next.config.ts",
-    ".next/types/**/*.ts"
+    "**/vite-env.d.ts",
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "build"]
 }

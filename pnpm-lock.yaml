@@ -175,6 +175,9 @@ importers:
       '@repo/app':
         specifier: workspace:*
         version: link:../../packages/app
+      '@repo/clients':
+        specifier: workspace:*
+        version: link:../../packages/clients
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -306,6 +309,9 @@ importers:
       '@repo/types':
         specifier: workspace:*
         version: link:../types
+      '@supabase/supabase-js':
+        specifier: ^2.48.1
+        version: 2.48.1
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*

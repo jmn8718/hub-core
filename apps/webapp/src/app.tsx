@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 
 import { App } from "@repo/app";
 import { AppType } from "@repo/types";
-import { Session } from "@supabase/supabase-js";
-import { WebClient } from "@/libs/client.js";
+import { WebClient, SupabaseUserSession } from "@repo/clients";
 import { supabase } from "@/libs/supabase.js";
 import Login from "@/login.js";
 
-const client = new WebClient();
+const client = new WebClient(supabase);
 
 export default function WebApp() {
-  const [userSession, setUserSession] = useState<Session | null>(null);
+  const [userSession, setUserSession] = useState<SupabaseUserSession | null>(
+    null,
+  );
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUserSession(session);

@@ -28,6 +28,7 @@ export function Settings() {
               id="download-path"
               storeKey={STORE_KEYS.DOWNLOAD_FOLDER}
               text="This is where your downloaded files will be saved"
+              popupTitle="Select folder to save downloaded files"
               placeholder="Enter download path"
             />
           </SectionContainer>
@@ -38,6 +39,7 @@ export function Settings() {
               id="obsidian-path"
               storeKey={STORE_KEYS.OBSIDIAN_FOLDER}
               text="Select the Obsidian Vault folder to export the activities"
+              popupTitle="Select folder to export obsidian notes"
               placeholder="Enter obsidian vault path"
             />
           </SectionContainer>
