@@ -54,6 +54,7 @@
     "yaml.keyOrdering": true,
     "turbo.useLocalTurbo": true,
     "cSpell.words": [
+      "COROS",
       "Supa",
       "supabase"
     ]
