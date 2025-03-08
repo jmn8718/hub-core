@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import type { AppType } from "@repo/types";
+import { Client } from "@repo/clients";
 
 import { BottomStatus, Layout } from "./components/index.js";
 import { Routes as AppRoutes } from "./constants.js";
@@ -10,7 +11,6 @@ import {
   StoreProvider,
   ThemeProvider,
 } from "./contexts/index.js";
-import { Client } from "@repo/clients";
 
 export function App({ client, type }: { client: Client; type: AppType }) {
   if (!client) {

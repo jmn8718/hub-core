@@ -1,4 +1,3 @@
-/* eslint-disable no-nested-ternary */
 import React, { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 
@@ -69,7 +68,7 @@ export const ProviderSync: React.FC<SyncProps> = ({
       }, 300);
     };
     getFromStore(id);
-  }, [id, setLocalLoading]);
+  }, [client, id, setLocalLoading]);
 
   const onSync = async () => {
     setLocalLoading(true);

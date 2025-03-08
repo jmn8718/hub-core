@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { IOverviewData, Providers } from "@repo/types";
@@ -27,7 +26,7 @@ export const Home = () => {
     setTimeout(() => {
       setLocalLoading(false);
     }, 500);
-  }, [setOverviewData, setLocalLoading]);
+  }, [setLocalLoading, client]);
 
   const onSyncDone = () => {
     return fetchData();

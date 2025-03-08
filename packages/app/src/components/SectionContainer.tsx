@@ -1,4 +1,3 @@
-/* eslint-disable react/require-default-props */
 import { cn } from "@repo/ui";
 import React from "react";
 import { H2 } from "./H2.js";
