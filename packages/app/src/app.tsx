@@ -1,17 +1,18 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import type { AppType, DataClient } from "@repo/types";
+import type { AppType } from "@repo/types";
 
 import { BottomStatus, Layout } from "./components/index.js";
 import { Routes as AppRoutes } from "./constants.js";
-import { HomePage, SettingsPage } from "./pages/index.js";
+import * as Pages from "./pages/index.js";
 import {
   DataClientProvider,
   LoadingProvider,
   StoreProvider,
   ThemeProvider,
 } from "./contexts/index.js";
+import { Client } from "@repo/clients";
 
-export function App({ client, type }: { client: DataClient; type: AppType }) {
+export function App({ client, type }: { client: Client; type: AppType }) {
   if (!client) {
     throw new Error("Provide valid client");
   }
@@ -23,10 +24,16 @@ export function App({ client, type }: { client: DataClient; type: AppType }) {
             <Router>
               <Layout>
                 <Routes>
-                  <Route path={AppRoutes.HOME} element={<HomePage />} />
-                  <Route path={AppRoutes.SETTINGS} element={<SettingsPage />} />
+                  <Route path={AppRoutes.HOME} element={<Pages.HomePage />} />
+                  <Route
+                    path={AppRoutes.SETTINGS}
+                    element={<Pages.SettingsPage />}
+                  />
+                  <Route
+                    path={AppRoutes.DATA}
+                    element={<Pages.DataListPage />}
+                  />
                   {/* <Route path={AppRoutes.PROVIDERS} element={<ProvidersPage />} />
-                  <Route path={AppRoutes.DATA} element={<DataPage />} />
                   <Route
                     path={`${AppRoutes.DETAILS}/:activityId`}
                     element={<DetailsPage />}

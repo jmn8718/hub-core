@@ -1,10 +1,12 @@
 import type {
   ProviderSuccessResponse,
-  DataClient,
   IOverviewData,
+  IDbGear,
+  ActivitiesData,
 } from "@repo/types";
+import { Client } from "./Client";
 
-export class MockClient implements DataClient {
+export class MockClient implements Client {
   async getDataOverview({ limit: _limit }: { limit?: number }): Promise<
     ProviderSuccessResponse<{
       data: IOverviewData[];
@@ -19,6 +21,32 @@ export class MockClient implements DataClient {
         { distance: 1500, count: 5, month: "2024-12" },
         { distance: 1200, count: 3, month: "2025-01" },
       ],
+    };
+  }
+
+  async getActivities(_params: { skip?: number; size?: number }): Promise<
+    ProviderSuccessResponse<{
+      data: ActivitiesData;
+    }>
+  > {
+    return {
+      success: true,
+      data: {
+        count: 0,
+        cursor: "",
+        data: [],
+      },
+    };
+  }
+
+  async getGears(_params: { skip?: number; size?: number }): Promise<
+    ProviderSuccessResponse<{
+      data: IDbGear[];
+    }>
+  > {
+    return {
+      success: true,
+      data: [],
     };
   }
 

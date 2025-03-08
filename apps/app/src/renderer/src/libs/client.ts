@@ -1,12 +1,14 @@
+import { Client } from "@repo/clients";
 import {
   type Providers,
   type ProviderSuccessResponse,
-  type DataClient,
   type IOverviewData,
   Channels,
+  IDbGear,
+  ActivitiesData,
 } from "@repo/types";
 
-export class Client implements DataClient {
+export class AppClient implements Client {
   async getDataOverview({ limit: _limit }: { limit?: number }): Promise<
     ProviderSuccessResponse<{
       data: IOverviewData[];
@@ -21,6 +23,40 @@ export class Client implements DataClient {
         { distance: 1500, count: 5, month: "2024-12" },
         { distance: 1200, count: 3, month: "2025-01" },
       ],
+    };
+  }
+
+  async getActivities(_params: { limit?: number; size?: number }): Promise<
+    ProviderSuccessResponse<{
+      data: ActivitiesData;
+    }>
+  > {
+    // const activities = await window.electron.ipcRenderer.invoke(
+    //   Channels.DB_ACTIVITIES,
+    //   params,
+    // )
+    return {
+      success: true,
+      data: {
+        data: [],
+        count: 0,
+        cursor: "",
+      },
+    };
+  }
+
+  async getGears(_params: { limit?: number; size?: number }): Promise<
+    ProviderSuccessResponse<{
+      data: IDbGear[];
+    }>
+  > {
+    // const activities = await window.electron.ipcRenderer.invoke(
+    //   Channels.DB_ACTIVITIES,
+    //   params,
+    // )
+    return {
+      success: true,
+      data: [],
     };
   }
 

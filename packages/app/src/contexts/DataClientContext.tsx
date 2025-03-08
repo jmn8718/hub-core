@@ -1,9 +1,9 @@
-import type { AppType, DataClient } from "@repo/types";
-import type React from "react";
+import { Client } from "@repo/clients";
+import type { AppType } from "@repo/types";
 import { createContext, useContext } from "react";
 
 interface DataClientContextType {
-  client: DataClient;
+  client: Client;
   type: AppType;
 }
 
@@ -12,7 +12,7 @@ const DataClientContext = createContext<DataClientContextType | undefined>(
 );
 
 export const DataClientProvider: React.FC<{
-  client: DataClient;
+  client: Client;
   type: AppType;
   children: React.ReactNode;
 }> = ({ children, client, type }) => {

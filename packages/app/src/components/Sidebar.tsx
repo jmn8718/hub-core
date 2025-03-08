@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { LucideProps } from "lucide-react";
 import { cn } from "@repo/ui";
 import { useTheme } from "../contexts/ThemeContext.js";
+import { useDataClient } from "../contexts/DataClientContext.js";
+import { AppType } from "@repo/types";
 
 export function Sidebar({
   sidebarItems,
@@ -16,13 +18,16 @@ export function Sidebar({
   }[];
 }) {
   const { isDarkMode } = useTheme();
+  const { type } = useDataClient();
   const location = useLocation();
   const navigation = useNavigate();
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 h-full w-12 shadow-lg flex flex-col items-center py-6 transition-colors duration-200",
+        "fixed left-0 top-0 h-full shadow-lg flex flex-col items-center py-6 transition-colors duration-200",
+        "fixed left-0 top-0 h-full shadow-lg flex flex-col items-center py-6 transition-colors duration-200",
         isDarkMode ? "bg-gray-800" : "bg-white",
+        type === AppType.DESKTOP ? "w-16" : "w-12",
       )}
     >
       <nav className="flex flex-col items-center space-y-4">
@@ -34,6 +39,7 @@ export function Sidebar({
             className={cn(
               "relative group flex items-center justify-center w-8 h-8 rounded-lg",
               isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-200",
+              type === AppType.DESKTOP ? "w-12 h-12" : "w-8 h-8",
             )}
           >
             <Icon
@@ -47,9 +53,11 @@ export function Sidebar({
               }
             />
             <span
-              className={`sr-only absolute left-full ml-2 px-2 py-1 ${
-                isDarkMode ? "bg-gray-700" : "bg-gray-800"
-              } text-white text-sm rounded opacity-0 group-hover:opacity-100 whitespace-nowrap`}
+              className={cn(
+                "sr-only absolute left-full ml-2 px-2 py-1",
+                "text-white text-sm rounded opacity-0 group-hover:opacity-100 whitespace-nowrap",
+                isDarkMode ? "bg-gray-700" : "bg-gray-800",
+              )}
             >
               {label}
             </span>

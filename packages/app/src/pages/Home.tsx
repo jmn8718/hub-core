@@ -4,11 +4,7 @@ import { Bounce, toast } from "react-toastify";
 import { IOverviewData, Providers } from "@repo/types";
 import { useLoading } from "../contexts/LoadingContext.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
-import {
-  Container,
-  ProviderSync,
-  MonthlyActivityChart,
-} from "../components/index.js";
+import { ProviderSync, MonthlyActivityChart } from "../components/index.js";
 
 export const Home = () => {
   const { setLocalLoading } = useLoading();
@@ -42,8 +38,8 @@ export const Home = () => {
   }, [fetchData]);
 
   return (
-    <Container>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-2xl min-w-full mx-auto mb-2">
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl min-w-full mx-auto mb-4">
         <ProviderSync
           id={Providers.GARMIN}
           title="Garmin"
@@ -56,6 +52,6 @@ export const Home = () => {
         />
       </div>
       <MonthlyActivityChart data={overviewData} />
-    </Container>
+    </>
   );
 };

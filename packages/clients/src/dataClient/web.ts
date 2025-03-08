@@ -1,11 +1,13 @@
 import type {
   ProviderSuccessResponse,
-  DataClient,
   IOverviewData,
+  IDbGear,
+  ActivitiesData,
 } from "@repo/types";
 import type { SupabaseClient } from "../supabase.js";
+import { Client } from "./Client.js";
 
-export class WebClient implements DataClient {
+export class WebClient implements Client {
   private _supabase: SupabaseClient;
 
   constructor(supabase: SupabaseClient) {
@@ -26,6 +28,32 @@ export class WebClient implements DataClient {
         { distance: 1500, count: 5, month: "2024-12" },
         { distance: 1200, count: 3, month: "2025-01" },
       ],
+    };
+  }
+
+  async getActivities(_params: { skip?: number; size?: number }): Promise<
+    ProviderSuccessResponse<{
+      data: ActivitiesData;
+    }>
+  > {
+    return {
+      success: true,
+      data: {
+        count: 0,
+        cursor: "",
+        data: [],
+      },
+    };
+  }
+
+  async getGears(_params: { skip?: number; size?: number }): Promise<
+    ProviderSuccessResponse<{
+      data: IDbGear[];
+    }>
+  > {
+    return {
+      success: true,
+      data: [],
     };
   }
 

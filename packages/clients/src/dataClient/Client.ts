@@ -1,10 +1,27 @@
-import type { Providers } from "./enums";
-import type { IOverviewData, ProviderSuccessResponse } from "./types";
+import {
+  ActivitiesData,
+  IDbGear,
+  IOverviewData,
+  Providers,
+  ProviderSuccessResponse,
+} from "@repo/types";
 
-export abstract class DataClient {
+export abstract class Client {
   abstract getDataOverview(params: { limit?: number }): Promise<
     ProviderSuccessResponse<{
       data: IOverviewData[];
+    }>
+  >;
+
+  abstract getActivities(params: { skip?: number; size?: number }): Promise<
+    ProviderSuccessResponse<{
+      data: ActivitiesData;
+    }>
+  >;
+
+  abstract getGears(params: { skip?: number; size?: number }): Promise<
+    ProviderSuccessResponse<{
+      data: IDbGear[];
     }>
   >;
 
