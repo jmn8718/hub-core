@@ -1,16 +1,16 @@
 import "dotenv/config";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { createDbClient } from "./index.js";
+import { createDbClient } from "./index";
 
 const db = createDbClient(
-  process.env.LOCAL_DB
-    ? {
-        url: process.env.LOCAL_DB,
-      }
-    : {
-        url: process.env.TURSO_DATABASE_URL,
-        authToken: process.env.TURSO_AUTH_TOKEN,
-      },
+	process.env.LOCAL_DB
+		? {
+				url: process.env.LOCAL_DB,
+			}
+		: {
+				url: process.env.TURSO_DATABASE_URL,
+				authToken: process.env.TURSO_AUTH_TOKEN,
+			},
 );
 
 migrate(db, { migrationsFolder: "./drizzle" });

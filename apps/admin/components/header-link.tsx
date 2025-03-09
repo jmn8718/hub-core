@@ -4,19 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function HeaderLink({
-  href = "#",
-  name,
+	href = "#",
+	name,
 }: {
-  name: string;
-  href?: string;
+	name: string;
+	href?: string;
 }) {
-  const pathname = usePathname();
-  return (
-    <Link
-      href={href}
-      className={pathname === href ? "font-bold" : "text-muted-foreground"}
-    >
-      {name}
-    </Link>
-  );
+	const pathname = usePathname();
+	return (
+		<Link
+			href={href}
+			className={pathname === href ? "font-bold" : "text-muted-foreground"}
+		>
+			{name}
+		</Link>
+	);
 }

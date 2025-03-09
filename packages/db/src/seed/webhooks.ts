@@ -1,28 +1,28 @@
 import "dotenv/config";
-import { createDbClient } from "../index";
-import { webhooks } from "../schemas";
+import { createDbClient } from "../client";
+import { webhooks } from "../schemas/webhooks";
 import { webhooks as webhooksData } from "./data";
 
 async function run() {
-  const db = createDbClient(
-    process.env.LOCAL_DB
-      ? {
-          url: process.env.LOCAL_DB,
-        }
-      : {
-          url: process.env.TURSO_DATABASE_URL,
-          authToken: process.env.TURSO_AUTH_TOKEN,
-        },
-  );
+	const db = createDbClient(
+		process.env.LOCAL_DB
+			? {
+					url: process.env.LOCAL_DB,
+				}
+			: {
+					url: process.env.TURSO_DATABASE_URL,
+					authToken: process.env.TURSO_AUTH_TOKEN,
+				},
+	);
 
-  await db.insert(webhooks).values(
-    webhooksData.map((record) => ({
-      ...record,
-      event_time: record.created_at,
-    })),
-  );
+	await db.insert(webhooks).values(
+		webhooksData.map((record) => ({
+			...record,
+			event_time: record.created_at,
+		})),
+	);
 }
 
 run().then(() => {
-  console.log("Seeding complete.");
+	console.log("Seeding complete.");
 });
