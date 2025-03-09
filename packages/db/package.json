@@ -14,7 +14,8 @@
     "db:schema": "drizzle-kit generate --dialect sqlite --schema src/schemas/index.ts",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed:webhooks": "tsx src/seed/webhooks.ts",
-    "db:seed:users": "tsx src/seed/users.ts"
+    "db:seed:activities": "tsx src/seed/activities.ts",
+    "test": "vitest"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
@@ -23,13 +24,16 @@
     "uuidv7": "^1.0.2"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.6.0",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@repo/types": "workspace:*",
     "@types/node": "^22.12.0",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.4",
     "eslint": "^9.20.0",
     "tsx": "^4.19.2",
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "vitest": "^3.0.8"
   }
 }

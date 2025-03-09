@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "bb8985e5-bf01-47f1-83d2-176ff10d0381",
+  "id": "966c6dce-cb77-4d07-8c1f-61c3aa25050f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "activities": {
@@ -49,27 +49,30 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "''"
         },
         "location_name": {
           "name": "location_name",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "''"
         },
         "location_country": {
           "name": "location_country",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "''"
         },
         "type": {
           "name": "type",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "subtype": {
@@ -92,14 +95,16 @@
           "type": "real",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         },
         "start_longitude": {
           "name": "start_longitude",
           "type": "real",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         }
       },
       "indexes": {
@@ -134,21 +139,12 @@
           "autoincrement": false
         }
       },
-      "indexes": {
-        "activities_connection_activity_id_provider_activity_id_unique": {
-          "name": "activities_connection_activity_id_provider_activity_id_unique",
-          "columns": [
-            "activity_id",
-            "provider_activity_id"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
-        "activities_connection_activity_id_gears_id_fk": {
-          "name": "activities_connection_activity_id_gears_id_fk",
+        "activities_connection_activity_id_activities_id_fk": {
+          "name": "activities_connection_activity_id_activities_id_fk",
           "tableFrom": "activities_connection",
-          "tableTo": "gears",
+          "tableTo": "activities",
           "columnsFrom": [
             "activity_id"
           ],
@@ -158,29 +154,14 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "activities_connection_provider_activity_id_activities_id_fk": {
-          "name": "activities_connection_provider_activity_id_activities_id_fk",
+        "activities_connection_provider_activity_id_provider_activities_id_fk": {
+          "name": "activities_connection_provider_activity_id_provider_activities_id_fk",
           "tableFrom": "activities_connection",
-          "tableTo": "activities",
+          "tableTo": "provider_activities",
           "columnsFrom": [
             "provider_activity_id"
           ],
           "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "activities_connection_activity_id_provider_activity_id_activities_id_id_fk": {
-          "name": "activities_connection_activity_id_provider_activity_id_activities_id_id_fk",
-          "tableFrom": "activities_connection",
-          "tableTo": "activities",
-          "columnsFrom": [
-            "activity_id",
-            "provider_activity_id"
-          ],
-          "columnsTo": [
-            "id",
             "id"
           ],
           "onDelete": "no action",
@@ -244,21 +225,6 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
-        },
-        "activity_gears_gear_id_activity_id_gears_id_id_fk": {
-          "name": "activity_gears_gear_id_activity_id_gears_id_id_fk",
-          "tableFrom": "activity_gears",
-          "tableTo": "gears",
-          "columnsFrom": [
-            "gear_id",
-            "activity_id"
-          ],
-          "columnsTo": [
-            "id",
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -294,7 +260,7 @@
           "name": "code",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "brand": {
@@ -302,13 +268,14 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "''"
         },
         "type": {
           "name": "type",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "date_begin": {
@@ -358,16 +325,7 @@
           "autoincrement": false
         }
       },
-      "indexes": {
-        "gears_connection_gear_id_provider_gear_id_unique": {
-          "name": "gears_connection_gear_id_provider_gear_id_unique",
-          "columns": [
-            "gear_id",
-            "provider_gear_id"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "gears_connection_gear_id_gears_id_fk": {
           "name": "gears_connection_gear_id_gears_id_fk",
@@ -382,29 +340,14 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "gears_connection_provider_gear_id_gears_id_fk": {
-          "name": "gears_connection_provider_gear_id_gears_id_fk",
+        "gears_connection_provider_gear_id_provider_gears_id_fk": {
+          "name": "gears_connection_provider_gear_id_provider_gears_id_fk",
           "tableFrom": "gears_connection",
-          "tableTo": "gears",
+          "tableTo": "provider_gears",
           "columnsFrom": [
             "provider_gear_id"
           ],
           "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "gears_connection_gear_id_provider_gear_id_gears_id_id_fk": {
-          "name": "gears_connection_gear_id_provider_gear_id_gears_id_id_fk",
-          "tableFrom": "gears_connection",
-          "tableTo": "gears",
-          "columnsFrom": [
-            "gear_id",
-            "provider_gear_id"
-          ],
-          "columnsTo": [
-            "id",
             "id"
           ],
           "onDelete": "no action",

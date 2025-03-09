@@ -37,5 +37,4 @@ yarn-error.log*
 dist/
 
 # db
-
-db.*
+*db.sqlite

@@ -55,8 +55,10 @@
     "turbo.useLocalTurbo": true,
     "cSpell.words": [
       "COROS",
+      "libsql",
       "Supa",
-      "supabase"
+      "supabase",
+      "uuidv"
     ]
   }
 }
