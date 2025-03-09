@@ -5,7 +5,10 @@
     "dist"
   ],
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "license": "MIT",
   "scripts": {
@@ -20,6 +23,7 @@
   "dependencies": {
     "@libsql/client": "^0.14.0",
     "@libsql/core": "^0.14.0",
+    "@repo/types": "workspace:*",
     "drizzle-orm": "^0.39.3",
     "uuidv7": "^1.0.2"
   },
@@ -27,7 +31,6 @@
     "@faker-js/faker": "^9.6.0",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@repo/types": "workspace:*",
     "@types/node": "^22.12.0",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.4",
