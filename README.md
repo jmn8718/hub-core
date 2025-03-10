@@ -16,7 +16,6 @@ The monorepo is divided on 2 parts:
 - app:
 - clients:
 - db:
-- eslint-config:
 - tailwind-config:
 - types:
 - typescript-config:
