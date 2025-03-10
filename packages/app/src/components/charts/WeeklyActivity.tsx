@@ -24,7 +24,8 @@ export const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({
 }) => {
 	const { isDarkMode } = useTheme();
 
-	const CustomTooltip = ({ active, payload, label }: any) => {
+	// @ts-expect-error not proper typing
+	const CustomTooltip = ({ active, payload, label }: unknown) => {
 		if (active && payload && payload.length) {
 			return (
 				<div

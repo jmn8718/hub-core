@@ -1,7 +1,7 @@
 {
   "extends": "@repo/typescript-config/base.json",
   "include": ["src"],
-  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/seeds/*.ts"],
+  "exclude": ["dist", "node_modules", "drizzle", "**/*.test.ts", "**/seeds/*.ts"],
   "compilerOptions": {
     "types": ["node"],
     "module": "esnext",

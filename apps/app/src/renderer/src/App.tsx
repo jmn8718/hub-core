@@ -23,6 +23,7 @@ function App(): JSX.Element {
 					</a>
 				</div>
 				<div className="action">
+					{/* biome-ignore lint/a11y/useValidAnchor: <explanation> */}
 					<a target="_blank" rel="noreferrer" onClick={ipcHandle}>
 						Send IPC
 					</a>

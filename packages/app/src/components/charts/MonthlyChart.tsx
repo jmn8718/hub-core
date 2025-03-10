@@ -26,7 +26,8 @@ export const MonthlyActivityChart: React.FC<MonthlyActivityChartProps> = ({
 	data,
 }: MonthlyActivityChartProps) => {
 	const { isDarkMode } = useTheme();
-	const CustomTooltip = ({ active, payload, label }: any) => {
+	// @ts-expect-error not proper typing
+	const CustomTooltip = ({ active, payload, label }: unknown) => {
 		if (active && payload && payload.length) {
 			return (
 				<div
@@ -34,7 +35,7 @@ export const MonthlyActivityChart: React.FC<MonthlyActivityChartProps> = ({
 						isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"
 					}`}
 				>
-					<p className="font-semibold">Month {payload[0].payload.month}</p>
+					<p className="font-semibold">Month {label}</p>
 					<p>{formatDistance(payload[0].value)}</p>
 				</div>
 			);

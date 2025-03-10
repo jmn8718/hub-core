@@ -9,6 +9,7 @@ import { App } from "./app.js";
 
 const client = new MockClient();
 
+// biome-ignore lint/style/noNonNullAssertion: <explanation>
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<App client={client} type={AppType.WEB} />

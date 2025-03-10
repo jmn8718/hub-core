@@ -1,18 +1,14 @@
 {
   "name": "@repo/db",
   "version": "0.0.0",
-  "files": [
-    "dist"
-  ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
     }
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
     "check-types": "tsc --noEmit",
     "db:schema": "drizzle-kit generate --dialect sqlite --schema src/schemas/index.ts",
     "db:migrate": "tsx src/migrate.ts",

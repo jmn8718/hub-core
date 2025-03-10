@@ -51,11 +51,16 @@ export function FolderPathSection({
 	return (
 		<div className="flex flex-col space-y-2">
 			<Text text={text} />
-			<div className="relative" onClick={onClick}>
+			<div className="relative">
+				<button
+					type="button"
+					className="z-20 rounded-lg absolute h-full w-full cursor-pointer"
+					onClick={onClick}
+				/>
 				<Folder
 					size={20}
 					className={cn(
-						"absolute left-3 top-1/2 transform -translate-y-1/2",
+						"absolute z-10 left-3 top-1/2 transform -translate-y-1/2",
 						isDarkMode ? "text-gray-300" : "text-gray-700",
 					)}
 				/>

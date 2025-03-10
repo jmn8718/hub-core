@@ -30,11 +30,11 @@ export class Db {
 		// TODO populate data
 		const data = result[1];
 		return {
-      // @ts-expect-error need to type
+			// @ts-expect-error need to type
 			count: dataCount,
-      // @ts-expect-error need to type
+			// @ts-expect-error need to type
 			data,
-      // @ts-expect-error need to type
+			// @ts-expect-error need to type
 			cursor: dataCount !== data.length ? data[data.length - 1]?.id : "",
 		};
 	}

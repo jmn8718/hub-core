@@ -12,7 +12,6 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
