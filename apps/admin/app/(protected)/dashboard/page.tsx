@@ -30,7 +30,7 @@ export default async function DashboardPage() {
 								</td>
 								<td className="px-4">{webhook.id}</td>
 								<td className="px-4">
-									{formatDate(webhook.event_time, "YYYY-MM-DD HH:mm:ss")}
+									{formatDate(webhook.created_at, "YYYY-MM-DD HH:mm:ss")}
 								</td>
 								<td className="px-4">{webhook.object_type}</td>
 								<td className="px-4">{webhook.aspect_type}</td>
