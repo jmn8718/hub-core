@@ -35,7 +35,7 @@ export default async function DashboardPage() {
 								<td className="px-4">{webhook.object_type}</td>
 								<td className="px-4">{webhook.aspect_type}</td>
 								<td className="px-4">{webhook.object_id}</td>
-								<td className="px-4">{webhook.updates}</td>
+								<td className="px-4">{webhook.event}</td>
 							</tr>
 						))}
 					</tbody>
