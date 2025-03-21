@@ -22,6 +22,7 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@repo/app": "workspace:*",
     "@repo/clients": "workspace:*",
+    "@repo/db": "workspace:*",
     "@repo/ui": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -1,6 +1,10 @@
 import { Channels } from "@repo/types";
 import { dialog, ipcMain } from "electron";
 
+// import other scoped ipc files
+import "./db.js";
+
+// implement common ipc messages
 ipcMain.on("ping", () => console.log("pong"));
 
 ipcMain.handle(

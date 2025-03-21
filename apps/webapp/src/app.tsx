@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 
+import { db } from "@/libs/db.js";
 import { supabase } from "@/libs/supabase.js";
 import Login from "@/login.js";
 import { App } from "@repo/app";
 import { type SupabaseUserSession, WebClient } from "@repo/clients";
 import { AppType } from "@repo/types";
 
-const client = new WebClient(supabase);
+const client = new WebClient(supabase, db);
 
 export default function WebApp() {
 	const [userSession, setUserSession] = useState<SupabaseUserSession | null>(

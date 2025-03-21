@@ -1,5 +1,9 @@
-import type { ActivitiesData } from "@repo/types";
-import { count, gt } from "drizzle-orm";
+import type {
+	ActivitiesData,
+	DbActivityPopulated,
+	IOverviewData,
+} from "@repo/types";
+import { count, desc, gt, min, sql, sum } from "drizzle-orm";
 import type { DbClient } from "./client";
 import { activities, gears } from "./schemas/app";
 
@@ -10,6 +14,34 @@ export class Db {
 		this._client = client;
 	}
 
+	async getActivitiesOverview(limit = 12): Promise<IOverviewData[]> {
+		const subquery = await this._client
+			.select({
+				distance: min(activities.distance).as("distance"),
+				count: count(),
+				timestamp: activities.timestamp,
+				month: sql`strftime('%Y %m', timestamp)`.as("month"),
+			})
+			.from(activities)
+			.groupBy(activities.timestamp)
+			.orderBy(desc(activities.timestamp))
+			.as("subquery");
+		const data = await this._client
+			.select({
+				distance: sum(subquery.distance),
+				count: count(),
+				month: subquery.month,
+			})
+			.from(subquery)
+			.groupBy(subquery.timestamp)
+			.orderBy(desc(subquery.timestamp))
+			.limit(limit);
+		return data.map((row) => ({
+			distance: Number.parseInt(row.distance || "0"),
+			count: row.count,
+			month: row.month as string,
+		}));
+	}
 	async getActivities({
 		limit = 20,
 		offset = 0,
@@ -26,16 +58,13 @@ export class Db {
 			this._client.select({ count: count() }).from(activities),
 			dataQuery.limit(limit).offset(offset),
 		]);
-		const dataCount = result[0][0]?.count;
+		const dataCount = result[0][0]?.count || 0;
 		// TODO populate data
-		const data = result[1];
+		const data = result[1] as unknown as DbActivityPopulated[];
 		return {
-			// @ts-expect-error need to type
 			count: dataCount,
-			// @ts-expect-error need to type
 			data,
-			// @ts-expect-error need to type
-			cursor: dataCount !== data.length ? data[data.length - 1]?.id : "",
+			cursor: dataCount !== data.length ? data[data.length - 1]?.id || "" : "",
 		};
 	}
 

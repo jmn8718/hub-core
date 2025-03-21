@@ -21,8 +21,7 @@ export function DataList() {
 	const [gears, setGears] = useState<IDbGear[]>([]);
 
 	const fetchGears = useCallback(
-		async (skip = 0, size = 10) => {
-			// TODO add new query for only gear without accumulate
+		async (skip = 0, size = 50) => {
 			const result = await client.getGears({ skip, size });
 			if (result.success) {
 				setGears(result.data);

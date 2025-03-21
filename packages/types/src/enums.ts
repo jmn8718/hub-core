@@ -35,4 +35,5 @@ export enum Channels {
 	FOLDER_GET = "FOLDER_GET",
 	DB_ACTIVITIES = "DB_ACTIVITIES",
 	DB_GEAR = "DB_GEAR",
+	DB_OVERVIEW = "DB_OVERVIEW",
 }

@@ -1,3 +1,4 @@
+import type { Db } from "@repo/db";
 import type {
 	ActivitiesData,
 	IDbGear,
@@ -9,26 +10,30 @@ import type { Client } from "./Client.js";
 
 export class WebClient implements Client {
 	private _supabase: SupabaseClient;
+	private _db: Db;
 
-	constructor(supabase: SupabaseClient) {
+	constructor(supabase: SupabaseClient, db: Db) {
 		this._supabase = supabase;
+		this._db = db;
 	}
 
-	async getDataOverview({ limit: _limit }: { limit?: number }): Promise<
+	async getDataOverview({ limit }: { limit?: number }): Promise<
 		ProviderSuccessResponse<{
 			data: IOverviewData[];
 		}>
 	> {
-		return {
-			success: true,
-			data: [
-				{ distance: 800, count: 3, month: "2024-09" },
-				{ distance: 900, count: 3, month: "2024-10" },
-				{ distance: 1000, count: 3, month: "2024-11" },
-				{ distance: 1500, count: 5, month: "2024-12" },
-				{ distance: 1200, count: 3, month: "2025-01" },
-			],
-		};
+		try {
+			const data = await this._db.getActivitiesOverview(limit);
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
 	}
 
 	async getActivities(_params: { skip?: number; size?: number }): Promise<
