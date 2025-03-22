@@ -33,6 +33,7 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										path={AppRoutes.DATA}
 										element={<Pages.DataListPage />}
 									/>
+									<Route path={AppRoutes.DEBUG} element={<Pages.DebugPage />} />
 									{/* <Route path={AppRoutes.PROVIDERS} element={<ProvidersPage />} />
                   <Route
                     path={`${AppRoutes.DETAILS}/:activityId`}

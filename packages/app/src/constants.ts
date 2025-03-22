@@ -7,6 +7,7 @@ export const Routes = {
 	GEAR: "/gear",
 	ADD: "/add",
 	SETTINGS: "/settings",
+	DEBUG: "/debug",
 };
 
 export const STORE_KEYS = {

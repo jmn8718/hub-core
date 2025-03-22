@@ -32,7 +32,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 				]}
 			/>
 			<div className="p-0 pl-16 min-h-screen">
-				<div className="py-4 px-4 max-w-4xl mx-auto min-w-[480px]">
+				<div className="py-4 pr-4 max-w-4xl mx-auto min-w-[480px] min-h-screen flex flex-col">
 					{children}
 				</div>
 				<ToastContainer position="bottom-right" autoClose={3000} />

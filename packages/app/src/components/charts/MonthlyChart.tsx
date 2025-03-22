@@ -35,7 +35,7 @@ export const MonthlyActivityChart: React.FC<MonthlyActivityChartProps> = ({
 						isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"
 					}`}
 				>
-					<p className="font-semibold">Month {label}</p>
+					<p className="font-semibold">{label}</p>
 					<p>{formatDistance(payload[0].value)}</p>
 				</div>
 			);
@@ -47,7 +47,7 @@ export const MonthlyActivityChart: React.FC<MonthlyActivityChartProps> = ({
 		<Box classes="h-96 min-h-fit">
 			<H2 text="Monthly Distance" />
 			{data.length > 0 && (
-				<ResponsiveContainer width="100%" height="100%">
+				<ResponsiveContainer width="100%" height="100%" maxHeight={450}>
 					<BarChart
 						data={data}
 						margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
