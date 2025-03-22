@@ -1,6 +1,8 @@
 import type {
 	ActivitiesData,
 	DbActivityPopulated,
+	GearsData,
+	IDbGear,
 	IOverviewData,
 } from "@repo/types";
 import { count, desc, gt, min, sql, sum } from "drizzle-orm";
@@ -84,12 +86,12 @@ export class Db {
 			this._client.select({ count: count() }).from(gears),
 			dataQuery.limit(limit).offset(offset),
 		]);
-		const dataCount = result[0][0]?.count;
-		const data = result[1];
+		const dataCount = result[0][0]?.count || 0;
+		const data = result[1] as unknown as IDbGear[];
 		return {
 			count: dataCount,
 			data,
-			cursor: dataCount !== data.length ? data[data.length - 1]?.id : "",
+			cursor: dataCount !== data.length ? data[data.length - 1]?.id || "" : "",
 		};
 	}
 }

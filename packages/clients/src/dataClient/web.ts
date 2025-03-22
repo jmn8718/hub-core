@@ -1,7 +1,7 @@
 import type { Db } from "@repo/db";
 import type {
 	ActivitiesData,
-	IDbGear,
+	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
 } from "@repo/types";
@@ -36,30 +36,58 @@ export class WebClient implements Client {
 		}
 	}
 
-	async getActivities(_params: { skip?: number; size?: number }): Promise<
+	async getActivities(params: {
+		skip?: number;
+		size?: number;
+		cursor?: string;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
 		}>
 	> {
-		return {
-			success: true,
-			data: {
-				count: 0,
-				cursor: "",
-				data: [],
-			},
-		};
+		try {
+			const data = await this._db.getActivities({
+				limit: params.size,
+				offset: params.skip,
+				cursor: params.cursor,
+			});
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
 	}
 
-	async getGears(_params: { skip?: number; size?: number }): Promise<
+	async getGears(params: {
+		skip?: number;
+		size?: number;
+		cursor?: string;
+	}): Promise<
 		ProviderSuccessResponse<{
-			data: IDbGear[];
+			data: GearsData;
 		}>
 	> {
-		return {
-			success: true,
-			data: [],
-		};
+		try {
+			const data = await this._db.getGears({
+				limit: params.size,
+				offset: params.skip,
+				cursor: params.cursor,
+			});
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
 	}
 
 	async getStoreValue<T = string>(key: string): Promise<T | undefined> {

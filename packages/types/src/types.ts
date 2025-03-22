@@ -54,9 +54,15 @@ export interface IDbGear {
 	id: string;
 	name: string;
 	code: string;
-	date_begin?: string;
-	date_end?: string;
-	maximum_distance: number;
+	dateBegin?: string;
+	dateEnd?: string;
+	maximumDistance: number;
 	type: GearType;
 	brand: string;
 }
+
+export type GearsData = {
+	data: IDbGear[];
+	count: number;
+	cursor: string;
+};

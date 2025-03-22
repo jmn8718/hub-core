@@ -1,6 +1,6 @@
 import type {
 	ActivitiesData,
-	IDbGear,
+	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
 } from "@repo/types";
@@ -41,12 +41,12 @@ export class MockClient implements Client {
 
 	async getGears(_params: { skip?: number; size?: number }): Promise<
 		ProviderSuccessResponse<{
-			data: IDbGear[];
+			data: GearsData;
 		}>
 	> {
 		return {
 			success: true,
-			data: [],
+			data: { data: [], count: 0, cursor: "" },
 		};
 	}
 

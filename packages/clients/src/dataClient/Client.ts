@@ -1,6 +1,6 @@
 import type {
 	ActivitiesData,
-	IDbGear,
+	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
 	Providers,
@@ -21,7 +21,7 @@ export abstract class Client {
 
 	abstract getGears(params: { skip?: number; size?: number }): Promise<
 		ProviderSuccessResponse<{
-			data: IDbGear[];
+			data: GearsData;
 		}>
 	>;
 
