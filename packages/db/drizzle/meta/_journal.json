@@ -8,6 +8,20 @@
       "when": 1741485288970,
       "tag": "0000_lyrical_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1742807254514,
+      "tag": "0001_steep_centennial",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1742809418918,
+      "tag": "0002_bumpy_sleepwalker",
+      "breakpoints": true
     }
   ]
 }

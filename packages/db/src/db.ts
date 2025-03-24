@@ -1,7 +1,6 @@
 import type {
 	ActivitiesData,
 	DbActivityPopulated,
-	GearsData,
 	IDbGear,
 	IOverviewData,
 } from "@repo/types";

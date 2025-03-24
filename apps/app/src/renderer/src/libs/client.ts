@@ -2,7 +2,7 @@ import type { Client } from "@repo/clients";
 import {
 	type ActivitiesData,
 	Channels,
-	type IDbGear,
+	type GearsData,
 	type IOverviewData,
 	type ProviderSuccessResponse,
 	type Providers,
@@ -54,7 +54,7 @@ export class AppClient implements Client {
 
 	async getGears(_params: { limit?: number; size?: number }): Promise<
 		ProviderSuccessResponse<{
-			data: IDbGear[];
+			data: GearsData;
 		}>
 	> {
 		// const activities = await window.electron.ipcRenderer.invoke(
@@ -63,7 +63,11 @@ export class AppClient implements Client {
 		// )
 		return {
 			success: true,
-			data: [],
+			data: {
+				data: [],
+				cursor: "",
+				count: 0,
+			},
 		};
 	}
 

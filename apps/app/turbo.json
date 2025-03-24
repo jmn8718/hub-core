@@ -2,7 +2,6 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      // Cache all files emitted to the packages's `dist` directory
       "outputs": ["out/**"]
     }
   }

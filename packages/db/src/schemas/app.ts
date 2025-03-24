@@ -23,6 +23,7 @@ export const activities = sqliteTable(
 		locationCountry: text("location_country").default(""),
 		type: text("type").notNull(),
 		subtype: text("subtype"),
+		notes: text("subtype").default(""),
 		is_event: integer("is_event").default(0),
 		startLatitude: real("start_latitude").default(0),
 		startLongitude: real("start_longitude").default(0),
@@ -31,11 +32,10 @@ export const activities = sqliteTable(
 );
 
 export const providerActivities = sqliteTable("provider_activities", {
-	id: text("id")
-		.primaryKey()
-		.$defaultFn(() => uuidv7()),
+	id: text("id").primaryKey(),
 	provider: text("provider").notNull(),
-	providerId: text("provider_id").notNull(),
+	timestamp: text("timestamp").notNull(),
+	original: integer("original").default(0),
 	data: text("data").default("{}"),
 });
 
