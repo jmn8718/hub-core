@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/libsql";
-import * as schema from "./schemas/index";
+import * as schema from "./schemas/index.js";
 
 export type DbClient = ReturnType<typeof drizzle>;
 

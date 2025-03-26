@@ -33,42 +33,48 @@ export class AppClient implements Client {
 		}
 	}
 
-	async getActivities(_params: { limit?: number; size?: number }): Promise<
+	async getActivities(params: { limit?: number; cursor?: string }): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
 		}>
 	> {
-		// const activities = await window.electron.ipcRenderer.invoke(
-		//   Channels.DB_ACTIVITIES,
-		//   params,
-		// )
-		return {
-			success: true,
-			data: {
-				data: [],
-				count: 0,
-				cursor: "",
-			},
-		};
+		try {
+			const data = (await window.electron.ipcRenderer.invoke(
+				Channels.DB_ACTIVITIES,
+				params,
+			)) as Awaited<Promise<ActivitiesData>>;
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
 	}
 
-	async getGears(_params: { limit?: number; size?: number }): Promise<
+	async getGears(params: { limit?: number; size?: number }): Promise<
 		ProviderSuccessResponse<{
 			data: GearsData;
 		}>
 	> {
-		// const activities = await window.electron.ipcRenderer.invoke(
-		//   Channels.DB_ACTIVITIES,
-		//   params,
-		// )
-		return {
-			success: true,
-			data: {
-				data: [],
-				cursor: "",
-				count: 0,
-			},
-		};
+		try {
+			const data = (await window.electron.ipcRenderer.invoke(
+				Channels.DB_GEAR,
+				params,
+			)) as Awaited<Promise<GearsData>>;
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
 	}
 
 	async getStoreValue<T = string>(key: string): Promise<T | undefined> {
@@ -110,4 +116,23 @@ export class AppClient implements Client {
 	}
 
 	async signout(): Promise<undefined> {}
+
+	getDebugInfo(): ProviderSuccessResponse<{ data: string[] }> {
+		try {
+			return {
+				success: true,
+				data: Object.entries(window.electron.process.versions)
+					.filter(
+						([key, value]) =>
+							!!value && ["node", "electron", "chrome"].includes(key),
+					)
+					.map(([key, value]) => `${key}: ${value}`) as string[],
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
 }

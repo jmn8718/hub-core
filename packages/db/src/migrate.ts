@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { createDbClient } from "./index";
+import { createDbClient } from "./index.js";
 
 const db = createDbClient(
 	process.env.LOCAL_DB

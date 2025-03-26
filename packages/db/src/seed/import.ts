@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { ActivityType, GearType } from "@repo/types";
 import { uuidv7 } from "uuidv7";
-import { createDbClient } from "../client";
+import { createDbClient } from "../client.js";
 import {
 	activities,
 	activitiesConnection,
@@ -10,7 +10,7 @@ import {
 	gearsConnection,
 	providerActivities,
 	providerGears,
-} from "../schemas/app";
+} from "../schemas/app.js";
 
 import activitiesDbData from "./data/activities.json";
 import activitiesConnectionDbData from "./data/activities_connection.json";

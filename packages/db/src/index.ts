@@ -1,4 +1,4 @@
 export * from "drizzle-orm";
-export * from "./client";
-export * from "./db";
-export * from "./schemas/index";
+export * from "./client.js";
+export * from "./db.js";
+export * from "./schemas/index.js";

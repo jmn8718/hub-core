@@ -37,8 +37,7 @@ export class WebClient implements Client {
 	}
 
 	async getActivities(params: {
-		skip?: number;
-		size?: number;
+		limit?: number;
 		cursor?: string;
 	}): Promise<
 		ProviderSuccessResponse<{
@@ -46,11 +45,7 @@ export class WebClient implements Client {
 		}>
 	> {
 		try {
-			const data = await this._db.getActivities({
-				limit: params.size,
-				offset: params.skip,
-				cursor: params.cursor,
-			});
+			const data = await this._db.getActivities(params);
 			return {
 				success: true,
 				data,
@@ -121,5 +116,11 @@ export class WebClient implements Client {
 		if (result.error) {
 			throw result.error;
 		}
+	}
+	getDebugInfo(): ProviderSuccessResponse<{ data: string[] }> {
+		return {
+			success: true,
+			data: [],
+		};
 	}
 }

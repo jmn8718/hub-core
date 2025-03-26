@@ -4,8 +4,9 @@
   "exclude": ["dist", "node_modules"],
   "compilerOptions": {
     "types": ["node"],
-    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "outDir": "dist"
   }
 }

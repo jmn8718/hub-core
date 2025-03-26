@@ -13,7 +13,7 @@ export abstract class Client {
 		}>
 	>;
 
-	abstract getActivities(params: { skip?: number; size?: number }): Promise<
+	abstract getActivities(params: { limit?: number; cursor?: string }): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
 		}>
@@ -42,4 +42,6 @@ export abstract class Client {
 	): Promise<ProviderSuccessResponse<{ data: string }>>;
 
 	abstract signout(): Promise<undefined>;
+
+	abstract getDebugInfo(): ProviderSuccessResponse<{ data: string[] }>;
 }

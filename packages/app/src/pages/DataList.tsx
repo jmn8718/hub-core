@@ -1,4 +1,4 @@
-import type { ActivitiesData, IDbGear } from "@repo/types";
+import type { ActivitiesData, GearsData } from "@repo/types";
 import { cn } from "@repo/ui";
 import { RefreshCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -18,7 +18,11 @@ export function DataList() {
 		data: [],
 		cursor: "",
 	});
-	const [gears, setGears] = useState<IDbGear[]>([]);
+	const [gears, setGears] = useState<GearsData>({
+		count: 0,
+		data: [],
+		cursor: "",
+	});
 
 	const fetchGears = useCallback(
 		async (skip = 0, size = 50) => {
@@ -37,15 +41,18 @@ export function DataList() {
 	);
 
 	const fetchData = useCallback(
-		async (skip = 0, size = 50) => {
-			const result = await client.getActivities({ size, skip });
+		async ({
+			cursor,
+			limit,
+		}: {
+			cursor?: string;
+			limit: number;
+		}) => {
+			const result = await client.getActivities({ limit, cursor });
 			if (result.success) {
 				setData((current) => ({
 					count: result.data.count,
-					data:
-						skip === 0
-							? result.data.data
-							: current.data.concat(result.data.data),
+					data: current.data.concat(result.data.data),
 					cursor: result.data.cursor,
 				}));
 			} else {
@@ -56,7 +63,7 @@ export function DataList() {
 				});
 			}
 			setTimeout(() => {
-				if (skip === 0) setGlobalLoading(false);
+				if (!cursor) setGlobalLoading(false);
 				else setLocalLoading(false);
 			}, 250);
 		},
@@ -71,13 +78,18 @@ export function DataList() {
 
 	useEffect(() => {
 		setGlobalLoading(true);
-		fetchData();
+		fetchData({
+			limit: 20,
+		});
 		fetchGears();
 	}, [fetchData, fetchGears, setGlobalLoading]);
 
 	const loadMoreClick = () => {
 		setLocalLoading(true);
-		fetchData(data.data.length, 20);
+		fetchData({
+			limit: 20,
+			cursor: data.cursor,
+		});
 	};
 
 	const filteredActivities = useMemo(() => {
@@ -109,9 +121,13 @@ export function DataList() {
 					</div>
 				)
 			) : (
-				<div className="grid grid-cols-1 gap-6">
+				<div className="grid grid-cols-1 gap-4 mt-4">
 					{filteredActivities.map((activity) => (
-						<ActivityCard key={activity.id} activity={activity} gears={gears} />
+						<ActivityCard
+							key={activity.id}
+							activity={activity}
+							gears={gears.data}
+						/>
 					))}
 				</div>
 			)}

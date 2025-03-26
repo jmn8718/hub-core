@@ -5,8 +5,8 @@ import type {
 	IOverviewData,
 } from "@repo/types";
 import { count, desc, gt, min, sql, sum } from "drizzle-orm";
-import type { DbClient } from "./client";
-import { activities, gears } from "./schemas/app";
+import type { DbClient } from "./client.js";
+import { activities, gears } from "./schemas/app.js";
 
 export class Db {
 	private _client: DbClient;
@@ -45,23 +45,25 @@ export class Db {
 	}
 	async getActivities({
 		limit = 20,
-		offset = 0,
 		cursor,
 	}: {
 		cursor?: string;
 		limit?: number;
-		offset?: number;
 	}): Promise<ActivitiesData> {
+		console.log("------1", limit, cursor);
 		const dataQuery = cursor
 			? this._client.select().from(activities).where(gt(gears.id, cursor))
 			: this._client.select().from(activities);
 		const result = await this._client.batch([
 			this._client.select({ count: count() }).from(activities),
-			dataQuery.limit(limit).offset(offset),
+			dataQuery.limit(limit),
 		]);
+		console.log("------2");
 		const dataCount = result[0][0]?.count || 0;
+		console.log("------3", dataCount);
 		// TODO populate data
 		const data = result[1] as unknown as DbActivityPopulated[];
+		console.log("------4", data.length);
 		return {
 			count: dataCount,
 			data,

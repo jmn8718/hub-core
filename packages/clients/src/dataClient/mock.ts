@@ -4,7 +4,7 @@ import type {
 	IOverviewData,
 	ProviderSuccessResponse,
 } from "@repo/types";
-import type { Client } from "./Client";
+import type { Client } from "./Client.js";
 
 export class MockClient implements Client {
 	async getDataOverview({ limit: _limit }: { limit?: number }): Promise<
@@ -24,7 +24,7 @@ export class MockClient implements Client {
 		};
 	}
 
-	async getActivities(_params: { skip?: number; size?: number }): Promise<
+	async getActivities(_params: { limit?: number; cursor?: string }): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
 		}>
@@ -77,4 +77,10 @@ export class MockClient implements Client {
 	}
 
 	async signout(): Promise<undefined> {}
+	getDebugInfo(): ProviderSuccessResponse<{ data: string[] }> {
+		return {
+			success: true,
+			data: [],
+		};
+	}
 }

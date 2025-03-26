@@ -1,4 +1,5 @@
 import type { DbActivityPopulated, IDbGear } from "@repo/types";
+import { Box } from "../Box.js";
 
 interface RunningCardProps {
 	activity: DbActivityPopulated;
@@ -6,5 +7,5 @@ interface RunningCardProps {
 }
 
 export function RunningCard({ activity, gears }: RunningCardProps) {
-	return <div>r</div>;
+	return <Box>{activity.id}</Box>;
 }

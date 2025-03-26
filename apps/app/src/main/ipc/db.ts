@@ -15,3 +15,17 @@ ipcMain.handle(
 		return db.getActivitiesOverview(limit);
 	},
 );
+
+ipcMain.handle(
+	Channels.DB_ACTIVITIES,
+	async (_event, params: { limit?: number; cursor?: string }) => {
+		return db.getActivities(params);
+	},
+);
+
+ipcMain.handle(
+	Channels.DB_GEAR,
+	async (_event, params: { limit?: number; size?: number }) => {
+		return db.getGears(params);
+	},
+);

@@ -3,7 +3,7 @@ import type {
 	ActivityType,
 	GearType,
 	Providers,
-} from "./enums";
+} from "./enums.js";
 
 export type ProviderSuccessResponse<T = unknown> =
 	| (T & { success: true })
