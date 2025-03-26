@@ -37,8 +37,9 @@ export class WebClient implements Client {
 	}
 
 	async getActivities(params: {
-		limit?: number;
 		cursor?: string;
+		limit?: number;
+		offset?: number;
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
@@ -59,20 +60,16 @@ export class WebClient implements Client {
 	}
 
 	async getGears(params: {
-		skip?: number;
-		size?: number;
 		cursor?: string;
+		limit?: number;
+		offset?: number;
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: GearsData;
 		}>
 	> {
 		try {
-			const data = await this._db.getGears({
-				limit: params.size,
-				offset: params.skip,
-				cursor: params.cursor,
-			});
+			const data = await this._db.getGears(params);
 			return {
 				success: true,
 				data,

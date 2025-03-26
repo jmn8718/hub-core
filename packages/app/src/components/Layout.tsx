@@ -1,5 +1,5 @@
 import { cn } from "@repo/ui";
-import { Database, Home, Settings } from "lucide-react";
+import { Database, Dumbbell, Home, Settings } from "lucide-react";
 import type React from "react";
 import { ToastContainer } from "react-toastify";
 import { Routes as AppRoutes } from "../constants.js";
@@ -26,7 +26,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 					{ icon: Database, href: AppRoutes.DATA, label: "Data" },
 					// { icon: Table, href: AppRoutes.TABLE, label: "Table" },
 					// { icon: Atom, href: AppRoutes.PROVIDERS, label: "Providers" },
-					// { icon: Dumbbell, href: AppRoutes.GEAR, label: "Gear" },
+					{ icon: Dumbbell, href: AppRoutes.GEAR, label: "Gear" },
 					{ icon: Settings, href: AppRoutes.SETTINGS, label: "Settings" },
 					// { icon: CirclePlus, href: AppRoutes.ADD, label: 'Add' },
 				]}

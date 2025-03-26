@@ -25,7 +25,14 @@ ipcMain.handle(
 
 ipcMain.handle(
 	Channels.DB_GEAR,
-	async (_event, params: { limit?: number; size?: number }) => {
+	async (
+		_event,
+		params: {
+			cursor?: string;
+			limit?: number;
+			offset?: number;
+		},
+	) => {
 		return db.getGears(params);
 	},
 );

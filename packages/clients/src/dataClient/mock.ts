@@ -24,7 +24,11 @@ export class MockClient implements Client {
 		};
 	}
 
-	async getActivities(_params: { limit?: number; cursor?: string }): Promise<
+	async getActivities(_params: {
+		cursor?: string;
+		limit?: number;
+		offset?: number;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
 		}>
@@ -39,7 +43,11 @@ export class MockClient implements Client {
 		};
 	}
 
-	async getGears(_params: { skip?: number; size?: number }): Promise<
+	async getGears(_params: {
+		cursor?: string;
+		limit?: number;
+		offset?: number;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: GearsData;
 		}>

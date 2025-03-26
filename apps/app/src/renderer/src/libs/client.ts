@@ -33,7 +33,11 @@ export class AppClient implements Client {
 		}
 	}
 
-	async getActivities(params: { limit?: number; cursor?: string }): Promise<
+	async getActivities(params: {
+		cursor?: string;
+		limit?: number;
+		offset?: number;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
 		}>
@@ -55,7 +59,11 @@ export class AppClient implements Client {
 		}
 	}
 
-	async getGears(params: { limit?: number; size?: number }): Promise<
+	async getGears(params: {
+		cursor?: string;
+		limit?: number;
+		offset?: number;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: GearsData;
 		}>

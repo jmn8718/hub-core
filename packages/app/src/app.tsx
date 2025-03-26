@@ -34,13 +34,13 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										element={<Pages.DataListPage />}
 									/>
 									<Route path={AppRoutes.DEBUG} element={<Pages.DebugPage />} />
+									<Route path={AppRoutes.GEAR} element={<Pages.GearsPage />} />
 									{/* <Route path={AppRoutes.PROVIDERS} element={<ProvidersPage />} />
                   <Route
                     path={`${AppRoutes.DETAILS}/:activityId`}
                     element={<DetailsPage />}
                   />
                   <Route path={AppRoutes.TABLE} element={<TablePage />} />
-                  <Route path={AppRoutes.GEAR} element={<GearPage />} />
                   <Route path={AppRoutes.ADD} element={<AddActivityPage />} /> */}
 								</Routes>
 								<BottomStatus />

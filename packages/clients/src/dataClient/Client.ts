@@ -13,13 +13,21 @@ export abstract class Client {
 		}>
 	>;
 
-	abstract getActivities(params: { limit?: number; cursor?: string }): Promise<
+	abstract getActivities(params: {
+		cursor?: string;
+		limit?: number;
+		offset?: number;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
 		}>
 	>;
 
-	abstract getGears(params: { skip?: number; size?: number }): Promise<
+	abstract getGears(params: {
+		cursor?: string;
+		limit?: number;
+		offset?: number;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: GearsData;
 		}>

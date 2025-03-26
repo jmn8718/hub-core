@@ -25,8 +25,14 @@ export function DataList() {
 	});
 
 	const fetchGears = useCallback(
-		async (skip = 0, size = 50) => {
-			const result = await client.getGears({ skip, size });
+		async ({
+			cursor,
+			limit,
+		}: {
+			cursor?: string;
+			limit: number;
+		}) => {
+			const result = await client.getGears({ cursor, limit });
 			if (result.success) {
 				setGears(result.data);
 			} else {
@@ -76,7 +82,9 @@ export function DataList() {
 		fetchData({
 			limit: 20,
 		});
-		fetchGears();
+		fetchGears({
+			limit: 50,
+		});
 	}, []);
 
 	const loadMoreClick = () => {

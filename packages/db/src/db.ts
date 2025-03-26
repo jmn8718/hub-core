@@ -50,7 +50,6 @@ export class Db {
 		cursor?: string;
 		limit?: number;
 	}): Promise<ActivitiesData> {
-		console.log("------1", limit, cursor);
 		const dataQuery = cursor
 			? this._client.select().from(activities).where(gt(gears.id, cursor))
 			: this._client.select().from(activities);
@@ -58,12 +57,9 @@ export class Db {
 			this._client.select({ count: count() }).from(activities),
 			dataQuery.limit(limit),
 		]);
-		console.log("------2");
 		const dataCount = result[0][0]?.count || 0;
-		console.log("------3", dataCount);
 		// TODO populate data
 		const data = result[1] as unknown as DbActivityPopulated[];
-		console.log("------4", data.length);
 		return {
 			count: dataCount,
 			data,
