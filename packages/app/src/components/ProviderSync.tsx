@@ -11,16 +11,11 @@ import { Box } from "./Box.js";
 import { H2 } from "./H2.js";
 
 interface SyncProps {
-	id: Providers;
-	title: string;
+	provider: Providers;
 	onSyncDone: () => void;
 }
 
-export const ProviderSync: React.FC<SyncProps> = ({
-	id,
-	title,
-	onSyncDone,
-}) => {
+export const ProviderSync: React.FC<SyncProps> = ({ provider, onSyncDone }) => {
 	const { isDarkMode } = useTheme();
 	const { client } = useDataClient();
 	const { setLocalLoading } = useLoading();
@@ -38,12 +33,12 @@ export const ProviderSync: React.FC<SyncProps> = ({
 	});
 
 	useEffect(() => {
-		const getFromStore = async (provider: string) => {
+		const getFromStore = async (providerId: string) => {
 			setLocalLoading(true);
 			try {
 				const [storeLastSync, storeValidated] = await Promise.all([
-					client.getStoreValue(`${provider}.last_sync`),
-					client.getStoreValue(`${provider}.validated`),
+					client.getStoreValue(`${providerId}.last_sync`),
+					client.getStoreValue(`${providerId}.validated`),
 				]);
 				setData({
 					lastSync: storeLastSync || "",
@@ -68,8 +63,8 @@ export const ProviderSync: React.FC<SyncProps> = ({
 				setLocalLoading(false);
 			}, 300);
 		};
-		getFromStore(id);
-	}, [client, id, setLocalLoading]);
+		getFromStore(provider);
+	}, [client, provider, setLocalLoading]);
 
 	const onSync = async () => {
 		setLocalLoading(true);
@@ -78,11 +73,11 @@ export const ProviderSync: React.FC<SyncProps> = ({
 			isSyncing: true,
 		}));
 
-		const result = await client.providerSync(id, forceSync);
+		const result = await client.providerSync(provider, forceSync);
 
 		if (result.success) {
 			const syncDate = new Date().toISOString();
-			await client.setStoreValue(`${id}.last_sync`, syncDate);
+			await client.setStoreValue(`${provider}.last_sync`, syncDate);
 			setData((current) => ({
 				...current,
 				error: "",
@@ -110,7 +105,7 @@ export const ProviderSync: React.FC<SyncProps> = ({
 		<Box>
 			<div className="flex items-center justify-between">
 				<div className="flex-1 space-y-2">
-					<H2 text={title} classes="font-semibold capitalize" />
+					<H2 text={provider} classes="font-semibold capitalize" />
 					<p
 						className={cn(
 							"text-lg",
