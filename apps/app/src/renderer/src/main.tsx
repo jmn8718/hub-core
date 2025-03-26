@@ -9,8 +9,9 @@ import { AppClient } from "./libs/client.js";
 
 const client = new AppClient();
 
+// use React.Fragment instead of React.StrictMode to avoid initial re-rendering
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-	<React.StrictMode>
+	<React.Fragment>
 		<App client={client} type={AppType.DESKTOP} />
-	</React.StrictMode>,
+	</React.Fragment>,
 );

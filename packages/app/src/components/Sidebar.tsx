@@ -2,7 +2,7 @@ import { AppType } from "@repo/types";
 import { cn } from "@repo/ui";
 import type { LucideProps } from "lucide-react";
 import type React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
 
@@ -20,7 +20,6 @@ export function Sidebar({
 	const { isDarkMode } = useTheme();
 	const { type } = useDataClient();
 	const location = useLocation();
-	const navigation = useNavigate();
 	return (
 		<aside
 			className={cn(
@@ -32,10 +31,9 @@ export function Sidebar({
 		>
 			<nav className="flex flex-col items-center space-y-4">
 				{sidebarItems.map(({ icon: Icon, href, label }) => (
-					<button
+					<Link
 						key={href}
-						type="button"
-						onClick={() => navigation(href)}
+						to={href}
 						className={cn(
 							"relative group flex items-center justify-center w-8 h-8 rounded-lg",
 							isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-200",
@@ -61,7 +59,7 @@ export function Sidebar({
 						>
 							{label}
 						</span>
-					</button>
+					</Link>
 				))}
 			</nav>
 		</aside>

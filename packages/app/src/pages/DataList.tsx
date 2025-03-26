@@ -70,19 +70,14 @@ export function DataList() {
 		[client, setGlobalLoading, setLocalLoading],
 	);
 
-	// useEffect(() => {
-	//   if (data.count > data.data.length) {
-	//     fetchData(data.data.length, 100);
-	//   }
-	// }, [data, fetchData]);
-
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		setGlobalLoading(true);
 		fetchData({
 			limit: 20,
 		});
 		fetchGears();
-	}, [fetchData, fetchGears, setGlobalLoading]);
+	}, []);
 
 	const loadMoreClick = () => {
 		setLocalLoading(true);
