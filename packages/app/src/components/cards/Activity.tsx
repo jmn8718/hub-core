@@ -3,7 +3,7 @@ import {
 	type DbActivityPopulated,
 	type IDbGear,
 } from "@repo/types";
-import { RunningCard } from "./Running.js";
+import { RunningCard } from "./run/index.js";
 
 interface ActivityCardProps {
 	activity: DbActivityPopulated;

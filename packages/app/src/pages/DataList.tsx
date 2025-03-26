@@ -94,7 +94,7 @@ export function DataList() {
 					search === "" ||
 					activity.id.toLowerCase().includes(search) ||
 					activity.name.toLowerCase().includes(search.toLowerCase()) ||
-					(activity.location_name || "")
+					(activity.locationName || "")
 						.toLowerCase()
 						.includes(search.toLowerCase()),
 			)

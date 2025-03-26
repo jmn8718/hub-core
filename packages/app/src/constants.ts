@@ -13,4 +13,5 @@ export const Routes = {
 export const STORE_KEYS = {
 	DOWNLOAD_FOLDER: "settings.download_folder",
 	OBSIDIAN_FOLDER: "settings.obsidian_folder",
+	OBSIDIAN_DISABLED: "settings.obsidian_disabled",
 };

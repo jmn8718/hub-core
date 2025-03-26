@@ -9,8 +9,9 @@ import {
 import { STORE_KEYS } from "../constants.js";
 import { useDataClient } from "./DataClientContext.js";
 
+type StoreKeys = Record<string, string>;
 interface StoreContextType {
-	store: Record<string, string>;
+	store: StoreKeys;
 	getValue: (key: string) => Promise<string | undefined>;
 	setValue: (key: string, value: string) => void;
 }
@@ -21,12 +22,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 	children,
 }) => {
 	const { client } = useDataClient();
-	const [store, setStore] = useState<
-		Record<string, string> & {
-			obsidian_disabled: string;
-		}
-	>({
-		obsidian_disabled: "",
+	const [store, setStore] = useState<StoreKeys>({
+		[STORE_KEYS.OBSIDIAN_DISABLED]: "",
+		[STORE_KEYS.OBSIDIAN_FOLDER]: "",
+		[STORE_KEYS.DOWNLOAD_FOLDER]: "",
 	});
 
 	const setValue = useCallback(
@@ -61,6 +60,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 	useEffect(() => {
 		getFromStore(STORE_KEYS.DOWNLOAD_FOLDER, true);
 		getFromStore(STORE_KEYS.OBSIDIAN_FOLDER, true);
+		getFromStore(STORE_KEYS.OBSIDIAN_DISABLED, true);
 	}, [getFromStore]);
 
 	return (

@@ -22,7 +22,7 @@ export function Settings() {
 				{type === AppType.DESKTOP && (
 					<SectionContainer
 						title="Downloads"
-						hasBorder={!store.obsidian_disabled}
+						hasBorder={!store[STORE_KEYS.OBSIDIAN_DISABLED]}
 					>
 						<FolderPathSection
 							id="download-path"
@@ -33,7 +33,7 @@ export function Settings() {
 						/>
 					</SectionContainer>
 				)}
-				{type === AppType.DESKTOP && !store.obsidian_disabled && (
+				{type === AppType.DESKTOP && !store[STORE_KEYS.OBSIDIAN_DISABLED] && (
 					<SectionContainer title="Obsidian">
 						<FolderPathSection
 							id="obsidian-path"

@@ -22,19 +22,19 @@ export interface IDbActivity {
 	distance: number;
 	duration: number;
 	manufacturer: string;
-	location_name: string;
-	location_country: string;
-	start_latitude: number;
-	start_longitude: number;
+	locationName: string;
+	locationCountry: string;
+	startLatitude: number;
+	startLongitude: number;
 	notes?: string;
 	type: ActivityType;
 	subtype?: ActivitySubType;
-	is_event: 0 | 1;
+	isEvent: 0 | 1;
 }
 
 export type DbActivityPopulated = IDbActivity & {
-	shoe_id?: string;
-	insole_id?: string;
+	shoeId?: string;
+	insoleId?: string;
 	connections: IConnection[];
 };
 
