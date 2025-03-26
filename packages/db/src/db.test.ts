@@ -8,7 +8,7 @@ import { activities, activityGears, gears } from "./schemas/app";
 
 describe("db", () => {
 	const client = createDbClient({
-		url: "file:test_db.sqlite",
+		url: "file:test.sqlite",
 	});
 	const db = new Db(client);
 	migrate(client, { migrationsFolder: "./drizzle" });
@@ -63,5 +63,10 @@ describe("db", () => {
 		console.log(result);
 		expect(result.count).eq(1);
 		expect(result.data.length).eq(1);
+	});
+
+	test("should get accumulated data", async () => {
+		const result = await db.getActivitiesOverview(12);
+		console.log(result);
 	});
 });

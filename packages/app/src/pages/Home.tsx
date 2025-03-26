@@ -15,7 +15,7 @@ export const Home = () => {
 		setLocalLoading(true);
 		const result = await client.getDataOverview({ limit: 12 });
 		if (result.success) {
-			setOverviewData(result.data);
+			setOverviewData(result.data.reverse());
 		} else {
 			toast.error(result.error, {
 				hideProgressBar: false,

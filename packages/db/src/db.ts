@@ -19,7 +19,7 @@ export class Db {
 		const subquery = await this._client
 			.select({
 				distance: min(activities.distance).as("distance"),
-				count: count(),
+				count: count().as("count"),
 				timestamp: activities.timestamp,
 				month: sql`strftime('%Y %m', timestamp)`.as("month"),
 			})
@@ -27,17 +27,18 @@ export class Db {
 			.groupBy(activities.timestamp)
 			.orderBy(desc(activities.timestamp))
 			.as("subquery");
-		const data = await this._client
+
+		const result = await this._client
 			.select({
 				distance: sum(subquery.distance),
 				count: count(),
 				month: subquery.month,
 			})
 			.from(subquery)
-			.groupBy(subquery.timestamp)
+			.groupBy(subquery.month.sql)
 			.orderBy(desc(subquery.timestamp))
 			.limit(limit);
-		return data.map((row) => ({
+		return result.map((row) => ({
 			distance: Number.parseInt(row.distance || "0"),
 			count: row.count,
 			month: row.month as string,
