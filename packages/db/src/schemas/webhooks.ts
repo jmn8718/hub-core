@@ -7,9 +7,9 @@ export const webhooks = sqliteTable("webhooks", {
 	object_type: text("object_type"),
 	updates: text("updates"),
 	event: text("event"),
-	owner_id: integer("owner_id"),
-	object_id: integer("owner_id"),
-	subscription_id: integer("owner_id"),
+	owner_id: text("owner_id"),
+	object_id: text("object_id"),
+	subscription_id: text("subscription_id"),
 	event_time: text("event_time").notNull(),
 	created_at: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });

@@ -19,12 +19,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
 	const body = await req.json();
 	console.log("Received webhook:", body);
-
 	try {
 		await db.insert(webhooks).values({
-			owner_id: body.owner_id,
+			owner_id: body.owner_id.toString(),
 			aspect_type: body.aspect_type,
-			object_id: body.object_id,
+			subscription_id: body.subscription_id.toString(),
+			object_id: body.object_id.toString(),
 			object_type: body.object_type,
 			updates: JSON.stringify(body.updates || {}),
 			event_time: new Date(body.event_time * 1000).toISOString(),
