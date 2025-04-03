@@ -32,17 +32,21 @@ export interface IDbActivity {
 	isEvent: 0 | 1;
 }
 
-export type DbActivityPopulated = IDbActivity & {
-	shoeId?: string;
-	insoleId?: string;
-	connections: IConnection[];
-};
+export interface IGear {
+	id: string;
+	type: GearType;
+}
 
 export interface IConnection {
 	provider: Providers;
 	id: string;
 	original: 0 | 1;
 }
+
+export type DbActivityPopulated = IDbActivity & {
+	connections: IConnection[];
+	gears: IGear[];
+};
 
 export type ActivitiesData = {
 	count: number;

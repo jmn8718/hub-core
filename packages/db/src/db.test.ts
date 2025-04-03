@@ -1,72 +1,43 @@
-import { faker } from "@faker-js/faker";
-import { ActivityType, GearType } from "@repo/types";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { beforeAll, describe, expect, test } from "vitest";
 import { createDbClient } from "./client";
 import { Db } from "./db";
-import { activities, activityGears, gears } from "./schemas/app";
-
+import { clearData, importData } from "./seed/import";
 describe("db", () => {
 	const client = createDbClient({
 		url: "file:test.sqlite",
 	});
 	const db = new Db(client);
-	migrate(client, { migrationsFolder: "./drizzle" });
 
 	beforeAll(async () => {
-		await client.delete(activityGears);
-		await client.delete(activities);
-		await client.delete(gears);
-
-		const activitiesData = await client
-			.insert(activities)
-			.values({
-				timestamp: faker.date.past().toISOString(),
-				startLatitude: 0,
-				startLongitude: 0,
-				name: faker.string.sample(),
-				type: ActivityType.RUN,
-				locationCountry: faker.location.country(),
-				locationName: faker.location.city(),
-				distance: faker.number.float({ min: 10, max: 100 }),
-				duration: faker.number.int({ min: 100, max: 500 }),
-			})
-			.returning();
-		const gearsData = await client
-			.insert(gears)
-			.values([
-				{
-					type: GearType.INSOLE,
-					name: faker.string.alphanumeric(),
-					code: faker.string.alphanumeric(),
-				},
-				{
-					type: GearType.SHOES,
-					name: faker.string.alphanumeric(),
-					code: faker.string.alphanumeric(),
-				},
-			])
-			.returning();
-		const insertedActivity = activitiesData[0];
-		if (insertedActivity) {
-			await client.insert(activityGears).values(
-				gearsData.map((gearData) => ({
-					activityId: insertedActivity.id,
-					gearId: gearData.id,
-				})),
-			);
-		}
-	});
-
-	test("should return all the activities", async () => {
-		const result = await db.getActivities({});
-		console.log(result);
-		expect(result.count).eq(1);
-		expect(result.data.length).eq(1);
+		await migrate(client, { migrationsFolder: "./drizzle" });
+		console.log('migrated db')
+		await clearData(client);
+		console.log('cleared db')
+		await importData(client);
+		console.log('imported data')
 	});
 
 	test("should get accumulated data", async () => {
 		const result = await db.getActivitiesOverview(12);
-		console.log(result);
+		// console.log(result);
+	});
+
+	test("should get activities with limit", async () => {
+		const limit = 3;
+		const result = await db.getActivities({ limit });
+		console.log(JSON.stringify(result, null, 2));
+		if (result.data.length >= limit) {
+			expect(result.data.length).eq(limit);
+			expect(result.cursor).not.eq("");
+		} else {
+			expect(result.data.length).eq(result.count);
+		}
+	});
+
+	test("should get all activities", async () => {
+		const result = await db.getActivities({});
+		expect(result.data.length).eq(result.count);
+		expect(result.cursor).eq("");
 	});
 });

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { ActivityType, GearType } from "@repo/types";
 import { uuidv7 } from "uuidv7";
-import { createDbClient } from "../client.js";
+import { type DbClient, createDbClient } from "../client.js";
 import {
 	activities,
 	activitiesConnection,
@@ -20,43 +20,28 @@ import gearsConnectionDbData from "./data/gear_connection.json";
 import providerActivitiesDbData from "./data/provider_activities.json";
 import providerGearsDbData from "./data/provider_gear.json";
 
-async function run() {
-	const client = createDbClient(
-		process.env.LOCAL_DB
-			? {
-					url: process.env.LOCAL_DB,
-					logger: false,
-				}
-			: {
-					url: process.env.TURSO_DATABASE_URL,
-					authToken: process.env.TURSO_AUTH_TOKEN,
-					logger: false,
-				},
-	);
-
+export function clearData(client: DbClient) {
+	return Promise.all([
+		client.delete(activitiesConnection),
+		client.delete(gearsConnection),
+		client.delete(activityGears),
+		client.delete(gears),
+		client.delete(activities),
+		client.delete(providerActivities),
+		client.delete(providerGears),
+	]);
+}
+export async function importData(client: DbClient) {
 	const activitiesId: Record<string, string> = {};
 	const gearsId: Record<string, string> = {};
 
-	const result11 = await client.delete(activitiesConnection);
-	const result12 = await client.delete(gearsConnection);
-	const result13 = await client.delete(activityGears);
-	const result2 = await client.delete(gears);
-	const result3 = await client.delete(activities);
-	const result4 = await client.delete(providerActivities);
-	const result5 = await client.delete(providerGears);
-	console.log({
-		result11: result11.rowsAffected,
-		result12: result12.rowsAffected,
-		result13: result13.rowsAffected,
-		result2: result2.rowsAffected,
-		result3: result3.rowsAffected,
-		result4: result4.rowsAffected,
-		result5: result5.rowsAffected,
-	});
+	const storedActivities: string[] = [];
+
 	const activitiesData = await client.insert(activities).values(
 		activitiesDbData.data.map((data) => {
 			const id = uuidv7();
 			activitiesId[data.id] = id;
+			storedActivities.push(data.id);
 			return {
 				id,
 				name: data.name,
@@ -67,7 +52,7 @@ async function run() {
 				locationName: data.location_name || "",
 				locationCountry: "",
 				type: ActivityType.RUN,
-				is_event: data.is_race || 0,
+				isEvent: data.is_race || 0,
 				startLatitude: data.start_latitude || 0,
 				startLongitude: data.start_longitude || 0,
 				notes: data.notes || "",
@@ -92,22 +77,24 @@ async function run() {
 	);
 
 	const activityGearsData = await client.insert(activityGears).values(
-		activityGearsDbData.data.map((data) => {
-			const gearId = gearsId[data.gear_id];
-			const activityId = activitiesId[data.activity_id];
-			if (!activityId || !gearId) {
-				console.log({
+		activityGearsDbData.data
+			.filter((data) => storedActivities.includes(data.activity_id))
+			.map((data) => {
+				const gearId = gearsId[data.gear_id];
+				const activityId = activitiesId[data.activity_id];
+				if (!activityId || !gearId) {
+					console.log({
+						gearId,
+						activityId,
+						data,
+					});
+					throw new Error("no id related");
+				}
+				return {
 					gearId,
 					activityId,
-					data,
-				});
-				throw new Error("no id related");
-			}
-			return {
-				gearId,
-				activityId,
-			};
-		}),
+				};
+			}),
 	);
 
 	const providerGearsData = await client.insert(providerGears).values(
@@ -144,11 +131,16 @@ async function run() {
 			}),
 		);
 
-	const providerActivityData = await client
-		.insert(providerActivities)
-		// @ts-expect-error
-		.values(
-			providerActivitiesDbData.data.map((data) => {
+	const storedProviderActivities = activitiesConnectionDbData.data.filter(
+		(data) => storedActivities.includes(data.activity_id),
+	);
+	const storedProviderActivitiesIds = storedProviderActivities.map(
+		({ provider_activity_id }) => provider_activity_id,
+	);
+	const providerActivityData = await client.insert(providerActivities).values(
+		providerActivitiesDbData.data
+			.filter((data) => storedProviderActivitiesIds.includes(data.id))
+			.map((data) => {
 				activitiesId[data.id] = data.id.toString();
 				return {
 					id: data.id.toString(),
@@ -158,12 +150,12 @@ async function run() {
 					data: data.data,
 				};
 			}),
-		);
+	);
 
 	const providerConnectionActivityData = await client
 		.insert(activitiesConnection)
 		.values(
-			activitiesConnectionDbData.data.map((data, index) => {
+			storedProviderActivities.map((data, index) => {
 				const activityId = activitiesId[data.activity_id];
 				const providerActivityId = activitiesId[data.provider_activity_id];
 				if (!activityId || !providerActivityId) {
@@ -191,6 +183,25 @@ async function run() {
 		providerActivityData: providerActivityData.rowsAffected,
 		providerConnectionActivityData: providerConnectionActivityData.rowsAffected,
 	});
+}
+async function run() {
+	const client = createDbClient(
+		process.env.LOCAL_DB
+			? {
+					url: process.env.LOCAL_DB,
+					logger: false,
+				}
+			: {
+					url: process.env.TURSO_DATABASE_URL,
+					authToken: process.env.TURSO_AUTH_TOKEN,
+					logger: false,
+				},
+	);
+
+	await clearData(client);
+	console.log("--- db cleared");
+	await importData(client);
+	console.log("--- db data imported");
 }
 
 run().then(() => {
