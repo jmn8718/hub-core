@@ -152,11 +152,17 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 		}
 	};
 
-	const garminConnection = activityData.connections?.find(
+	const garminConnection = activityData.connections.find(
 		(connection) => connection.provider === Providers.GARMIN,
 	);
-	const corosConnection = activityData.connections?.find(
+	const corosConnection = activityData.connections.find(
 		(connection) => connection.provider === Providers.COROS,
+	);
+	const shoeGear = activityData.gears.find(
+		(gear) => gear.type === GearType.SHOES,
+	);
+	const insoleGear = activityData.gears.find(
+		(gear) => gear.type === GearType.INSOLE,
 	);
 
 	return (
@@ -210,7 +216,7 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 						activityDate={activityData.timestamp}
 						type={GearType.SHOES}
 						availableGear={gears}
-						selectedGearId={activityData.shoeId}
+						selectedGearId={shoeGear?.id}
 						onSelect={handleGearSelect(GearType.SHOES)}
 						onRemove={handleGearRemove(GearType.SHOES)}
 					/>
@@ -218,7 +224,7 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 						activityDate={activityData.timestamp}
 						type={GearType.INSOLE}
 						availableGear={gears}
-						selectedGearId={activityData.insoleId}
+						selectedGearId={insoleGear?.id}
 						onSelect={handleGearSelect(GearType.INSOLE)}
 						onRemove={handleGearRemove(GearType.INSOLE)}
 					/>

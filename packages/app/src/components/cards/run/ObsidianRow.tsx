@@ -1,9 +1,5 @@
 // import { Bounce, toast } from 'react-toastify';
-import {
-	ActivitySubType,
-	type DbActivityPopulated,
-	type IDbGear,
-} from "@repo/types";
+import { type DbActivityPopulated, GearType, type IDbGear } from "@repo/types";
 import { NotebookPen } from "lucide-react";
 import { useState } from "react";
 import { useLoading } from "../../../contexts/LoadingContext.js";
@@ -17,8 +13,10 @@ interface ObsidianRowProps {
 }
 
 const prepareObsidianFile = (data: DbActivityPopulated, gears: IDbGear[]) => {
-	const insole = gears.find(({ id }) => id === data.insoleId);
-	const shoe = gears.find(({ id }) => id === data.shoeId);
+	const shoeGear = data.gears.find((gear) => gear.type === GearType.SHOES);
+	const insoleGear = data.gears.find((gear) => gear.type === GearType.INSOLE);
+	const insole = gears.find(({ id }) => id === insoleGear?.id);
+	const shoe = gears.find(({ id }) => id === shoeGear?.id);
 	return [
 		"---",
 		`date: ${formatDate(data.timestamp, "YYYY-MM-DDTHH:mm:ss")}`,
@@ -26,16 +24,18 @@ const prepareObsidianFile = (data: DbActivityPopulated, gears: IDbGear[]) => {
 		`distance: ${formatDistance(data.distance, false)}`,
 		`shoes: ${shoe?.code ?? ""}`,
 		`insole: ${insole?.code ?? ""}`,
-		`type: ${data.subtype || ActivitySubType.EASY_RUN}`,
+		`type: ${data.subtype}`,
 		"tags:",
-		"  - running",
-		`  - ${data.locationName.toLowerCase() || "cheongra"}`,
-		`  - ${data.locationCountry.toLowerCase() || "korea"}`,
+		` - ${data.type}`,
+		data.locationName && `  - ${data.locationName.toLowerCase()}`,
+		data.locationCountry && `  - ${data.locationCountry.toLowerCase()}`,
 		"---",
 		"",
 		"## REVIEW",
 		data.notes || "-",
-	].join("\n");
+	]
+		.filter((row) => row.length)
+		.join("\n");
 };
 
 // eslint-disable-next-line react/function-component-definition
