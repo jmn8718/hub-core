@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "966c6dce-cb77-4d07-8c1f-61c3aa25050f",
+  "id": "8c9ca988-b3db-4064-9d58-850f2f7c6772",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "activities": {
@@ -81,6 +81,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "''"
         },
         "is_event": {
           "name": "is_event",
@@ -383,12 +391,20 @@
           "notNull": true,
           "autoincrement": false
         },
-        "provider_id": {
-          "name": "provider_id",
+        "timestamp": {
+          "name": "timestamp",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "original": {
+          "name": "original",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
         },
         "data": {
           "name": "data",
@@ -484,7 +500,21 @@
         },
         "owner_id": {
           "name": "owner_id",
-          "type": "integer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "object_id": {
+          "name": "object_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "subscription_id": {
+          "name": "subscription_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

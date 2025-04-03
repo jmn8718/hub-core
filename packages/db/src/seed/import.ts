@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { ActivityType, GearType } from "@repo/types";
+import { ActivitySubType, ActivityType, GearType } from "@repo/types";
 import { uuidv7 } from "uuidv7";
 import { type DbClient, createDbClient } from "../client.js";
 import {
@@ -52,6 +52,7 @@ export async function importData(client: DbClient) {
 				locationName: data.location_name || "",
 				locationCountry: "",
 				type: ActivityType.RUN,
+				subtype: data.is_race ? ActivitySubType.ROAD : ActivitySubType.EASY_RUN,
 				isEvent: data.is_race || 0,
 				startLatitude: data.start_latitude || 0,
 				startLongitude: data.start_longitude || 0,

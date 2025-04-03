@@ -9,6 +9,7 @@ CREATE TABLE `activities` (
 	`location_country` text DEFAULT '',
 	`type` text NOT NULL,
 	`subtype` text,
+	`notes` text DEFAULT '',
 	`is_event` integer DEFAULT 0,
 	`start_latitude` real DEFAULT 0,
 	`start_longitude` real DEFAULT 0
@@ -53,7 +54,8 @@ CREATE TABLE `gears_connection` (
 CREATE TABLE `provider_activities` (
 	`id` text PRIMARY KEY NOT NULL,
 	`provider` text NOT NULL,
-	`provider_id` text NOT NULL,
+	`timestamp` text NOT NULL,
+	`original` integer DEFAULT 0,
 	`data` text DEFAULT '{}'
 );
 --> statement-breakpoint
@@ -70,7 +72,9 @@ CREATE TABLE `webhooks` (
 	`object_type` text,
 	`updates` text,
 	`event` text,
-	`owner_id` integer,
+	`owner_id` text,
+	`object_id` text,
+	`subscription_id` text,
 	`event_time` text NOT NULL,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

@@ -11,11 +11,11 @@ describe("db", () => {
 
 	beforeAll(async () => {
 		await migrate(client, { migrationsFolder: "./drizzle" });
-		console.log('migrated db')
+		console.log("migrated db");
 		await clearData(client);
-		console.log('cleared db')
+		console.log("cleared db");
 		await importData(client);
-		console.log('imported data')
+		console.log("imported data");
 	});
 
 	test("should get accumulated data", async () => {
