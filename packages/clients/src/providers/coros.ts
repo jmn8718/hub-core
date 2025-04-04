@@ -57,7 +57,7 @@ export class CorosClient implements Client {
 	async connect({
 		username,
 		password,
-	}: { username: string; password: string; force: true }) {
+	}: { username: string; password: string }) {
 		const user = await this.client.login(username, password);
 		this.userId = user.userId;
 		this.lastTokenRefreshed = new Date();

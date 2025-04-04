@@ -1,3 +1,4 @@
+import type { StorageKeys } from "@repo/types";
 import { cn } from "@repo/ui";
 import { Folder } from "lucide-react";
 import type React from "react";
@@ -13,7 +14,7 @@ export function FolderPathSection({
 	popupTitle,
 }: {
 	id: string;
-	storeKey: string;
+	storeKey: StorageKeys.OBSIDIAN_FOLDER | StorageKeys.DOWNLOAD_FOLDER;
 	text: string;
 	placeholder: string;
 	popupTitle: string;

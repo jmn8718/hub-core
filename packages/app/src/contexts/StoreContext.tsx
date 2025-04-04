@@ -1,3 +1,4 @@
+import { StorageKeys } from "@repo/types";
 import type React from "react";
 import {
 	createContext,
@@ -6,14 +7,17 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { STORE_KEYS } from "../constants.js";
 import { useDataClient } from "./DataClientContext.js";
 
-type StoreKeys = Record<string, string>;
+type StoreKeys =
+	| StorageKeys.OBSIDIAN_DISABLED
+	| StorageKeys.DOWNLOAD_FOLDER
+	| StorageKeys.OBSIDIAN_FOLDER;
+type Store = Record<StoreKeys, string>;
 interface StoreContextType {
-	store: StoreKeys;
-	getValue: (key: string) => Promise<string | undefined>;
-	setValue: (key: string, value: string) => void;
+	store: Store;
+	getValue: (key: StoreKeys) => Promise<string | undefined>;
+	setValue: (key: StoreKeys, value: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -22,14 +26,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 	children,
 }) => {
 	const { client } = useDataClient();
-	const [store, setStore] = useState<StoreKeys>({
-		[STORE_KEYS.OBSIDIAN_DISABLED]: "",
-		[STORE_KEYS.OBSIDIAN_FOLDER]: "",
-		[STORE_KEYS.DOWNLOAD_FOLDER]: "",
+	const [store, setStore] = useState<Store>({
+		[StorageKeys.OBSIDIAN_DISABLED]: "",
+		[StorageKeys.OBSIDIAN_FOLDER]: "",
+		[StorageKeys.DOWNLOAD_FOLDER]: "",
 	});
 
 	const setValue = useCallback(
-		async (key: string, value: string, setOnClient = true) => {
+		async (key: StorageKeys, value: string, setOnClient = true) => {
 			if (setOnClient) {
 				await client.setStoreValue(key, value);
 			}
@@ -42,7 +46,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 	);
 
 	const getFromStore = useCallback(
-		async (key: string, isInitialGet = false) => {
+		async (key: StoreKeys, isInitialGet = false) => {
 			const storeValue = await client.getStoreValue<string>(key);
 			if (storeValue) {
 				setValue(key, storeValue, !isInitialGet);
@@ -52,15 +56,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 		[client, setValue],
 	);
 
-	const getValue = async (key: string) => {
+	const getValue = async (key: StoreKeys) => {
 		if (store[key]) return store[key];
 		return getFromStore(key);
 	};
 
 	useEffect(() => {
-		getFromStore(STORE_KEYS.DOWNLOAD_FOLDER, true);
-		getFromStore(STORE_KEYS.OBSIDIAN_FOLDER, true);
-		getFromStore(STORE_KEYS.OBSIDIAN_DISABLED, true);
+		getFromStore(StorageKeys.DOWNLOAD_FOLDER, true);
+		getFromStore(StorageKeys.OBSIDIAN_FOLDER, true);
+		getFromStore(StorageKeys.OBSIDIAN_DISABLED, true);
 	}, [getFromStore]);
 
 	return (

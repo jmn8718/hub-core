@@ -1,4 +1,9 @@
-import type { Providers, Value } from "@repo/types";
+import {
+	type Credentials,
+	type Providers,
+	StorageKeys,
+	type Value,
+} from "@repo/types";
 import { RotateCcw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
@@ -10,11 +15,6 @@ import { InputField } from "./InputField.js";
 
 interface ProviderCardInputProps {
 	provider: Providers;
-}
-
-interface Credentials {
-	username: string;
-	password: string;
 }
 
 export function ProviderCardInput({ provider }: ProviderCardInputProps) {
@@ -35,7 +35,7 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 		setLocalLoading(true);
 		try {
 			await client.setStoreValue(
-				`${provider}-credentials`,
+				StorageKeys[`${provider}_CREDENTIALS`],
 				newCredentials as unknown as Value,
 			);
 		} catch (error) {
@@ -64,7 +64,7 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 		const loadInitialData = async () => {
 			try {
 				const storedCredentials = await client.getStoreValue<Credentials>(
-					`${provider}-credentials`,
+					StorageKeys[`${provider}_CREDENTIALS`],
 				);
 				console.log({ storedCredentials });
 				if (storedCredentials) {

@@ -6,6 +6,7 @@ import {
 	type IOverviewData,
 	type ProviderSuccessResponse,
 	type Providers,
+	type StorageKeys,
 	type Value,
 } from "@repo/types";
 
@@ -86,7 +87,7 @@ export class AppClient implements Client {
 		}
 	}
 
-	async getStoreValue<T = Value>(key: string): Promise<T | undefined> {
+	async getStoreValue<T = Value>(key: StorageKeys): Promise<T | undefined> {
 		return window.electron.ipcRenderer
 			.invoke(Channels.STORE_GET, { key })
 			.then((data: T | undefined) => {
@@ -95,7 +96,7 @@ export class AppClient implements Client {
 			});
 	}
 
-	async setStoreValue(key: string, value: Value): Promise<undefined> {
+	async setStoreValue(key: StorageKeys, value: Value): Promise<undefined> {
 		await window.electron.ipcRenderer.invoke(Channels.STORE_SET, {
 			key,
 			value,

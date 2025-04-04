@@ -73,3 +73,8 @@ export type GearsData = {
 
 export type BasicValue = string | boolean | number;
 export type Value = BasicValue | Record<string, BasicValue>;
+
+export interface Credentials {
+	username: string;
+	password: string;
+}

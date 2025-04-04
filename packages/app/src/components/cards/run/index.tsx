@@ -4,10 +4,10 @@ import {
 	GearType,
 	type IDbGear,
 	Providers,
+	StorageKeys,
 } from "@repo/types";
 import { Clock, Footprints, MapPin, Pencil, Route } from "lucide-react";
 import { useState } from "react";
-import { STORE_KEYS } from "../../../constants.js";
 import {
 	useDataClient,
 	useLoading,
@@ -255,8 +255,8 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 					/>
 				</SectionContainer>
 				{type === AppType.DESKTOP &&
-					!store[STORE_KEYS.OBSIDIAN_DISABLED] &&
-					store[STORE_KEYS.OBSIDIAN_FOLDER] && (
+					!store[StorageKeys.OBSIDIAN_DISABLED] &&
+					store[StorageKeys.OBSIDIAN_FOLDER] && (
 						<ObsidianRow data={activityData} gears={gears} />
 					)}
 			</SectionContainer>

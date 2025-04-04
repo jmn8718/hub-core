@@ -1,4 +1,4 @@
-import { AppType } from "@repo/types";
+import { AppType, StorageKeys } from "@repo/types";
 import { Link } from "react-router-dom";
 import {
 	Box,
@@ -7,7 +7,7 @@ import {
 	SignOutSection,
 	ThemeSection,
 } from "../components/index.js";
-import { Routes, STORE_KEYS } from "../constants.js";
+import { Routes } from "../constants.js";
 import { useDataClient, useStore } from "../contexts/index.js";
 
 export function Settings() {
@@ -22,22 +22,22 @@ export function Settings() {
 				{type === AppType.DESKTOP && (
 					<SectionContainer
 						title="Downloads"
-						hasBorder={!store[STORE_KEYS.OBSIDIAN_DISABLED]}
+						hasBorder={!store[StorageKeys.OBSIDIAN_DISABLED]}
 					>
 						<FolderPathSection
 							id="download-path"
-							storeKey={STORE_KEYS.DOWNLOAD_FOLDER}
+							storeKey={StorageKeys.DOWNLOAD_FOLDER}
 							text="This is where your downloaded files will be saved"
 							popupTitle="Select folder to save downloaded files"
 							placeholder="Enter download path"
 						/>
 					</SectionContainer>
 				)}
-				{type === AppType.DESKTOP && !store[STORE_KEYS.OBSIDIAN_DISABLED] && (
+				{type === AppType.DESKTOP && !store[StorageKeys.OBSIDIAN_DISABLED] && (
 					<SectionContainer title="Obsidian">
 						<FolderPathSection
 							id="obsidian-path"
-							storeKey={STORE_KEYS.OBSIDIAN_FOLDER}
+							storeKey={StorageKeys.OBSIDIAN_FOLDER}
 							text="Select the Obsidian Vault folder to export the activities"
 							popupTitle="Select folder to export obsidian notes"
 							placeholder="Enter obsidian vault path"

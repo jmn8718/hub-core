@@ -2,7 +2,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 
-import type { Providers } from "@repo/types";
+import { type Providers, StorageKeys } from "@repo/types";
 import { cn } from "@repo/ui";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useDataClient, useLoading, useTheme } from "../../contexts/index.js";
@@ -35,12 +35,12 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 	});
 
 	useEffect(() => {
-		const getFromStore = async (providerId: string) => {
+		const getFromStore = async () => {
 			setLocalLoading(true);
 			try {
 				const [storeLastSync, storeValidated] = await Promise.all([
-					client.getStoreValue<string>(`${providerId}.last_sync`),
-					client.getStoreValue<boolean>(`${providerId}.validated`),
+					client.getStoreValue<string>(StorageKeys[`${provider}_LAST_SYNC`]),
+					client.getStoreValue<boolean>(StorageKeys[`${provider}_VALIDATED`]),
 				]);
 				setData({
 					lastSync: storeLastSync || "",
@@ -48,6 +48,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 					hasValidData: !!storeValidated,
 					error: "",
 				});
+				console.log("");
 			} catch (err) {
 				console.error(err);
 				const message = (err as Error).message;
@@ -65,7 +66,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 				setLocalLoading(false);
 			}, 300);
 		};
-		getFromStore(provider);
+		getFromStore();
 	}, [client, provider, setLocalLoading]);
 
 	const onSync = async () => {
@@ -79,7 +80,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 
 		if (result.success) {
 			const syncDate = new Date().toISOString();
-			await client.setStoreValue(`${provider}.last_sync`, syncDate);
+			// await client.setStoreValue(`${provider}.last_sync`, syncDate);
 			setData((current) => ({
 				...current,
 				error: "",

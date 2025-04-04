@@ -4,6 +4,7 @@ import type {
 	IOverviewData,
 	ProviderSuccessResponse,
 	Providers,
+	StorageKeys,
 	Value,
 } from "@repo/types";
 
@@ -34,8 +35,8 @@ export abstract class Client {
 		}>
 	>;
 
-	abstract getStoreValue<T = Value>(key: string): Promise<T | undefined>;
-	abstract setStoreValue(key: string, value: Value): Promise<undefined>;
+	abstract getStoreValue<T = Value>(key: StorageKeys): Promise<T | undefined>;
+	abstract setStoreValue(key: StorageKeys, value: Value): Promise<undefined>;
 
 	abstract providerSync(provider: Providers): Promise<ProviderSuccessResponse>;
 
