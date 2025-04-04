@@ -41,7 +41,6 @@ const GearSelector: React.FC<GearSelectorProps> = ({
 	}, [selectedGearId, availableGear]);
 
 	if (selectedGear) {
-		// console.log('s', selectedGear)
 		return (
 			<div
 				className={cn(

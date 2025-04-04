@@ -18,7 +18,7 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
-	Channels.PROVIDERS_SYNC,
+	Channels.PROVIDERS_CONNECT,
 	async (
 		_event,
 		{

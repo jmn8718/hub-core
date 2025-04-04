@@ -91,10 +91,7 @@ export class AppClient implements Client {
 	async getStoreValue<T = Value>(key: StorageKeys): Promise<T | undefined> {
 		return window.electron.ipcRenderer
 			.invoke(Channels.STORE_GET, { key })
-			.then((data: T | undefined) => {
-				console.log({ data });
-				return data;
-			});
+			.then((data: T | undefined) => data);
 	}
 
 	async setStoreValue(key: StorageKeys, value: Value): Promise<undefined> {

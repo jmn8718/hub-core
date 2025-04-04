@@ -26,7 +26,6 @@ describe("db", () => {
 	test("should get activities with limit", async () => {
 		const limit = 3;
 		const result = await db.getActivities({ limit });
-		console.log(JSON.stringify(result, null, 2));
 		if (result.data.length >= limit) {
 			expect(result.data.length).eq(limit);
 			expect(result.cursor).not.eq("");

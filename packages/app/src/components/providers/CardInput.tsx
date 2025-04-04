@@ -77,13 +77,17 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 		setValidationStatus("validating");
 		setLocalLoading(true);
 		try {
-			await client.providerConnect(provider, credentials);
-			await client.setStoreValue(StorageKeys[`${provider}_VALIDATED`], true);
-			setValidationStatus("success");
-			toast.success("Validated successfully", {
-				transition: Bounce,
-			});
-			await client.setStoreValue(StorageKeys[`${provider}_VALIDATED`], true);
+			const result = await client.providerConnect(provider, credentials);
+			if (result.success) {
+				await client.setStoreValue(StorageKeys[`${provider}_VALIDATED`], true);
+				setValidationStatus("success");
+				toast.success("Validated successfully", {
+					transition: Bounce,
+				});
+				await client.setStoreValue(StorageKeys[`${provider}_VALIDATED`], true);
+			} else {
+				throw new Error(result.error);
+			}
 		} catch (error) {
 			toast.error((error as Error).message, {
 				hideProgressBar: false,

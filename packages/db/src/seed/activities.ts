@@ -45,7 +45,6 @@ async function run() {
 			},
 		])
 		.returning();
-	console.log({ gearsData, activitiesData });
 	const insertedActivity = activitiesData[0];
 	if (insertedActivity) {
 		const i = await client.insert(activityGears).values(
@@ -54,7 +53,6 @@ async function run() {
 				gearId: gearData.id,
 			})),
 		);
-		console.log({ i });
 	} else {
 		console.log("no activity data inserted");
 	}

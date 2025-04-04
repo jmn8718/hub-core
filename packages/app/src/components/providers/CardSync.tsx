@@ -48,7 +48,6 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 					hasValidData: !!storeValidated,
 					error: "",
 				});
-				console.log("");
 			} catch (err) {
 				console.error(err);
 				const message = (err as Error).message;

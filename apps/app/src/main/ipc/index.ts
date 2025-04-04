@@ -4,6 +4,7 @@ import { storage } from "../storage.js";
 
 // import other scoped ipc files
 import "./db.js";
+// import "./providers.js";
 
 // implement common ipc messages
 ipcMain.on("ping", () => console.log("pong"));
