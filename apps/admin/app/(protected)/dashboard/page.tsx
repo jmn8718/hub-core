@@ -2,6 +2,7 @@ import { formatDate } from "@/lib/dates";
 import db from "@/lib/db";
 import { desc, webhooks } from "@repo/db";
 import { ScrollArea } from "@repo/ui";
+import Link from "next/link";
 import { DeleteRow } from "./delete-row-button";
 
 export default async function DashboardPage() {
@@ -40,7 +41,11 @@ export default async function DashboardPage() {
 									</td>
 									<td className="px-4">{webhook.object_type}</td>
 									<td className="px-4">{webhook.aspect_type}</td>
-									<td className="px-4">{webhook.object_id}</td>
+									<td className="px-4">
+										<Link href={`/activities/${webhook.object_id}`}>
+											{webhook.object_id}
+										</Link>
+									</td>
 									<td className="px-4">{JSON.stringify(event, null, 2)}</td>
 								</tr>
 							);

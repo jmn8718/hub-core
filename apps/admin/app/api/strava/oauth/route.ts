@@ -1,4 +1,6 @@
-import strava, { updateToken } from "@/lib/strava";
+import db from "@/lib/db";
+import strava from "@/lib/strava";
+import { eq, profiles } from "@repo/db";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
@@ -15,7 +17,31 @@ export async function POST(req: NextRequest) {
 
 	const { code } = await req.json();
 	const token = await strava.oauth.getToken(code);
-	await updateToken(token.access_token);
+	console.log("-------", token);
+	const users = await db
+		.select({ id: profiles.id })
+		.from(profiles)
+		.where(eq(profiles.externalId, token.athlete.id.toString()))
+		.limit(1);
+	if (users[0]?.id) {
+		await db
+			.update(profiles)
+			.set({
+				expiresAt: token.expires_at,
+				refreshToken: token.refresh_token,
+				accessToken: token.access_token,
+			})
+			.where(eq(profiles.id, users[0].id));
+	} else {
+		await db.insert(profiles).values({
+			id: session.user.id,
+			externalId: token.athlete.id.toString(),
+			tokenType: token.token_type,
+			expiresAt: token.expires_at,
+			refreshToken: token.refresh_token,
+			accessToken: token.access_token,
+		});
+	}
 	return NextResponse.json({
 		token,
 	});
