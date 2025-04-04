@@ -2,6 +2,7 @@ import type { Client } from "@repo/clients";
 import {
 	type ActivitiesData,
 	Channels,
+	type Credentials,
 	type GearsData,
 	type IOverviewData,
 	type ProviderSuccessResponse,
@@ -108,6 +109,26 @@ export class AppClient implements Client {
 		try {
 			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_SYNC, {
 				provider,
+			});
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async providerConnect(
+		provider: Providers,
+		credentials: Credentials,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_CONNECT, {
+				provider,
+				credentials,
 			});
 			return {
 				success: true,

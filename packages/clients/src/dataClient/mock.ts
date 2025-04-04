@@ -1,8 +1,10 @@
 import type {
 	ActivitiesData,
+	Credentials,
 	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
+	Providers,
 	StorageKeys,
 	Value,
 } from "@repo/types";
@@ -75,6 +77,14 @@ export class MockClient implements Client {
 		};
 	}
 
+	async providerConnect(
+		provider: Providers,
+		credentials: Credentials,
+	): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
 	// on the web, this can not be implemented
 	async getFolder(): Promise<ProviderSuccessResponse<{ data: string }>> {
 		return {

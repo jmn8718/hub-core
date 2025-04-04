@@ -36,31 +36,40 @@ function mapActivityDetails(activity: ActivityData, id: string): IDbActivity {
 }
 
 export class CorosClient implements Client {
-	private client: CorosApi;
+	private _client: CorosApi;
 
-	private db: Db;
+	private _db: Db;
 
-	private userId = "";
+	private _signedIn = false;
 
-	private lastTokenRefreshed: Date | undefined;
+	private _userId = "";
+
+	private _lastTokenRefreshed: Date | undefined;
 
 	public static PROVIDER = Providers.COROS;
 
 	constructor(db: Db) {
-		this.db = db;
-		this.client = new CorosApi({
+		this._db = db;
+		this._client = new CorosApi({
 			email: "",
 			password: "",
 		});
+		this._signedIn = false;
 	}
 
 	async connect({
 		username,
 		password,
 	}: { username: string; password: string }) {
-		const user = await this.client.login(username, password);
-		this.userId = user.userId;
-		this.lastTokenRefreshed = new Date();
+		try {
+			const user = await this._client.login(username, password);
+			this._userId = user.userId;
+			this._lastTokenRefreshed = new Date();
+			this._signedIn = true;
+		} catch (error) {
+			this._signedIn = false;
+			throw error;
+		}
 	}
 
 	private async fetchRunningActivities({
@@ -76,11 +85,11 @@ export class CorosClient implements Client {
 		// coros starts on page 1
 		let page = 1;
 		const data: Awaited<
-			ReturnType<typeof this.client.getActivitiesList>
+			ReturnType<typeof this._client.getActivitiesList>
 		>["dataList"] = [];
 
 		do {
-			const activities = await this.client.getActivitiesList({
+			const activities = await this._client.getActivitiesList({
 				page,
 				size: activitiesToFetch,
 				from,
@@ -117,7 +126,7 @@ export class CorosClient implements Client {
 	}
 
 	getActivity(id: string) {
-		return this.client.getActivityDetails(id);
+		return this._client.getActivityDetails(id);
 	}
 
 	async syncActivity(activityId: string) {
@@ -127,7 +136,7 @@ export class CorosClient implements Client {
 	}
 
 	async sync() {
-		const lastDbProviderActivity = await this.db.getLastProviderActivity(
+		const lastDbProviderActivity = await this._db.getLastProviderActivity(
 			CorosClient.PROVIDER,
 		);
 

@@ -4,7 +4,7 @@ import {
 	StorageKeys,
 	type Value,
 } from "@repo/types";
-import { RotateCcw, Save } from "lucide-react";
+import { CheckCircle2, Loader2, RotateCcw, Save, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { useDataClient, useLoading } from "../../contexts/index.js";
@@ -17,6 +17,8 @@ interface ProviderCardInputProps {
 	provider: Providers;
 }
 
+type ValidationStatus = "pending" | "validating" | "success" | "error";
+
 export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 	const { setLocalLoading, isLocalLoading, setGlobalLoading } = useLoading();
 	const { client } = useDataClient();
@@ -25,6 +27,8 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 		password: "",
 	});
 	const [hasChanges, setHasChanges] = useState(false);
+	const [validationStatus, setValidationStatus] =
+		useState<ValidationStatus>("pending");
 
 	const handleInputChange = (field: keyof Credentials) => (value: string) => {
 		setCredentials((prev) => ({ ...prev, [field]: value }));
@@ -37,6 +41,15 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 			await client.setStoreValue(
 				StorageKeys[`${provider}_CREDENTIALS`],
 				newCredentials as unknown as Value,
+			);
+			setValidationStatus("pending");
+			setCredentials(newCredentials);
+			await client.setStoreValue(StorageKeys[`${provider}_VALIDATED`], false);
+			toast.success(
+				`Credentials ${newCredentials.username ? "stored" : "cleared"}`,
+				{
+					transition: Bounce,
+				},
 			);
 		} catch (error) {
 			toast.error((error as Error).message, {
@@ -56,7 +69,32 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 	};
 
 	const handleClear = () => {
-		setCredentials({ username: "", password: "" });
+		saveOnStore({ username: "", password: "" });
+	};
+
+	const validateCredentials = async () => {
+		if (hasChanges || !credentials.username || !credentials.password) return;
+		setValidationStatus("validating");
+		setLocalLoading(true);
+		try {
+			await client.providerConnect(provider, credentials);
+			await client.setStoreValue(StorageKeys[`${provider}_VALIDATED`], true);
+			setValidationStatus("success");
+			toast.success("Validated successfully", {
+				transition: Bounce,
+			});
+			await client.setStoreValue(StorageKeys[`${provider}_VALIDATED`], true);
+		} catch (error) {
+			toast.error((error as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+			setValidationStatus("error");
+		}
+		setTimeout(() => {
+			setLocalLoading(false);
+		}, 200);
 	};
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -69,6 +107,12 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 				console.log({ storedCredentials });
 				if (storedCredentials) {
 					setCredentials(storedCredentials);
+					const credentialsValidated = await client.getStoreValue<boolean>(
+						StorageKeys[`${provider}_VALIDATED`],
+					);
+					if (credentialsValidated) {
+						setValidationStatus("success");
+					}
 				}
 			} catch (error) {
 				toast.error((error as Error).message, {
@@ -85,6 +129,48 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 		loadInitialData();
 	}, []);
 
+	const getValidationButton = () => {
+		const canValidate =
+			!hasChanges &&
+			validationStatus === "pending" &&
+			credentials.username &&
+			credentials.password;
+		switch (validationStatus) {
+			case "validating":
+				return (
+					<ActionButton
+						icon={<Loader2 size={20} className="animate-spin" />}
+						tooltip="Validating..."
+						disabled
+					/>
+				);
+			case "success":
+				return (
+					<ActionButton
+						icon={<CheckCircle2 size={20} className="text-green-500" />}
+						tooltip="Credentials validated"
+					/>
+				);
+			case "error":
+				return (
+					<ActionButton
+						icon={<XCircle size={20} className="text-red-500" />}
+						tooltip="Validation failed - Click to retry"
+						disabled={!canValidate}
+					/>
+				);
+			default:
+				return (
+					<ActionButton
+						icon={<CheckCircle2 size={20} className="text-yellow-400" />}
+						onClick={validateCredentials}
+						tooltip="Validate credentials"
+						disabled={!canValidate}
+					/>
+				);
+		}
+	};
+
 	return (
 		<Box>
 			<div className="flex justify-between items-center mb-4">
@@ -96,6 +182,7 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 						tooltip="Save credentials"
 						disabled={isLocalLoading || !hasChanges}
 					/>
+					{getValidationButton()}
 					<ActionButton
 						icon={<RotateCcw size={20} />}
 						onClick={handleClear}

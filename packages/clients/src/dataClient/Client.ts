@@ -1,5 +1,6 @@
 import type {
 	ActivitiesData,
+	Credentials,
 	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
@@ -39,6 +40,10 @@ export abstract class Client {
 	abstract setStoreValue(key: StorageKeys, value: Value): Promise<undefined>;
 
 	abstract providerSync(provider: Providers): Promise<ProviderSuccessResponse>;
+	abstract providerConnect(
+		provider: Providers,
+		credentials: Credentials,
+	): Promise<ProviderSuccessResponse>;
 
 	abstract getFolder(
 		defaultPath: string,

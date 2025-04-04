@@ -1,6 +1,7 @@
 import type { Db } from "@repo/db";
 import type {
 	ActivitiesData,
+	Credentials,
 	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
@@ -101,6 +102,24 @@ export class WebClient implements Client {
 		try {
 			const client = this._manager.getProvider(provider);
 			await client.sync();
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async providerConnect(
+		provider: Providers,
+		credentials: Credentials,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			const client = this._manager.getProvider(provider);
+			await client.connect(credentials);
 			return {
 				success: true,
 			};
