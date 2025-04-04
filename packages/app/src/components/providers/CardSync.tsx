@@ -5,21 +5,23 @@ import { Bounce, toast } from "react-toastify";
 import type { Providers } from "@repo/types";
 import { cn } from "@repo/ui";
 import { AlertCircle, RefreshCw } from "lucide-react";
-import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
-import { formatRelativeTime } from "../utils/date.js";
-import { Box } from "./Box.js";
-import { H2 } from "./H2.js";
+import { useDataClient, useLoading, useTheme } from "../../contexts/index.js";
+import { formatRelativeTime } from "../../utils/date.js";
+import { Box } from "../Box.js";
+import { H2 } from "../H2.js";
 
-interface SyncProps {
+interface ProviderCardSync {
 	provider: Providers;
 	onSyncDone: () => void;
 }
 
-export const ProviderSync: React.FC<SyncProps> = ({ provider, onSyncDone }) => {
+export const ProviderCardSync: React.FC<ProviderCardSync> = ({
+	provider,
+	onSyncDone,
+}) => {
 	const { isDarkMode } = useTheme();
 	const { client } = useDataClient();
 	const { setLocalLoading } = useLoading();
-	const [forceSync, setForceSync] = useState(false);
 	const [data, setData] = useState<{
 		hasValidData: boolean;
 		lastSync: string;
@@ -37,8 +39,8 @@ export const ProviderSync: React.FC<SyncProps> = ({ provider, onSyncDone }) => {
 			setLocalLoading(true);
 			try {
 				const [storeLastSync, storeValidated] = await Promise.all([
-					client.getStoreValue(`${providerId}.last_sync`),
-					client.getStoreValue(`${providerId}.validated`),
+					client.getStoreValue<string>(`${providerId}.last_sync`),
+					client.getStoreValue<boolean>(`${providerId}.validated`),
 				]);
 				setData({
 					lastSync: storeLastSync || "",
@@ -73,7 +75,7 @@ export const ProviderSync: React.FC<SyncProps> = ({ provider, onSyncDone }) => {
 			isSyncing: true,
 		}));
 
-		const result = await client.providerSync(provider, forceSync);
+		const result = await client.providerSync(provider);
 
 		if (result.success) {
 			const syncDate = new Date().toISOString();
@@ -98,7 +100,6 @@ export const ProviderSync: React.FC<SyncProps> = ({ provider, onSyncDone }) => {
 		}
 		setTimeout(() => {
 			onSyncDone();
-			setForceSync((current) => !current);
 		}, 500);
 	};
 	return (

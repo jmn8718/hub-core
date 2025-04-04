@@ -1,7 +1,7 @@
 import type { IOverviewData, Providers } from "@repo/types";
 import { useCallback, useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
-import { MonthlyActivityChart, ProviderSync } from "../components/index.js";
+import { MonthlyActivityChart, ProviderCardSync } from "../components/index.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useLoading } from "../contexts/LoadingContext.js";
 
@@ -42,7 +42,7 @@ export const Home = () => {
 			{availableProviders.length > 0 && (
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl min-w-full mx-auto mb-4">
 					{availableProviders.map((provider) => (
-						<ProviderSync
+						<ProviderCardSync
 							key={provider}
 							provider={provider}
 							onSyncDone={onSyncDone}

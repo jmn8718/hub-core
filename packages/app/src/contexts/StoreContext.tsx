@@ -43,7 +43,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 
 	const getFromStore = useCallback(
 		async (key: string, isInitialGet = false) => {
-			const storeValue = await client.getStoreValue(key);
+			const storeValue = await client.getStoreValue<string>(key);
 			if (storeValue) {
 				setValue(key, storeValue, !isInitialGet);
 			}

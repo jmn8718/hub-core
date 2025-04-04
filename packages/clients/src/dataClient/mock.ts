@@ -3,6 +3,7 @@ import type {
 	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
+	Value,
 } from "@repo/types";
 import type { Client } from "./Client.js";
 
@@ -58,15 +59,12 @@ export class MockClient implements Client {
 		};
 	}
 
-	async getStoreValue<T = string>(key: string): Promise<T | undefined> {
+	async getStoreValue<T = Value>(key: string): Promise<T | undefined> {
 		const value = localStorage.getItem(key);
 		return value ? (JSON.parse(value) as { value: T }).value : undefined;
 	}
 
-	async setStoreValue(
-		key: string,
-		value: string | boolean | number,
-	): Promise<undefined> {
+	async setStoreValue(key: string, value: Value): Promise<undefined> {
 		localStorage.setItem(key, JSON.stringify({ value }));
 	}
 

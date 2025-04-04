@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
 import { BrowserWindow, app, shell } from "electron";
 import icon from "../../resources/icon.png?asset";
+import { storage } from "./storage.js";
 
 function createWindow(): void {
 	// Create the browser window.
@@ -16,6 +17,8 @@ function createWindow(): void {
 			sandbox: false,
 		},
 	});
+
+	storage.initRenderer();
 
 	mainWindow.on("ready-to-show", () => {
 		mainWindow.show();

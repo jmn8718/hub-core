@@ -70,3 +70,6 @@ export type GearsData = {
 	count: number;
 	cursor: string;
 };
+
+export type BasicValue = string | boolean | number;
+export type Value = BasicValue | Record<string, BasicValue>;

@@ -6,6 +6,7 @@ import {
 	type IOverviewData,
 	type ProviderSuccessResponse,
 	type Providers,
+	type Value,
 } from "@repo/types";
 
 export class AppClient implements Client {
@@ -85,42 +86,61 @@ export class AppClient implements Client {
 		}
 	}
 
-	async getStoreValue<T = string>(key: string): Promise<T | undefined> {
-		const value = localStorage.getItem(key);
-		return value ? (JSON.parse(value) as { value: T }).value : undefined;
+	async getStoreValue<T = Value>(key: string): Promise<T | undefined> {
+		return window.electron.ipcRenderer
+			.invoke(Channels.STORE_GET, { key })
+			.then((data: T | undefined) => {
+				console.log({ data });
+				return data;
+			});
 	}
 
-	async setStoreValue(
-		key: string,
-		value: string | boolean | number,
-	): Promise<undefined> {
+	async setStoreValue(key: string, value: Value): Promise<undefined> {
+		await window.electron.ipcRenderer.invoke(Channels.STORE_SET, {
+			key,
+			value,
+		});
 		localStorage.setItem(key, JSON.stringify({ value }));
 	}
 
-	async providerSync(
-		_providerId: Providers,
-		_force?: boolean,
-	): Promise<ProviderSuccessResponse> {
-		return {
-			success: true,
-		};
+	async providerSync(provider: Providers): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_SYNC, {
+				provider,
+			});
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
 	}
 
 	async getFolder(
 		defaultPath: string,
 		title: string,
 	): Promise<ProviderSuccessResponse<{ data: string }>> {
-		const selectedPath = await window.electron.ipcRenderer.invoke(
-			Channels.FOLDER_GET,
-			{
-				defaultPath,
-				title,
-			},
-		);
-		return {
-			success: true,
-			data: selectedPath,
-		};
+		try {
+			const selectedPath = await window.electron.ipcRenderer.invoke(
+				Channels.FOLDER_GET,
+				{
+					defaultPath,
+					title,
+				},
+			);
+			return {
+				success: true,
+				data: selectedPath,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
 	}
 
 	async signout(): Promise<undefined> {}

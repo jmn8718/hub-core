@@ -4,17 +4,22 @@ import type {
 	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
+	Providers,
+	Value,
 } from "@repo/types";
+import type { ProviderManager } from "../providers/ProviderManager.js";
 import type { SupabaseClient } from "../supabase.js";
 import type { Client } from "./Client.js";
 
 export class WebClient implements Client {
 	private _supabase: SupabaseClient;
 	private _db: Db;
+	private _manager: ProviderManager;
 
-	constructor(supabase: SupabaseClient, db: Db) {
+	constructor(supabase: SupabaseClient, db: Db, manager: ProviderManager) {
 		this._supabase = supabase;
 		this._db = db;
+		this._manager = manager;
 	}
 
 	async getDataOverview({ limit }: { limit?: number }): Promise<
@@ -82,22 +87,28 @@ export class WebClient implements Client {
 		}
 	}
 
-	async getStoreValue<T = string>(key: string): Promise<T | undefined> {
+	async getStoreValue<T = Value>(key: string): Promise<T | undefined> {
 		const value = localStorage.getItem(key);
 		return value ? (JSON.parse(value) as { value: T }).value : undefined;
 	}
 
-	async setStoreValue(
-		key: string,
-		value: string | boolean | number,
-	): Promise<undefined> {
+	async setStoreValue(key: string, value: Value): Promise<undefined> {
 		localStorage.setItem(key, JSON.stringify({ value }));
 	}
 
-	async providerSync(): Promise<ProviderSuccessResponse> {
-		return {
-			success: true,
-		};
+	async providerSync(provider: Providers): Promise<ProviderSuccessResponse> {
+		try {
+			const client = this._manager.getProvider(provider);
+			await client.sync();
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
 	}
 
 	// on the web, this can not be implemented

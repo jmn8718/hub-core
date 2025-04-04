@@ -1,8 +1,10 @@
 import type {
 	ActivitiesData,
 	DbActivityPopulated,
+	GearsData,
 	IConnection,
 	IDbActivity,
+	IDbGear,
 	IGear,
 	IOverviewData,
 	Providers,
@@ -151,7 +153,7 @@ export class Db {
 		cursor?: string;
 		limit?: number;
 		offset?: number;
-	}) {
+	}): Promise<GearsData> {
 		const dataQuery = cursor
 			? this._client.select().from(gears).where(gt(gears.id, cursor))
 			: this._client.select().from(gears);
@@ -160,7 +162,7 @@ export class Db {
 			dataQuery.limit(limit).offset(offset),
 		]);
 		const dataCount = result[0][0]?.count || 0;
-		const data = result[1];
+		const data = result[1].map((record) => ({ ...record }) as IDbGear);
 		return {
 			count: dataCount,
 			data,
