@@ -20,6 +20,9 @@ importers:
       '@libsql/client':
         specifier: 0.15.0
         version: 0.15.0
+      '@repo/clients':
+        specifier: workspace:*
+        version: link:../../packages/clients
       '@repo/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -57,6 +60,9 @@ importers:
       '@repo/tailwind-config':
         specifier: workspace:*
         version: link:../../packages/tailwind-config
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
