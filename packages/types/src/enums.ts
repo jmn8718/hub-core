@@ -1,6 +1,7 @@
 export enum Providers {
 	GARMIN = "GARMIN",
 	COROS = "COROS",
+	STRAVA = "STRAVA",
 }
 
 export enum AppType {

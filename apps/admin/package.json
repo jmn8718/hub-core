@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@libsql/client": "0.15.0",
+    "@repo/clients": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/ui": "workspace:*",
     "@supabase/auth-helpers-nextjs": "0.10.0",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@next/eslint-plugin-next": "15.1.6",
     "@repo/tailwind-config": "workspace:*",
+    "@repo/types": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "22.12.0",
     "@types/react": "19.0.7",

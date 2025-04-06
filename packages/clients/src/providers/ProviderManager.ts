@@ -27,15 +27,26 @@ export class ProviderManager {
 		return client.connect(credentials);
 	}
 
-	public async sync(provider: Providers) {
+	public sync(provider: Providers) {
 		const client = this._getProvider(provider);
-		const lastDbProviderActivity =
-			await this._db.getLastProviderActivity(provider);
+		return this._db
+			.getLastProviderActivity(provider)
+			.then((lastDbProviderActivity) =>
+				client.sync(lastDbProviderActivity?.timestamp),
+			)
+			.then((activities) => {
+				if (activities.length === 0) return;
+				return pMap(activities, (activityPayload) =>
+					this._db.insertActivity(activityPayload),
+				);
+			});
+	}
 
-		const activities = await client.sync(lastDbProviderActivity?.timestamp);
-		if (activities.length === 0) return;
-		return pMap(activities, (activityPayload) =>
-			this._db.insertActivity(activityPayload),
-		);
+	public syncActivity(provider: Providers, activityId: string) {
+		const client = this._getProvider(provider);
+		return client.syncActivity(activityId).then((activityPayload) => {
+			if (!activityPayload) return;
+			return this._db.insertActivity(activityPayload);
+		});
 	}
 }

@@ -8,5 +8,7 @@ export abstract class Client {
 
 	abstract sync(lastTimestamp?: string): Promise<IInsertActivityPayload[]>;
 
+	abstract syncActivity(activityId: string): Promise<IInsertActivityPayload>;
+
 	abstract getActivity(id: string): Promise<unknown>;
 }

@@ -126,7 +126,9 @@ export class CorosClient implements Client {
 		return this._client.getActivityDetails(id);
 	}
 
-	async syncActivity(activityId: string): Promise<IInsertActivityPayload> {
+	public async syncActivity(
+		activityId: string,
+	): Promise<IInsertActivityPayload> {
 		const activity = await this.getActivity(activityId);
 		const data = mapActivityDetails(activity, activityId);
 		return {
