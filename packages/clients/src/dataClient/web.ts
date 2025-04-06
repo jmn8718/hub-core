@@ -100,8 +100,7 @@ export class WebClient implements Client {
 
 	async providerSync(provider: Providers): Promise<ProviderSuccessResponse> {
 		try {
-			const client = this._manager.getProvider(provider);
-			await client.sync();
+			await this._manager.sync(provider);
 			return {
 				success: true,
 			};
@@ -118,8 +117,7 @@ export class WebClient implements Client {
 		credentials: Credentials,
 	): Promise<ProviderSuccessResponse> {
 		try {
-			const client = this._manager.getProvider(provider);
-			await client.connect(credentials);
+			await this._manager.connect(provider, credentials);
 			return {
 				success: true,
 			};

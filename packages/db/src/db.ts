@@ -28,6 +28,7 @@ import {
 	gears,
 	providerActivities,
 } from "./schemas/app.js";
+import type { IInsertActivityPayload } from "./types/index.js";
 
 export class Db {
 	private _client: DbClient;
@@ -170,16 +171,7 @@ export class Db {
 		};
 	}
 
-	async insertActivity(
-		data: Omit<IDbActivity, "id">,
-		providerData?: {
-			id: string;
-			provider: Providers;
-			original: boolean;
-			timestamp: string;
-			data: Record<string, string | number | undefined>;
-		},
-	) {
+	async insertActivity({ data, providerData }: IInsertActivityPayload) {
 		const query = await this._client
 			.select({
 				id: activities.id,
@@ -224,7 +216,7 @@ export class Db {
 					provider: providerData.provider,
 					timestamp: providerData.timestamp,
 					original: providerData.original ? 1 : 0,
-					data: JSON.stringify(providerData.data),
+					data: providerData.data,
 				});
 				await txClient.insert(activitiesConnection).values({
 					activityId,

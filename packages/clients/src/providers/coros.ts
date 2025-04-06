@@ -1,12 +1,11 @@
-import type { Db } from "@repo/db";
+import type { IInsertActivityPayload } from "@repo/db";
 import {
 	ActivitySubType,
 	ActivityType,
 	type IDbActivity,
 	Providers,
 } from "@repo/types";
-import { CorosApi } from "coros-connect";
-import type { ActivityData } from "coros-connect/dist/types/activity.js";
+import { type ActivityData, CorosApi } from "coros-connect";
 import dayjs from "dayjs";
 import pMap from "p-map";
 import type { Client } from "./Client.js";
@@ -38,8 +37,6 @@ function mapActivityDetails(activity: ActivityData, id: string): IDbActivity {
 export class CorosClient implements Client {
 	private _client: CorosApi;
 
-	private _db: Db;
-
 	private _signedIn = false;
 
 	private _userId = "";
@@ -48,8 +45,7 @@ export class CorosClient implements Client {
 
 	public static PROVIDER = Providers.COROS;
 
-	constructor(db: Db) {
-		this._db = db;
+	constructor() {
 		this._client = new CorosApi({
 			email: "",
 			password: "",
@@ -62,12 +58,13 @@ export class CorosClient implements Client {
 		password,
 	}: { username: string; password: string }) {
 		try {
-			const user = await this._client.login(username, password);
-			this._userId = user.userId;
+			const result = await this._client.login(username, password);
+			this._userId = result.userId;
 			this._lastTokenRefreshed = new Date();
 			this._signedIn = true;
 		} catch (error) {
 			this._signedIn = false;
+			console.error(error);
 			throw error;
 		}
 	}
@@ -129,27 +126,31 @@ export class CorosClient implements Client {
 		return this._client.getActivityDetails(id);
 	}
 
-	async syncActivity(activityId: string) {
+	async syncActivity(activityId: string): Promise<IInsertActivityPayload> {
 		const activity = await this.getActivity(activityId);
-		const dbActivity = mapActivityDetails(activity, activityId);
-		// insert activity
+		const data = mapActivityDetails(activity, activityId);
+		return {
+			data,
+			providerData: {
+				id: activityId,
+				provider: CorosClient.PROVIDER,
+				original: data.manufacturer.toLowerCase().includes("coros"),
+				timestamp: data.timestamp,
+				data: JSON.stringify(activity),
+			},
+		};
 	}
 
-	async sync() {
-		const lastDbProviderActivity = await this._db.getLastProviderActivity(
-			CorosClient.PROVIDER,
-		);
-
-		const lastTimestamp = lastDbProviderActivity?.timestamp;
+	async sync(lastTimestamp?: string): Promise<IInsertActivityPayload[]> {
 		const newActivities = await this.getActivities(lastTimestamp);
 
 		if (newActivities.length === 0) {
 			console.log(
 				`${CorosClient.PROVIDER}: no new activities from ${lastTimestamp}`,
 			);
-			return;
+			return [];
 		}
-		await pMap(
+		return pMap(
 			newActivities,
 			async (activity) => this.syncActivity(activity.labelId),
 			{

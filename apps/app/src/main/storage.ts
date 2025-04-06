@@ -11,11 +11,17 @@ class Storage {
 	getValue<T = Value>(key: string): T | undefined {
 		const encryptedValue = this.store.get(key);
 		if (!encryptedValue) return undefined;
-		const stringValue = safeStorage.decryptString(
-			Buffer.from(encryptedValue, "base64"),
-		);
-		const parsed = JSON.parse(stringValue) as { value: T };
-		return parsed.value;
+		try {
+			const stringValue = safeStorage.decryptString(
+				Buffer.from(encryptedValue, "base64"),
+			);
+			const parsed = JSON.parse(stringValue) as { value: T };
+			return parsed.value;
+		} catch (err) {
+			console.error(err);
+			this.deleteValue(key);
+		}
+		return;
 	}
 
 	setValue(key: string, value: Value) {

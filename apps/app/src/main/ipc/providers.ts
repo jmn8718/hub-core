@@ -12,8 +12,7 @@ ipcMain.handle(
 			provider: Providers;
 		},
 	) => {
-		const client = manager.getProvider(provider);
-		await client.sync();
+		await manager.sync(provider);
 	},
 );
 
@@ -29,7 +28,6 @@ ipcMain.handle(
 			credentials: Credentials;
 		},
 	) => {
-		const client = manager.getProvider(provider);
-		await client.connect(credentials);
+		await manager.connect(provider, credentials);
 	},
 );
