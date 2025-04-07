@@ -1,0 +1,31 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "clean": "rimraf .turbo node_modules .next",
+    "dev": "next dev --port 3003 --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/auth-helpers-nextjs": "0.10.0",
+    "@supabase/supabase-js": "2.48.1",
+    "next": "15.1.6",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@next/eslint-plugin-next": "15.1.6",
+    "@repo/tailwind-config": "workspace:*",
+    "@repo/types": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "22.12.0",
+    "@types/react": "19.0.7",
+    "@types/react-dom": "19.0.3",
+    "rimraf": "6.0.1",
+    "typescript": "5.7.3"
+  }
+}

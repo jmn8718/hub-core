@@ -91,6 +91,52 @@ importers:
         specifier: 5.7.3
         version: 5.7.3
 
+  apps/api:
+    dependencies:
+      '@supabase/auth-helpers-nextjs':
+        specifier: 0.10.0
+        version: 0.10.0(@supabase/supabase-js@2.48.1)
+      '@supabase/supabase-js':
+        specifier: 2.48.1
+        version: 2.48.1
+      next:
+        specifier: 15.1.6
+        version: 15.1.6(react-dom@19.0.0)(react@19.0.0)
+      react:
+        specifier: 19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: 19.0.0
+        version: 19.0.0(react@19.0.0)
+    devDependencies:
+      '@next/eslint-plugin-next':
+        specifier: 15.1.6
+        version: 15.1.6
+      '@repo/tailwind-config':
+        specifier: workspace:*
+        version: link:../../packages/tailwind-config
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
+      '@types/node':
+        specifier: 22.12.0
+        version: 22.12.0
+      '@types/react':
+        specifier: 19.0.7
+        version: 19.0.7
+      '@types/react-dom':
+        specifier: 19.0.3
+        version: 19.0.3(@types/react@19.0.7)
+      rimraf:
+        specifier: 6.0.1
+        version: 6.0.1
+      typescript:
+        specifier: 5.7.3
+        version: 5.7.3
+
   apps/app:
     dependencies:
       '@electron-toolkit/preload':

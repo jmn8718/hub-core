@@ -8,8 +8,10 @@ The monorepo is divided on 2 parts:
 
 ### Apps
 
-- [admin](apps/admin/README.md): Manage webhooks
-- [webapp](apps/webapp/README.md): Web dashboard
+- [admin](apps/admin/README.md): Admin dashboard and webhooks
+- [api](apps/api/README.md): Server API for webapp
+- [app](apps/app/README.md): Electron app
+- [webapp](apps/webapp/README.md): Web app
 
 ### Packages
 
