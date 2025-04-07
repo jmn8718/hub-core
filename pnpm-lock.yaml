@@ -313,8 +313,8 @@ importers:
         specifier: 2.48.1
         version: 2.48.1
       coros-connect:
-        specifier: 0.1.3
-        version: 0.1.3
+        specifier: 0.1.4
+        version: 0.1.4
       dayjs:
         specifier: 1.11.13
         version: 1.11.13
@@ -5239,8 +5239,8 @@ packages:
   /core-util-is@1.0.2:
     resolution: {integrity: sha512-3lqz5YjWTYnW6dlDa5TLaTCcShfar1e40rmcJVwCBJC6mWlFuj0eCHIElmG1g5kyuJ/GD+8Wn4FFCcz4gJPfaQ==}
 
-  /coros-connect@0.1.3:
-    resolution: {integrity: sha512-EZp4evECwdJSP9bySxNtDqO0Muzp3wwRXeS8IVd3MPC1dowVcAcuppQqoE5t7uaYyCjSTQQi5RJrSnP2hJ5H5g==}
+  /coros-connect@0.1.4:
+    resolution: {integrity: sha512-/yxqwCZS4eUKfZUqV0alQwX+ChH8IbX85TKoYtqWjMEVHUcwkjiP2l7OSUjPSfyHAt+XS8tAo8BykcPLvJflZA==}
     dependencies:
       '@aws-sdk/client-s3': 3.750.0
       app-root-path: 3.1.0
