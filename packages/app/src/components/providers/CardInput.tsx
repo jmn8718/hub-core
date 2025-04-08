@@ -7,7 +7,7 @@ import {
 import { CheckCircle2, Loader2, RotateCcw, Save, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
-import { useDataClient, useLoading } from "../../contexts/index.js";
+import { useDataClient, useLoading, useStore } from "../../contexts/index.js";
 import { Box } from "../Box.js";
 import { H2 } from "../H2.js";
 import { ActionButton } from "./ActionButton.js";
@@ -22,6 +22,7 @@ type ValidationStatus = "pending" | "validating" | "success" | "error";
 export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 	const { setLocalLoading, isLocalLoading, setGlobalLoading } = useLoading();
 	const { client } = useDataClient();
+	const { setValue, getValue } = useStore();
 	const [credentials, setCredentials] = useState<Credentials>({
 		username: "",
 		password: "",
@@ -38,13 +39,13 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 	const saveOnStore = async (newCredentials: Credentials) => {
 		setLocalLoading(true);
 		try {
-			await client.setStoreValue(
+			await setValue(
 				StorageKeys[`${provider}_CREDENTIALS`],
 				newCredentials as unknown as Value,
 			);
 			setValidationStatus("pending");
 			setCredentials(newCredentials);
-			await client.setStoreValue(StorageKeys[`${provider}_VALIDATED`], false);
+			await setValue(StorageKeys[`${provider}_VALIDATED`], false);
 			toast.success(
 				`Credentials ${newCredentials.username ? "stored" : "cleared"}`,
 				{
@@ -79,12 +80,12 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 		try {
 			const result = await client.providerConnect(provider, credentials);
 			if (result.success) {
-				await client.setStoreValue(StorageKeys[`${provider}_VALIDATED`], true);
+				await setValue(StorageKeys[`${provider}_VALIDATED`], true);
 				setValidationStatus("success");
 				toast.success("Validated successfully", {
 					transition: Bounce,
 				});
-				await client.setStoreValue(StorageKeys[`${provider}_VALIDATED`], true);
+				await setValue(StorageKeys[`${provider}_VALIDATED`], true);
 			} else {
 				throw new Error(result.error);
 			}
@@ -105,13 +106,12 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 	useEffect(() => {
 		const loadInitialData = async () => {
 			try {
-				const storedCredentials = await client.getStoreValue<Credentials>(
+				const storedCredentials = await getValue<Credentials>(
 					StorageKeys[`${provider}_CREDENTIALS`],
 				);
-				console.log({ storedCredentials });
 				if (storedCredentials) {
 					setCredentials(storedCredentials);
-					const credentialsValidated = await client.getStoreValue<boolean>(
+					const credentialsValidated = await getValue<boolean>(
 						StorageKeys[`${provider}_VALIDATED`],
 					);
 					if (credentialsValidated) {

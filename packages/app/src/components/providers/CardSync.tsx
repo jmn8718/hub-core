@@ -5,7 +5,12 @@ import { Bounce, toast } from "react-toastify";
 import { type Providers, StorageKeys } from "@repo/types";
 import { cn } from "@repo/ui";
 import { AlertCircle, RefreshCw } from "lucide-react";
-import { useDataClient, useLoading, useTheme } from "../../contexts/index.js";
+import {
+	useDataClient,
+	useLoading,
+	useStore,
+	useTheme,
+} from "../../contexts/index.js";
 import { formatRelativeTime } from "../../utils/date.js";
 import { Box } from "../Box.js";
 import { H2 } from "../H2.js";
@@ -21,6 +26,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 }) => {
 	const { isDarkMode } = useTheme();
 	const { client } = useDataClient();
+	const { getValue, setValue } = useStore();
 	const { setLocalLoading } = useLoading();
 	const [data, setData] = useState<{
 		hasValidData: boolean;
@@ -34,13 +40,14 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 		error: "",
 	});
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		const getFromStore = async () => {
 			setLocalLoading(true);
 			try {
 				const [storeLastSync, storeValidated] = await Promise.all([
-					client.getStoreValue<string>(StorageKeys[`${provider}_LAST_SYNC`]),
-					client.getStoreValue<boolean>(StorageKeys[`${provider}_VALIDATED`]),
+					getValue<string>(StorageKeys[`${provider}_LAST_SYNC`]),
+					getValue<boolean>(StorageKeys[`${provider}_VALIDATED`]),
 				]);
 				setData({
 					lastSync: storeLastSync || "",
@@ -66,7 +73,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 			}, 300);
 		};
 		getFromStore();
-	}, [client, provider, setLocalLoading]);
+	}, [provider]);
 
 	const onSync = async () => {
 		setLocalLoading(true);
@@ -79,7 +86,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 
 		if (result.success) {
 			const syncDate = new Date().toISOString();
-			// await client.setStoreValue(`${provider}.last_sync`, syncDate);
+			setValue(StorageKeys[`${provider}_LAST_SYNC`], syncDate);
 			setData((current) => ({
 				...current,
 				error: "",

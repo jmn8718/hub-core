@@ -1,13 +1,16 @@
-import type { IOverviewData, Providers } from "@repo/types";
+import { type IOverviewData, Providers, StorageKeys } from "@repo/types";
 import { useCallback, useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { MonthlyActivityChart, ProviderCardSync } from "../components/index.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useLoading } from "../contexts/LoadingContext.js";
+import { useStore } from "../contexts/StoreContext.js";
 
 export const Home = () => {
 	const { setLocalLoading } = useLoading();
 	const { client } = useDataClient();
+	const { getValue } = useStore();
+	const [availableProviders, setAvailableProviders] = useState<Providers[]>([]);
 
 	const [overviewData, setOverviewData] = useState<IOverviewData[]>([]);
 
@@ -32,11 +35,18 @@ export const Home = () => {
 		return fetchData();
 	};
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		fetchData();
-	}, [fetchData]);
-
-	const availableProviders: Providers[] = [];
+		getValue(StorageKeys.COROS_CREDENTIALS).then((value) => {
+			if (value) {
+				setAvailableProviders((current) => {
+					if (current.includes(Providers.COROS)) return current;
+					return [...current, Providers.COROS];
+				});
+			}
+		});
+	}, []);
 	return (
 		<>
 			{availableProviders.length > 0 && (

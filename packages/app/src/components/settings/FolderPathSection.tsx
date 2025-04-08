@@ -35,9 +35,10 @@ export function FolderPathSection({
 	};
 
 	const onClick = async () => {
-		const result = await client.getFolder(store[storeKey] || "", popupTitle);
+		const currentValue = (store[storeKey] as string) || "";
+		const result = await client.getFolder(currentValue, popupTitle);
 		if (result.success) {
-			if (result.data && result.data !== store[storeKey]) {
+			if (result.data && result.data !== currentValue) {
 				saveNewPath(result.data);
 			}
 		} else {
@@ -67,7 +68,7 @@ export function FolderPathSection({
 				/>
 				<input
 					id={id}
-					value={store[storeKey] || ""}
+					value={(store[storeKey] as string) || ""}
 					onChange={handlePathChange}
 					className={cn(
 						"w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500",

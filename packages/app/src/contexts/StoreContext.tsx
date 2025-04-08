@@ -1,4 +1,4 @@
-import { StorageKeys } from "@repo/types";
+import { StorageKeys, type Value } from "@repo/types";
 import type React from "react";
 import {
 	createContext,
@@ -9,15 +9,11 @@ import {
 } from "react";
 import { useDataClient } from "./DataClientContext.js";
 
-type StoreKeys =
-	| StorageKeys.OBSIDIAN_DISABLED
-	| StorageKeys.DOWNLOAD_FOLDER
-	| StorageKeys.OBSIDIAN_FOLDER;
-type Store = Record<StoreKeys, string>;
+type Store = Record<string, Value | undefined>;
 interface StoreContextType {
 	store: Store;
-	getValue: (key: StoreKeys) => Promise<string | undefined>;
-	setValue: (key: StoreKeys, value: string) => void;
+	getValue: <T = Value>(key: StorageKeys) => Promise<T | undefined>;
+	setValue: (key: StorageKeys, value: Value) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -33,7 +29,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 	});
 
 	const setValue = useCallback(
-		async (key: StorageKeys, value: string, setOnClient = true) => {
+		async (key: StorageKeys, value: Value, setOnClient = true) => {
 			if (setOnClient) {
 				await client.setStoreValue(key, value);
 			}
@@ -46,8 +42,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 	);
 
 	const getFromStore = useCallback(
-		async (key: StoreKeys, isInitialGet = false) => {
-			const storeValue = await client.getStoreValue<string>(key);
+		async <T = Value>(
+			key: StorageKeys,
+			isInitialGet = false,
+		): Promise<T | undefined> => {
+			const storeValue = await client.getStoreValue<T>(key);
 			if (storeValue) {
 				setValue(key, storeValue, !isInitialGet);
 			}
@@ -56,9 +55,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 		[client, setValue],
 	);
 
-	const getValue = async (key: StoreKeys) => {
-		if (store[key]) return store[key];
-		return getFromStore(key);
+	const getValue = async <T = Value>(
+		key: StorageKeys,
+	): Promise<T | undefined> => {
+		if (store[key]) return store[key] as T;
+		return getFromStore<T>(key);
 	};
 
 	useEffect(() => {
