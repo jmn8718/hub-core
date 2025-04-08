@@ -62,6 +62,27 @@ export class MockClient implements Client {
 		};
 	}
 
+	async editActivity(
+		id: string,
+		data: {
+			locationName?: string;
+			locationCountry?: string;
+			notes?: string;
+			name?: string;
+		},
+	): Promise<ProviderSuccessResponse> {
+		try {
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async getStoreValue<T = Value>(key: StorageKeys): Promise<T | undefined> {
 		const value = localStorage.getItem(key);
 		return value ? (JSON.parse(value) as { value: T }).value : undefined;

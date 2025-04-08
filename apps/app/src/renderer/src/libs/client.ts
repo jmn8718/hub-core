@@ -102,6 +102,32 @@ export class AppClient implements Client {
 		localStorage.setItem(key, JSON.stringify({ value }));
 	}
 
+	async editActivity(
+		id: string,
+		data: {
+			locationName?: string;
+			locationCountry?: string;
+			name?: string;
+			notes?: string;
+		},
+	): Promise<ProviderSuccessResponse> {
+		console.log("-", id, data);
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.DB_ACTIVITY_EDIT, {
+				activityId: id,
+				data,
+			});
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async providerSync(provider: Providers): Promise<ProviderSuccessResponse> {
 		try {
 			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_SYNC, {

@@ -24,6 +24,24 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
+	Channels.DB_ACTIVITY_EDIT,
+	async (
+		_event,
+		params: {
+			activityId: string;
+			data: {
+				locationName?: string;
+				locationCountry?: string;
+				name?: string;
+				notes?: string;
+			};
+		},
+	) => {
+		return db.editActivity(params.activityId, params.data);
+	},
+);
+
+ipcMain.handle(
 	Channels.DB_GEAR,
 	async (
 		_event,

@@ -15,6 +15,7 @@ import {
 	Route,
 } from "lucide-react";
 import { useState } from "react";
+import { Bounce, toast } from "react-toastify";
 import {
 	useDataClient,
 	useLoading,
@@ -38,7 +39,7 @@ interface RunningCardProps {
 
 export function RunningCard({ activity, gears }: RunningCardProps) {
 	const { isDarkMode } = useTheme();
-	const { type } = useDataClient();
+	const { type, client } = useDataClient();
 	const { store } = useStore();
 	const { setLocalLoading } = useLoading();
 	const [activityData, setActivityData] =
@@ -117,22 +118,15 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 		value: string,
 	) => {
 		setLocalLoading(true);
-		// const result = (await window.electron.ipcRenderer.invoke(
-		//   Channels.DB_ACTIVITY_EDIT,
-		//   {
-		//     activityId,
-		//     field,
-		//     value,
-		//   },
-		// )) as ProviderIpcResponse;
-		// if (!result.success) {
-		//   // handle error
-		//   toast.error(result.error, {
-		//     hideProgressBar: false,
-		//     closeOnClick: false,
-		//     transition: Bounce,
-		//   });
-		// }
+		const result = await client.editActivity(activityId, { [field]: value });
+		if (!result.success) {
+			// handle error
+			toast.error(result.error, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		}
 		refreshActivity();
 		setTimeout(() => {
 			setLocalLoading(false);
@@ -155,13 +149,17 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 	const handleLocationNameChange = (newLocationName: string) => {
 		setLocationName(newLocationName);
 		if (newLocationName !== activityData.locationName) {
-			handleEditActivity(activityData.id, "location_name", newLocationName);
+			handleEditActivity(activityData.id, "locationName", newLocationName);
 		}
 	};
 	const handleLocationCountryChange = (newLocationCountry: string) => {
 		setLocationCountry(newLocationCountry);
-		if (newLocationCountry !== activityData.locationName) {
-			handleEditActivity(activityData.id, "location_name", newLocationCountry);
+		if (newLocationCountry !== activityData.locationCountry) {
+			handleEditActivity(
+				activityData.id,
+				"locationCountry",
+				newLocationCountry,
+			);
 		}
 	};
 

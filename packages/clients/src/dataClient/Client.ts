@@ -36,6 +36,16 @@ export abstract class Client {
 		}>
 	>;
 
+	abstract editActivity(
+		id: string,
+		data: {
+			locationName?: string;
+			locationCountry?: string;
+			notes?: string;
+			name?: string;
+		},
+	): Promise<ProviderSuccessResponse>;
+
 	abstract getStoreValue<T = Value>(key: StorageKeys): Promise<T | undefined>;
 	abstract setStoreValue(key: StorageKeys, value: Value): Promise<undefined>;
 

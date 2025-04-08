@@ -66,6 +66,28 @@ export class WebClient implements Client {
 		}
 	}
 
+	async editActivity(
+		id: string,
+		data: {
+			locationName?: string;
+			notes?: string;
+			locationCountry?: string;
+			name?: string;
+		},
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await this._db.editActivity(id, data);
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async getGears(params: {
 		cursor?: string;
 		limit?: number;

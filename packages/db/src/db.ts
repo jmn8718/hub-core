@@ -170,6 +170,13 @@ export class Db {
 		};
 	}
 
+	editActivity(id: string, data: Record<string, string>) {
+		return this._client
+			.update(activities)
+			.set(data)
+			.where(eq(activities.id, id));
+	}
+
 	async insertActivity({ data, providerData }: IInsertActivityPayload) {
 		let activityId = "";
 		if (providerData) {
@@ -218,10 +225,7 @@ export class Db {
 				updateData.startLongitude = data.startLongitude.toString();
 			}
 			if (Object.keys(updateData).length > 0) {
-				await this._client
-					.update(activities)
-					.set(updateData)
-					.where(eq(activities.id, activityId));
+				await this.editActivity(activityId, updateData);
 			}
 		} else {
 			activityId = uuidv7();
