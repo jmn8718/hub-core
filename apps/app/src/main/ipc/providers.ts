@@ -28,6 +28,9 @@ ipcMain.handle(
 			credentials: Credentials;
 		},
 	) => {
+		// force add a client when we ask to connect
+		// as it might not be added before
+		manager.initializeClient(provider);
 		await manager.connect(provider, credentials);
 	},
 );

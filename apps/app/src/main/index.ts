@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
 import { BrowserWindow, app, shell } from "electron";
 import icon from "../../resources/icon.png?asset";
+import { initializeClients } from "./client.js";
 import { storage } from "./storage.js";
 
 function createWindow(): void {
@@ -19,7 +20,7 @@ function createWindow(): void {
 	});
 
 	storage.initRenderer();
-
+	initializeClients();
 	mainWindow.on("ready-to-show", () => {
 		mainWindow.show();
 	});

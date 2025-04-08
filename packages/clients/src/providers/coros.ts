@@ -97,13 +97,12 @@ export class CorosClient implements Client {
 					({ sportType }) => sportType === 100 || sportType === 101,
 				);
 				data.push(...activitiesList);
-				console.debug(
-					CorosClient.PROVIDER,
-					activities.count,
-					activities.pageNumber,
-					activities.totalPage,
-				);
-				console.debug(CorosClient.PROVIDER, page, data.length);
+				console.debug(CorosClient.PROVIDER, {
+					count: activities.count,
+					pageNumber: activities.pageNumber,
+					totalPage: activities.totalPage,
+				});
+				console.debug(CorosClient.PROVIDER, { page, dataLength: data.length });
 				keepFetching = activities.dataList.length === activitiesToFetch;
 				page += 1;
 			} else {
@@ -117,7 +116,9 @@ export class CorosClient implements Client {
 		// add 1 day because coros filter by day precision
 		const from = lastDate ? dayjs(lastDate).add(1, "day").toDate() : undefined;
 		return this.fetchRunningActivities({
-			activitiesToFetch: 100,
+			// if we have a from point, check few by few,
+			// and if there is no from then we want to fetch all
+			activitiesToFetch: from ? 5 : 100,
 			from,
 		});
 	}
@@ -138,18 +139,18 @@ export class CorosClient implements Client {
 				provider: CorosClient.PROVIDER,
 				original: data.manufacturer.toLowerCase().includes("coros"),
 				timestamp: data.timestamp,
-				data: JSON.stringify(activity),
+				// at the moment it does not store all the raw data as it includes a lot of data
+				data: "{}", // JSON.stringify(activity),
 			},
 		};
 	}
 
 	async sync(lastTimestamp?: string): Promise<IInsertActivityPayload[]> {
 		const newActivities = await this.getActivities(lastTimestamp);
-
+		console.log(
+			`${CorosClient.PROVIDER}: ${newActivities.length} new activities from ${lastTimestamp || "now"}`,
+		);
 		if (newActivities.length === 0) {
-			console.log(
-				`${CorosClient.PROVIDER}: no new activities from ${lastTimestamp}`,
-			);
 			return [];
 		}
 		return pMap(

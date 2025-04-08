@@ -172,6 +172,19 @@ export class Db {
 	}
 
 	async insertActivity({ data, providerData }: IInsertActivityPayload) {
+		let activityId = "";
+		if (providerData) {
+			// search first by activitiesConnection
+			const dbActivityConnection = await this._client
+				.select()
+				.from(activitiesConnection)
+				.where(eq(activitiesConnection.providerActivityId, providerData.id))
+				.limit(1);
+			if (dbActivityConnection[0]?.activityId) {
+				activityId = dbActivityConnection[0].activityId;
+			}
+		}
+
 		const query = await this._client
 			.select({
 				id: activities.id,
@@ -181,11 +194,16 @@ export class Db {
 				startLongitude: activities.startLongitude,
 			})
 			.from(activities)
-			.where(eq(activities.timestamp, data.timestamp));
+			.where(
+				activityId
+					? eq(activities.id, activityId)
+					: eq(activities.timestamp, data.timestamp),
+			)
+			.limit(1);
 
 		const dbActivity = query[0];
-		const activityId = dbActivity?.id || uuidv7();
 		if (dbActivity) {
+			activityId = dbActivity.id;
 			const updateData: Record<string, string> = {};
 
 			if (!dbActivity.locationCountry && data.locationCountry) {
@@ -200,28 +218,58 @@ export class Db {
 			if (!dbActivity.startLongitude && data.startLongitude) {
 				updateData.startLongitude = data.startLongitude.toString();
 			}
-			await this._client
-				.update(activities)
-				.set(updateData)
-				.where(eq(activities.id, activityId));
+			if (Object.keys(updateData).length > 0) {
+				await this._client
+					.update(activities)
+					.set(updateData)
+					.where(eq(activities.id, activityId));
+			}
 		} else {
-			await this._client.insert(activities).values(data);
+			activityId = uuidv7();
+			await this._client.insert(activities).values({
+				...data,
+				id: activityId,
+			});
 		}
 
 		// if there is provider data, insert on related tables
 		if (providerData) {
 			await this._client.transaction(async (txClient) => {
-				await txClient.insert(providerActivities).values({
-					id: providerData.id,
-					provider: providerData.provider,
-					timestamp: providerData.timestamp,
-					original: providerData.original ? 1 : 0,
-					data: providerData.data,
-				});
-				await txClient.insert(activitiesConnection).values({
-					activityId,
-					providerActivityId: providerData.id,
-				});
+				const linkedProviderActivity = await txClient
+					.select({ id: providerActivities.id })
+					.from(providerActivities)
+					.where(eq(providerActivities.id, providerData.id))
+					.limit(1);
+				if (linkedProviderActivity[0]) {
+					console.log(
+						linkedProviderActivity[0].id,
+						" providerActivities already inserted",
+					);
+				} else {
+					await txClient.insert(providerActivities).values({
+						id: providerData.id,
+						provider: providerData.provider,
+						timestamp: providerData.timestamp,
+						original: providerData.original ? 1 : 0,
+						data: providerData.data,
+					});
+				}
+
+				const linkedActivityConnection = await txClient
+					.select({ activityId: activitiesConnection.activityId })
+					.from(activitiesConnection)
+					.where(eq(activitiesConnection.providerActivityId, providerData.id))
+					.limit(1);
+				if (linkedActivityConnection[0]) {
+					console.log(
+						`${activityId} | ${providerData.id} => activitiesConnection already connected`,
+					);
+				} else {
+					await txClient.insert(activitiesConnection).values({
+						activityId,
+						providerActivityId: providerData.id,
+					});
+				}
 			});
 		}
 

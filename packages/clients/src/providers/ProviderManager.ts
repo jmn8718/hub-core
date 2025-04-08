@@ -1,7 +1,15 @@
 import type { Db } from "@repo/db";
-import type { Credentials, Providers } from "@repo/types";
+import { type Credentials, Providers } from "@repo/types";
 import pMap from "p-map";
 import type { Client } from "./Client.js";
+import { CorosClient } from "./coros.js";
+
+const initializeProviderClient = (provider: Providers) => {
+	if (provider === Providers.COROS) {
+		return new CorosClient();
+	}
+	throw new Error("Invalid client");
+};
 
 export class ProviderManager {
 	private _db: Db;
@@ -12,14 +20,15 @@ export class ProviderManager {
 		this._db = db;
 	}
 
-	public addClient(provider: Providers, client: Client) {
-		this._clients[provider] = client;
-	}
-
 	private _getProvider(provider: Providers) {
 		if (!this._clients[provider])
 			throw new Error(`${provider} not initialized`);
 		return this._clients[provider];
+	}
+
+	public initializeClient(provider: Providers) {
+		if (this._clients[provider]) return;
+		this._clients[provider] = initializeProviderClient(provider);
 	}
 
 	public connect(provider: Providers, credentials: Credentials) {
@@ -35,7 +44,7 @@ export class ProviderManager {
 				client.sync(lastDbProviderActivity?.timestamp),
 			)
 			.then((activities) => {
-				if (activities.length === 0) return;
+				if (activities.length === 0) return [];
 				return pMap(activities, (activityPayload) =>
 					this._db.insertActivity(activityPayload),
 				);
