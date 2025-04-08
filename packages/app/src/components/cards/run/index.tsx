@@ -6,7 +6,14 @@ import {
 	Providers,
 	StorageKeys,
 } from "@repo/types";
-import { Clock, Footprints, MapPin, Pencil, Route } from "lucide-react";
+import {
+	Clock,
+	Footprints,
+	MapIcon,
+	MapPin,
+	Pencil,
+	Route,
+} from "lucide-react";
 import { useState } from "react";
 import {
 	useDataClient,
@@ -145,10 +152,16 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 		}
 	};
 
-	const handleLocationChange = (newLocation: string) => {
-		setLocationName(newLocation);
-		if (newLocation !== activityData.locationName) {
-			handleEditActivity(activityData.id, "location_name", newLocation);
+	const handleLocationNameChange = (newLocationName: string) => {
+		setLocationName(newLocationName);
+		if (newLocationName !== activityData.locationName) {
+			handleEditActivity(activityData.id, "location_name", newLocationName);
+		}
+	};
+	const handleLocationCountryChange = (newLocationCountry: string) => {
+		setLocationCountry(newLocationCountry);
+		if (newLocationCountry !== activityData.locationName) {
+			handleEditActivity(activityData.id, "location_name", newLocationCountry);
 		}
 	};
 
@@ -181,20 +194,29 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 						</div>
 						<div className="flex items-center gap-2 text-sm">
 							<Clock size={16} className="text-gray-500" />
-							<span>{formatDateWithTime(activityData.timestamp)}</span>
+							<span className="pl-2">
+								{formatDateWithTime(activityData.timestamp)}
+							</span>
 						</div>
 						<div className="flex items-center gap-2 text-sm">
 							<MapPin size={16} className="text-gray-500 min-w-4" />
 							<EditableText
 								value={locationName}
-								onSave={handleLocationChange}
+								onSave={handleLocationNameChange}
 								className="h-8"
 							/>
-							{/* add country update */}
+						</div>
+						<div className="flex items-center gap-2 text-sm">
+							<MapIcon size={16} className="text-gray-500 min-w-4" />
+							<EditableText
+								value={locationCountry}
+								onSave={handleLocationCountryChange}
+								className="h-8"
+							/>
 						</div>
 						<div className="flex items-center gap-2 text-sm">
 							<Route size={16} className="text-gray-500" />
-							<span>
+							<span className="pl-2">
 								{formatDistance(activityData.distance)} •{" "}
 								{formatDuration(activityData.duration)}
 							</span>

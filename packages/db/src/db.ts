@@ -113,7 +113,6 @@ export class Db {
 			.with(connections, groupedGears)
 			.select({
 				...getTableColumns(activities),
-				activityId: connections.activityId,
 				connections: connections.connections,
 				gears: groupedGears.gears,
 			})

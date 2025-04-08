@@ -81,7 +81,7 @@ export const EditableText: FC<EditableTextProps> = ({
 		<div
 			onClick={handleClick}
 			className={cn(
-				"cursor-pointer rounded flex items-center px-2 py-1 -ml-2",
+				"cursor-pointer rounded flex items-center px-2 py-1",
 				isDarkMode
 					? "hover:bg-gray-700 text-white"
 					: "hover:bg-gray-100 text-gray-900",

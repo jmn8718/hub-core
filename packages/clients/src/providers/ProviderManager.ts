@@ -45,8 +45,12 @@ export class ProviderManager {
 			)
 			.then((activities) => {
 				if (activities.length === 0) return [];
-				return pMap(activities, (activityPayload) =>
-					this._db.insertActivity(activityPayload),
+				return pMap(
+					activities,
+					(activityPayload) => this._db.insertActivity(activityPayload),
+					{
+						concurrency: 1,
+					},
 				);
 			});
 	}

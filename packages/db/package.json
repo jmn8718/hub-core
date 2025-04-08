@@ -20,6 +20,7 @@
     "db:seed:webhooks": "tsx src/seed/webhooks.ts",
     "db:seed:activities": "tsx src/seed/activities.ts",
     "db:seed:import": "tsx src/seed/import.ts",
+    "db:seed:clear": "tsx src/seed/clear.ts",
     "test": "vitest"
   },
   "dependencies": {

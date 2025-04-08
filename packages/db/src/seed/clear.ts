@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { createDbClient } from "../client.js";
-import { clearData, importData } from "./common.js";
+import { clearData } from "./common.js";
 
 async function run() {
 	const client = createDbClient(
@@ -18,8 +18,6 @@ async function run() {
 
 	await clearData(client);
 	console.log("--- db cleared");
-	await importData(client);
-	console.log("--- db data imported");
 }
 
 run().then(() => {
