@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
 	}
 
 	const { code } = await req.json();
+	console.log("+++++++", code)
 	const token = await strava.oauth.getToken(code);
 	console.log("-------", token);
 	const users = await db
