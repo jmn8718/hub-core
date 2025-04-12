@@ -10,6 +10,7 @@ import type {
 	Providers,
 } from "@repo/types";
 import {
+	asc,
 	count,
 	desc,
 	eq,
@@ -69,9 +70,11 @@ export class Db {
 	async getActivities({
 		limit = 20,
 		cursor,
+		sort = "DESC",
 	}: {
 		cursor?: string;
 		limit?: number;
+		sort?: "ASC" | "DESC";
 	}): Promise<ActivitiesData> {
 		const connections = this._client.$with("connections").as(
 			this._client
@@ -109,6 +112,7 @@ export class Db {
 				.leftJoin(gears, eq(activityGears.gearId, gears.id))
 				.groupBy(activityGears.activityId),
 		);
+		const order = sort === "DESC" ? desc : asc;
 		const select = this._client
 			.with(connections, groupedGears)
 			.select({
@@ -118,7 +122,8 @@ export class Db {
 			})
 			.from(activities)
 			.leftJoin(connections, eq(activities.id, connections.activityId))
-			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId));
+			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId))
+			.orderBy(order(activities.timestamp));
 
 		const dataQuery = cursor ? select.where(gt(gears.id, cursor)) : select;
 
