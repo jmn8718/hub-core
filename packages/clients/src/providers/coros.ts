@@ -1,4 +1,4 @@
-import type { IInsertActivityPayload } from "@repo/db";
+import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
 import {
 	ActivitySubType,
 	ActivityType,
@@ -160,5 +160,9 @@ export class CorosClient implements Client {
 				concurrency: 1,
 			},
 		);
+	}
+
+	async syncGears(): Promise<IInsertGearPayload[]> {
+		throw new Error("Not supported");
 	}
 }

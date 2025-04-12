@@ -92,6 +92,12 @@ export class MockClient implements Client {
 		localStorage.setItem(key, JSON.stringify({ value }));
 	}
 
+	async providerSyncGear(): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
+
 	async providerSync(): Promise<ProviderSuccessResponse> {
 		return {
 			success: true,

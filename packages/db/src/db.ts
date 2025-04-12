@@ -10,6 +10,7 @@ import type {
 	Providers,
 } from "@repo/types";
 import {
+	and,
 	asc,
 	count,
 	desc,
@@ -27,9 +28,14 @@ import {
 	activitiesConnection,
 	activityGears,
 	gears,
+	gearsConnection,
 	providerActivities,
+	providerGears,
 } from "./schemas/app.js";
-import type { IInsertActivityPayload } from "./types/index.js";
+import type {
+	IInsertActivityPayload,
+	IInsertGearPayload,
+} from "./types/index.js";
 
 export class Db {
 	private _client: DbClient;
@@ -294,5 +300,105 @@ export class Db {
 			.orderBy(desc(providerActivities.timestamp))
 			.limit(1)
 			.then((data) => data[0]);
+	}
+
+	async insertGear({ data, provider, providerId }: IInsertGearPayload) {
+		return this._client.transaction(async (tx) => {
+			const providerGear = await tx
+				.select({ id: providerGears.id })
+				.from(providerGears)
+				.where(
+					and(
+						eq(providerGears.provider, provider),
+						eq(providerGears.providerId, providerId),
+					),
+				)
+				.limit(1);
+			let providerGearId = providerGear[0]?.id;
+			if (providerGearId) {
+				// update data
+				await tx
+					.update(providerGears)
+					.set({
+						data: JSON.stringify(data),
+					})
+					.where(eq(providerGears.id, providerGearId));
+			} else {
+				// create new one
+				providerGearId = uuidv7();
+				await tx.insert(providerGears).values({
+					id: providerGearId,
+					providerId,
+					provider,
+					data: JSON.stringify(data),
+				});
+			}
+			const linkedGear = await tx
+				.select({ gearId: gearsConnection.gearId })
+				.from(gearsConnection)
+				.where(eq(gearsConnection.providerGearId, providerGearId))
+				.limit(1);
+
+			let gearId = linkedGear[0]?.gearId;
+
+			if (gearId) {
+				if (data.dateEnd) {
+					const gearWithCode = await tx
+						.select()
+						.from(gears)
+						.where(eq(gears.id, gearId))
+						.limit(1);
+					if (gearWithCode[0] && !gearWithCode[0].dateEnd) {
+						await tx
+							.update(gears)
+							.set({
+								dateEnd: data.dateEnd,
+							})
+							.where(eq(gears.id, gearId));
+					}
+				}
+			} else {
+				const gearWithCode = await tx
+					.select()
+					.from(gears)
+					.where(eq(gears.code, data.code))
+					.limit(1);
+				if (gearWithCode[0]) {
+					gearId = gearWithCode[0].id;
+					if (!gearWithCode[0].dateEnd && data.dateEnd) {
+						await tx
+							.update(gears)
+							.set({
+								dateEnd: data.dateEnd,
+							})
+							.where(eq(gears.id, gearId));
+					}
+				} else {
+					gearId = uuidv7();
+					await tx.insert(gears).values({
+						...data,
+						id: gearId,
+					});
+				}
+			}
+		});
+	}
+
+	async linkActivityGear(activityId: string, gearId: string) {
+		await this._client.insert(activityGears).values({
+			gearId,
+			activityId,
+		});
+	}
+
+	async unlinkActivityGear(activityId: string, gearId: string) {
+		await this._client
+			.delete(activityGears)
+			.where(
+				and(
+					eq(activityGears.activityId, activityId),
+					eq(activityGears.gearId, gearId),
+				),
+			);
 	}
 }

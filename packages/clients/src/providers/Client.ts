@@ -1,4 +1,4 @@
-import type { IInsertActivityPayload } from "@repo/db";
+import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
 
 export abstract class Client {
 	abstract connect(params: {
@@ -9,6 +9,8 @@ export abstract class Client {
 	abstract sync(lastTimestamp?: string): Promise<IInsertActivityPayload[]>;
 
 	abstract syncActivity(activityId: string): Promise<IInsertActivityPayload>;
+
+	abstract syncGears(): Promise<IInsertGearPayload[]>;
 
 	abstract getActivity(id: string): Promise<unknown>;
 }

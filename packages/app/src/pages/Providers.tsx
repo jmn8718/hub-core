@@ -5,6 +5,7 @@ export function ProvidersPage() {
 	return (
 		<div className="grid grid-cols-1 gap-4">
 			<ProviderCardInput provider={Providers.COROS} />
+			<ProviderCardInput provider={Providers.GARMIN} />
 		</div>
 	);
 }

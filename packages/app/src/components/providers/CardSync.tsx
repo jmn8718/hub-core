@@ -93,6 +93,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 				lastSync: syncDate,
 				isSyncing: false,
 			}));
+			toast.success("Synced completed", { transition: Bounce });
 		} else {
 			toast.error(result.error, {
 				hideProgressBar: false,

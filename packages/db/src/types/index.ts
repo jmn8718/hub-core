@@ -1,4 +1,4 @@
-import type { IDbActivity, Providers } from "@repo/types";
+import type { IDbActivity, IDbGear, Providers } from "@repo/types";
 
 export interface IInsertActivityPayload {
 	data: Omit<IDbActivity, "id">;
@@ -9,4 +9,10 @@ export interface IInsertActivityPayload {
 		timestamp: string;
 		data: string;
 	};
+}
+
+export interface IInsertGearPayload {
+	data: Omit<IDbGear, "id">;
+	provider: Providers;
+	providerId: string;
 }

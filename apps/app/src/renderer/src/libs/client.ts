@@ -111,11 +111,28 @@ export class AppClient implements Client {
 			notes?: string;
 		},
 	): Promise<ProviderSuccessResponse> {
-		console.log("-", id, data);
 		try {
 			await window.electron.ipcRenderer.invoke(Channels.DB_ACTIVITY_EDIT, {
 				activityId: id,
 				data,
+			});
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async providerSyncGear(
+		provider: Providers,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_SYNC_GEAR, {
+				provider,
 			});
 			return {
 				success: true,

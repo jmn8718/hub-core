@@ -36,6 +36,16 @@ export class ProviderManager {
 		return client.connect(credentials);
 	}
 
+	public syncGear(provider: Providers) {
+		const client = this._getProvider(provider);
+		return client.syncGears().then((gears) => {
+			if (gears.length === 0) return [];
+			return pMap(gears, (gearPayload) => this._db.insertGear(gearPayload), {
+				concurrency: 1,
+			});
+		});
+	}
+
 	public sync(provider: Providers) {
 		const client = this._getProvider(provider);
 		return this._db

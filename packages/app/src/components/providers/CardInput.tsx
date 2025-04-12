@@ -4,12 +4,20 @@ import {
 	StorageKeys,
 	type Value,
 } from "@repo/types";
-import { CheckCircle2, Loader2, RotateCcw, Save, XCircle } from "lucide-react";
+import {
+	CheckCircle2,
+	FolderSync,
+	Loader2,
+	RotateCcw,
+	Save,
+	XCircle,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { useDataClient, useLoading, useStore } from "../../contexts/index.js";
 import { Box } from "../Box.js";
 import { H2 } from "../H2.js";
+import { SectionContainer } from "../SectionContainer.js";
 import { ActionButton } from "./ActionButton.js";
 import { InputField } from "./InputField.js";
 
@@ -133,6 +141,29 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 		loadInitialData();
 	}, []);
 
+	const handlePullGear = async () => {
+		if (validationStatus !== "success") return;
+		setLocalLoading(true);
+
+		try {
+			const result = await client.providerSyncGear(provider);
+			if (result.success) {
+				toast.success("Gear synced", { transition: Bounce });
+			} else {
+				throw new Error(result.error);
+			}
+		} catch (error) {
+			toast.error((error as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		}
+
+		setTimeout(() => {
+			setLocalLoading(false);
+		}, 200);
+	};
 	const getValidationButton = () => {
 		const canValidate =
 			!hasChanges &&
@@ -177,42 +208,54 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 
 	return (
 		<Box>
-			<div className="flex justify-between items-center mb-4">
-				<H2 text={provider} classes="font-bold uppercase" />
-				<div className="flex gap-2">
-					<ActionButton
-						icon={<Save size={20} />}
-						onClick={handleSave}
-						tooltip="Save credentials"
-						disabled={isLocalLoading || !hasChanges}
+			<SectionContainer hasBorder>
+				<div className="flex justify-between items-center mb-4">
+					<H2 text={provider} classes="font-bold uppercase" />
+					<div className="flex gap-2">
+						<ActionButton
+							icon={<Save size={20} />}
+							onClick={handleSave}
+							tooltip="Save credentials"
+							disabled={isLocalLoading || !hasChanges}
+						/>
+						{getValidationButton()}
+						<ActionButton
+							icon={<RotateCcw size={20} />}
+							onClick={handleClear}
+							tooltip="Clear credentials"
+							disabled={isLocalLoading}
+						/>
+					</div>
+				</div>
+				<div className="max-w-2xl">
+					<InputField
+						id={`${provider}-username`}
+						label="Username"
+						type="text"
+						value={credentials.username}
+						onChange={handleInputChange("username")}
+						placeholder="Enter username"
 					/>
-					{getValidationButton()}
-					<ActionButton
-						icon={<RotateCcw size={20} />}
-						onClick={handleClear}
-						tooltip="Clear credentials"
-						disabled={isLocalLoading}
+					<InputField
+						id={`${provider}-password`}
+						label="Password"
+						type="password"
+						value={credentials.password}
+						onChange={handleInputChange("password")}
+						placeholder="Enter password"
 					/>
 				</div>
-			</div>
-			<div className="max-w-2xl">
-				<InputField
-					id={`${provider}-username`}
-					label="Username"
-					type="text"
-					value={credentials.username}
-					onChange={handleInputChange("username")}
-					placeholder="Enter username"
-				/>
-				<InputField
-					id={`${provider}-password`}
-					label="Password"
-					type="password"
-					value={credentials.password}
-					onChange={handleInputChange("password")}
-					placeholder="Enter password"
-				/>
-			</div>
+			</SectionContainer>
+			<SectionContainer>
+				<div className="flex gap-2 items-center">
+					<ActionButton
+						icon={<FolderSync size={20} />}
+						onClick={handlePullGear}
+						text="Pull gear"
+						disabled={isLocalLoading || validationStatus !== "success"}
+					/>
+				</div>
+			</SectionContainer>
 		</Box>
 	);
 }

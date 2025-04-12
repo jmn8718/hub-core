@@ -120,6 +120,22 @@ export class WebClient implements Client {
 		localStorage.setItem(key, JSON.stringify({ value }));
 	}
 
+	async providerSyncGear(
+		provider: Providers,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await this._manager.syncGear(provider);
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async providerSync(provider: Providers): Promise<ProviderSuccessResponse> {
 		try {
 			await this._manager.sync(provider);
