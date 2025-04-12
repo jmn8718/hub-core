@@ -16,9 +16,7 @@ export async function POST(req: NextRequest) {
 	}
 
 	const { code } = await req.json();
-	console.log("+++++++", code)
 	const token = await strava.oauth.getToken(code);
-	console.log("-------", token);
 	const users = await db
 		.select({ id: profiles.id })
 		.from(profiles)
@@ -59,7 +57,7 @@ export async function GET(req: NextRequest) {
 	}
 
 	const url = await strava.oauth.getRequestAccessURL({
-		scope: "activity:read_all",
+		scope: "activity:read_all,profile:read_all",
 	});
 
 	return NextResponse.json({

@@ -15,7 +15,6 @@ export default function ActivityDetails() {
 		fetch(`/api/strava/activities/${id}`)
 			.then((response) => response.json())
 			.then((data) => {
-				console.log(data);
 				setActivity(data);
 			})
 			.catch(console.error);

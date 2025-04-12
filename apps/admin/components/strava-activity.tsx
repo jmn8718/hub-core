@@ -6,9 +6,6 @@ export function StravaActivity({
 	const syncProviderActivity = () => {
 		fetch(`/api/activities/strava/sync/${activity.id}`)
 			.then((response) => response.json())
-			.then((data) => {
-				console.log(data);
-			})
 			.catch(console.error);
 	};
 	return (

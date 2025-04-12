@@ -11,9 +11,7 @@ export async function GET(request: Request) {
 		data: { session },
 	} = await supabase.auth.getSession();
 	const requestUrl = new URL(request.url);
-	console.log('-', request.url)
 	const code = requestUrl.searchParams.get("code");
-	console.log({code})
 	let status = "error";
 	let message = "";
 	try {
@@ -25,7 +23,7 @@ export async function GET(request: Request) {
 				.where(eq(profiles.externalId, token.athlete.id.toString()))
 				.limit(1);
 			if (users[0]?.id) {
-				const result = await db
+				await db
 					.update(profiles)
 					.set({
 						expiresAt: token.expires_at,
@@ -33,9 +31,8 @@ export async function GET(request: Request) {
 						accessToken: token.access_token,
 					})
 					.where(eq(profiles.id, users[0].id));
-				console.log('e', {result});
 			} else {
-				const result = await db.insert(profiles).values({
+				await db.insert(profiles).values({
 					// biome-ignore lint/style/noNonNullAssertion: <explanation>
 					id: session!.user.id,
 					externalId: token.athlete.id.toString(),
@@ -44,7 +41,6 @@ export async function GET(request: Request) {
 					accessToken: token.access_token,
 					tokenType: token.token_type,
 				});
-				console.log('n', {result});
 			}
 			status = "success";
 		} else {
