@@ -6,7 +6,10 @@ export abstract class Client {
 		password: string;
 	}): Promise<void>;
 
-	abstract sync(lastTimestamp?: string): Promise<IInsertActivityPayload[]>;
+	abstract sync(params: {
+		id?: string;
+		lastTimestamp?: string;
+	}): Promise<IInsertActivityPayload[]>;
 
 	abstract syncActivity(activityId: string): Promise<IInsertActivityPayload>;
 

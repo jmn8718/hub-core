@@ -3,7 +3,6 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IConnection,
-	IDbActivity,
 	IDbGear,
 	IGear,
 	IOverviewData,
@@ -188,14 +187,15 @@ export class Db {
 			.where(eq(activities.id, id));
 	}
 
-	async insertActivity({ data, providerData }: IInsertActivityPayload) {
+	async insertActivity({ activity, gears }: IInsertActivityPayload) {
 		let activityId = "";
-		if (providerData) {
+		const providerActivity = activity.providerActivity;
+		if (providerActivity) {
 			// search first by activitiesConnection
 			const dbActivityConnection = await this._client
 				.select()
 				.from(activitiesConnection)
-				.where(eq(activitiesConnection.providerActivityId, providerData.id))
+				.where(eq(activitiesConnection.providerActivityId, providerActivity.id))
 				.limit(1);
 			if (dbActivityConnection[0]?.activityId) {
 				activityId = dbActivityConnection[0].activityId;
@@ -214,7 +214,7 @@ export class Db {
 			.where(
 				activityId
 					? eq(activities.id, activityId)
-					: eq(activities.timestamp, data.timestamp),
+					: eq(activities.timestamp, activity.data.timestamp),
 			)
 			.limit(1);
 
@@ -223,17 +223,17 @@ export class Db {
 			activityId = dbActivity.id;
 			const updateData: Record<string, string> = {};
 
-			if (!dbActivity.locationCountry && data.locationCountry) {
-				updateData.locationCountry = data.locationCountry;
+			if (!dbActivity.locationCountry && activity.data.locationCountry) {
+				updateData.locationCountry = activity.data.locationCountry;
 			}
-			if (!dbActivity.locationName && data.locationName) {
-				updateData.locationName = data.locationName;
+			if (!dbActivity.locationName && activity.data.locationName) {
+				updateData.locationName = activity.data.locationName;
 			}
-			if (!dbActivity.startLatitude && data.startLatitude) {
-				updateData.startLatitude = data.startLatitude.toString();
+			if (!dbActivity.startLatitude && activity.data.startLatitude) {
+				updateData.startLatitude = activity.data.startLatitude.toString();
 			}
-			if (!dbActivity.startLongitude && data.startLongitude) {
-				updateData.startLongitude = data.startLongitude.toString();
+			if (!dbActivity.startLongitude && activity.data.startLongitude) {
+				updateData.startLongitude = activity.data.startLongitude.toString();
 			}
 			if (Object.keys(updateData).length > 0) {
 				await this.editActivity(activityId, updateData);
@@ -241,18 +241,18 @@ export class Db {
 		} else {
 			activityId = uuidv7();
 			await this._client.insert(activities).values({
-				...data,
+				...activity.data,
 				id: activityId,
 			});
 		}
 
 		// if there is provider data, insert on related tables
-		if (providerData) {
+		if (providerActivity) {
 			await this._client.transaction(async (txClient) => {
 				const linkedProviderActivity = await txClient
 					.select({ id: providerActivities.id })
 					.from(providerActivities)
-					.where(eq(providerActivities.id, providerData.id))
+					.where(eq(providerActivities.id, providerActivity.id))
 					.limit(1);
 				if (linkedProviderActivity[0]) {
 					console.log(
@@ -261,27 +261,29 @@ export class Db {
 					);
 				} else {
 					await txClient.insert(providerActivities).values({
-						id: providerData.id,
-						provider: providerData.provider,
-						timestamp: providerData.timestamp,
-						original: providerData.original ? 1 : 0,
-						data: providerData.data,
+						id: providerActivity.id,
+						provider: providerActivity.provider,
+						timestamp: providerActivity.timestamp,
+						original: providerActivity.original ? 1 : 0,
+						data: providerActivity.data,
 					});
 				}
 
 				const linkedActivityConnection = await txClient
 					.select({ activityId: activitiesConnection.activityId })
 					.from(activitiesConnection)
-					.where(eq(activitiesConnection.providerActivityId, providerData.id))
+					.where(
+						eq(activitiesConnection.providerActivityId, providerActivity.id),
+					)
 					.limit(1);
 				if (linkedActivityConnection[0]) {
 					console.log(
-						`${activityId} | ${providerData.id} => activitiesConnection already connected`,
+						`${activityId} | ${providerActivity.id} => activitiesConnection already connected`,
 					);
 				} else {
 					await txClient.insert(activitiesConnection).values({
 						activityId,
-						providerActivityId: providerData.id,
+						providerActivityId: providerActivity.id,
 					});
 				}
 			});
@@ -293,6 +295,7 @@ export class Db {
 	getLastProviderActivity(provider: Providers) {
 		return this._client
 			.select({
+				id: providerActivities.id,
 				timestamp: providerActivities.timestamp,
 			})
 			.from(providerActivities)

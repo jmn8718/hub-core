@@ -1,5 +1,5 @@
 {
-  "name": "@repo/clients",
+  "name": "@repo/dates",
   "version": "0.0.0",
   "type": "module",
   "sideEffects": false,
@@ -16,13 +16,7 @@
     "clean": "rimraf .turbo node_modules"
   },
   "dependencies": {
-    "@repo/dates": "workspace:*",
-    "@repo/db": "workspace:*",
-    "@repo/types": "workspace:*",
-    "@supabase/supabase-js": "2.48.1",
-    "coros-connect": "0.1.4",
-    "garmin-connect": "1.6.2",
-    "p-map": "7.0.2"
+    "dayjs": "1.11.13"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

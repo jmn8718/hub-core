@@ -3,10 +3,14 @@ import { type Credentials, Providers } from "@repo/types";
 import pMap from "p-map";
 import type { Client } from "./Client.js";
 import { CorosClient } from "./coros.js";
+import { GarminClient } from "./garmin.js";
 
 const initializeProviderClient = (provider: Providers) => {
 	if (provider === Providers.COROS) {
 		return new CorosClient();
+	}
+	if (provider === Providers.GARMIN) {
+		return new GarminClient();
 	}
 	throw new Error("Invalid client");
 };
@@ -51,7 +55,10 @@ export class ProviderManager {
 		return this._db
 			.getLastProviderActivity(provider)
 			.then((lastDbProviderActivity) =>
-				client.sync(lastDbProviderActivity?.timestamp),
+				client.sync({
+					id: lastDbProviderActivity?.id,
+					lastTimestamp: lastDbProviderActivity?.timestamp,
+				}),
 			)
 			.then((activities) => {
 				if (activities.length === 0) return [];

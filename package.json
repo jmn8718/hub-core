@@ -3,19 +3,24 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "clean": "turbo run clean",
+    "clean": "turbo run clean && rimraf .turbo node_modules",
     "dev": "turbo run dev",
     "check-types": "turbo run check-types",
     "format": "biome check --write",
     "fix": "biome check --fix --unsafe"
-
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "rimraf": "6.0.1",
     "turbo": "2.4.2"
   },
   "packageManager": "pnpm@8.15.6",
   "engines": {
     "node": ">=18"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "garmin-connect@1.6.2": "patches/garmin-connect@1.6.2.patch"
+    }
   }
 }

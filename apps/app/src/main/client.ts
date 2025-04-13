@@ -14,4 +14,13 @@ export const initializeClients = async () => {
 		manager.initializeClient(Providers.COROS);
 		manager.connect(Providers.COROS, corosCredentials);
 	}
+
+	const garminCredentials = storage.getValue<Credentials>(
+		StorageKeys.GARMIN_CREDENTIALS,
+	);
+
+	if (garminCredentials) {
+		manager.initializeClient(Providers.GARMIN);
+		manager.connect(Providers.GARMIN, garminCredentials);
+	}
 };

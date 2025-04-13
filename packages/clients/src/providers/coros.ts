@@ -1,3 +1,4 @@
+import { dayjs } from "@repo/dates";
 import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
 import {
 	ActivitySubType,
@@ -6,7 +7,6 @@ import {
 	Providers,
 } from "@repo/types";
 import { type ActivityData, CorosApi } from "coros-connect";
-import dayjs from "dayjs";
 import pMap from "p-map";
 import type { Client } from "./Client.js";
 
@@ -127,25 +127,30 @@ export class CorosClient implements Client {
 		return this._client.getActivityDetails(id);
 	}
 
-	public async syncActivity(
-		activityId: string,
-	): Promise<IInsertActivityPayload> {
-		const activity = await this.getActivity(activityId);
-		const data = mapActivityDetails(activity, activityId);
-		return {
-			data,
-			providerData: {
-				id: activityId,
-				provider: CorosClient.PROVIDER,
-				original: data.manufacturer.toLowerCase().includes("coros"),
-				timestamp: data.timestamp,
-				// at the moment it does not store all the raw data as it includes a lot of data
-				data: "{}", // JSON.stringify(activity),
-			},
-		};
+	public syncActivity(activityId: string): Promise<IInsertActivityPayload> {
+		return this.getActivity(activityId).then((activity) => {
+			const data = mapActivityDetails(activity, activityId);
+			return {
+				activity: {
+					data,
+					providerActivity: {
+						id: activityId,
+						provider: CorosClient.PROVIDER,
+						original: data.manufacturer.toLowerCase().includes("coros"),
+						timestamp: data.timestamp,
+						// at the moment it does not store all the raw data as it includes a lot of data
+						data: "{}", // JSON.stringify(activity),
+					},
+				},
+			};
+		});
 	}
 
-	async sync(lastTimestamp?: string): Promise<IInsertActivityPayload[]> {
+	async sync({
+		lastTimestamp,
+	}: {
+		lastTimestamp?: string;
+	}): Promise<IInsertActivityPayload[]> {
 		const newActivities = await this.getActivities(lastTimestamp);
 		console.log(
 			`${CorosClient.PROVIDER}: ${newActivities.length} new activities from ${lastTimestamp || "now"}`,

@@ -46,6 +46,14 @@ export const Home = () => {
 				});
 			}
 		});
+		getValue(StorageKeys.GARMIN_CREDENTIALS).then((value) => {
+			if (value) {
+				setAvailableProviders((current) => {
+					if (current.includes(Providers.GARMIN)) return current;
+					return [...current, Providers.GARMIN];
+				});
+			}
+		});
 	}, []);
 	return (
 		<>

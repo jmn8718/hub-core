@@ -12,3 +12,11 @@ if (process.env.COROS_USERNAME && process.env.COROS_PASSWORD) {
 		password: process.env.COROS_PASSWORD,
 	});
 }
+
+if (process.env.GARMIN_USERNAME && process.env.GARMIN_PASSWORD) {
+	provider.initializeClient(Providers.GARMIN);
+	provider.connect(Providers.GARMIN, {
+		username: process.env.GARMIN_USERNAME,
+		password: process.env.GARMIN_PASSWORD,
+	});
+}
