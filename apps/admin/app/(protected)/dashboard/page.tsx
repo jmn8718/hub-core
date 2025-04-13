@@ -1,5 +1,5 @@
-import { formatDate } from "@/lib/dates";
 import db from "@/lib/db";
+import { formatDateWithTime } from "@repo/dates";
 import { desc, webhooks } from "@repo/db";
 import { ScrollArea } from "@repo/ui";
 import Link from "next/link";
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
 									</td>
 									<td className="px-4">{webhook.id}</td>
 									<td className="px-4">
-										{formatDate(webhook.created_at, "YYYY-MM-DD HH:mm:ss")}
+										{formatDateWithTime(webhook.created_at)}
 									</td>
 									<td className="px-4">{webhook.object_type}</td>
 									<td className="px-4">{webhook.aspect_type}</td>

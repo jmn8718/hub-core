@@ -1,9 +1,9 @@
+import { formatDate } from "@repo/dates";
 // import { Bounce, toast } from 'react-toastify';
 import { type DbActivityPopulated, GearType, type IDbGear } from "@repo/types";
 import { NotebookPen } from "lucide-react";
 import { useState } from "react";
 import { useLoading } from "../../../contexts/LoadingContext.js";
-import { formatDate } from "../../../utils/date.js";
 import { formatDistance, formatDuration } from "../../../utils/formatters.js";
 import IconButton from "../../IconButton.js";
 
@@ -19,7 +19,7 @@ const prepareObsidianFile = (data: DbActivityPopulated, gears: IDbGear[]) => {
 	const shoe = gears.find(({ id }) => id === shoeGear?.id);
 	return [
 		"---",
-		`date: ${formatDate(data.timestamp, "YYYY-MM-DDTHH:mm:ss")}`,
+		`date: ${formatDate(data.timestamp, { format: "YYYY-MM-DDTHH:mm:ss" })}`,
 		`time: ${formatDuration(data.duration)}`,
 		`distance: ${formatDistance(data.distance, false)}`,
 		`shoes: ${shoe?.code ?? ""}`,

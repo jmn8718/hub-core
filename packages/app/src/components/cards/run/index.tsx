@@ -1,3 +1,4 @@
+import { formatDateWithTime } from "@repo/dates";
 import {
 	AppType,
 	type DbActivityPopulated,
@@ -22,7 +23,6 @@ import {
 	useStore,
 	useTheme,
 } from "../../../contexts/index.js";
-import { formatDateWithTime } from "../../../utils/date.js";
 import { formatDistance, formatDuration } from "../../../utils/formatters.js";
 import ActivityTypeIcon from "../../ActivityTypeIcon.js";
 import { Box } from "../../Box.js";

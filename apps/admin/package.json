@@ -13,11 +13,11 @@
   "dependencies": {
     "@libsql/client": "0.15.0",
     "@repo/clients": "workspace:*",
+    "@repo/dates": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/ui": "workspace:*",
     "@supabase/auth-helpers-nextjs": "0.10.0",
     "@supabase/supabase-js": "2.48.1",
-    "dayjs": "1.11.13",
     "lucide-react": "0.475.0",
     "next": "15.1.6",
     "react": "19.0.0",

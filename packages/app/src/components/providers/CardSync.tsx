@@ -2,6 +2,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 
+import { formatRelativeTime } from "@repo/dates";
 import { type Providers, StorageKeys } from "@repo/types";
 import { cn } from "@repo/ui";
 import { AlertCircle, RefreshCw } from "lucide-react";
@@ -11,7 +12,6 @@ import {
 	useStore,
 	useTheme,
 } from "../../contexts/index.js";
-import { formatRelativeTime } from "../../utils/date.js";
 import { Box } from "../Box.js";
 import { H2 } from "../H2.js";
 

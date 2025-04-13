@@ -1,9 +1,9 @@
+import { isSameOrAfterDay, isSameOrBeforeDay } from "@repo/dates";
 import type { GearType, IDbGear } from "@repo/types";
 import { cn } from "@repo/ui";
 import { Plus, X } from "lucide-react";
 import { useMemo } from "react";
 import { useTheme } from "../../../contexts/ThemeContext.js";
-import { isSameOrAfterDay, isSameOrBeforeDay } from "../../../utils/date.js";
 
 interface GearSelectorProps {
 	activityDate: string;

@@ -1,6 +1,6 @@
-import { isAfter } from "@/lib/dates";
 import db from "@/lib/db";
 import strava from "@/lib/strava";
+import { isAfter } from "@repo/dates";
 import { eq, profiles } from "@repo/db";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";

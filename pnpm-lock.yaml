@@ -31,6 +31,9 @@ importers:
       '@repo/clients':
         specifier: workspace:*
         version: link:../../packages/clients
+      '@repo/dates':
+        specifier: workspace:*
+        version: link:../../packages/dates
       '@repo/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -43,9 +46,6 @@ importers:
       '@supabase/supabase-js':
         specifier: 2.48.1
         version: 2.48.1
-      dayjs:
-        specifier: 1.11.13
-        version: 1.11.13
       lucide-react:
         specifier: 0.475.0
         version: 0.475.0(react@19.0.0)
@@ -290,12 +290,12 @@ importers:
       '@repo/clients':
         specifier: workspace:*
         version: link:../clients
+      '@repo/dates':
+        specifier: workspace:*
+        version: link:../dates
       '@repo/ui':
         specifier: workspace:*
         version: link:../ui
-      dayjs:
-        specifier: 1.11.13
-        version: 1.11.13
       lucide-react:
         specifier: 0.475.0
         version: 0.475.0(react@19.0.0)
