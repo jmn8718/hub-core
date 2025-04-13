@@ -8,6 +8,7 @@ import {
 	CheckCircle2,
 	FolderSync,
 	Loader2,
+	RefreshCw,
 	RotateCcw,
 	Save,
 	XCircle,
@@ -164,6 +165,35 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 			setLocalLoading(false);
 		}, 200);
 	};
+
+	const handleSync = async () => {
+		if (validationStatus !== "success") return;
+		setLocalLoading(true);
+
+		try {
+			const result = await client.providerSync(provider);
+			if (result.success) {
+				toast.success("Activities synced", { transition: Bounce });
+				setValue(
+					StorageKeys[`${provider}_LAST_SYNC`],
+					new Date().toISOString(),
+				);
+			} else {
+				throw new Error(result.error);
+			}
+		} catch (error) {
+			toast.error((error as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		}
+
+		setTimeout(() => {
+			setLocalLoading(false);
+		}, 200);
+	};
+
 	const getValidationButton = () => {
 		const canValidate =
 			!hasChanges &&
@@ -206,6 +236,7 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 		}
 	};
 
+	const disabledAction = isLocalLoading || validationStatus !== "success";
 	return (
 		<Box>
 			<SectionContainer hasBorder>
@@ -247,12 +278,18 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 				</div>
 			</SectionContainer>
 			<SectionContainer>
-				<div className="flex gap-2 items-center">
+				<div className="flex gap-4 items-center">
 					<ActionButton
 						icon={<FolderSync size={20} />}
 						onClick={handlePullGear}
-						text="Pull gear"
-						disabled={isLocalLoading || validationStatus !== "success"}
+						text="Sync Gears"
+						disabled={disabledAction}
+					/>
+					<ActionButton
+						icon={<RefreshCw size={20} />}
+						onClick={handleSync}
+						text="Sync Activities"
+						disabled={disabledAction}
 					/>
 				</div>
 			</SectionContainer>
