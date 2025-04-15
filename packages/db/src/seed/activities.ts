@@ -1,8 +1,8 @@
 import "dotenv/config";
 import { faker } from "@faker-js/faker";
 import { ActivityType, GearType } from "@repo/types";
-import { createDbClient } from "../client";
-import { activities, activityGears, gears } from "../schemas/app";
+import { createDbClient } from "../client.js";
+import { activities, activityGears, gears } from "../schemas/app.js";
 
 async function run() {
 	const client = createDbClient(

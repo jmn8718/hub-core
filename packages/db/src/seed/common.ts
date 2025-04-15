@@ -1,3 +1,5 @@
+// @ts-nocheck
+ 
 import { ActivitySubType, ActivityType, GearType } from "@repo/types";
 import { uuidv7 } from "uuidv7";
 import type { DbClient } from "../client.js";
