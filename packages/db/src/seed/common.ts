@@ -11,13 +11,8 @@ import {
 	providerGears,
 } from "../schemas/app.js";
 
-import activitiesDbData from "./data/activities.json";
-import activitiesConnectionDbData from "./data/activities_connection.json";
-import activityGearsDbData from "./data/activity_gear.json";
-import gearsDbData from "./data/gear.json";
-import gearsConnectionDbData from "./data/gear_connection.json";
-import providerActivitiesDbData from "./data/provider_activities.json";
-import providerGearsDbData from "./data/provider_gear.json";
+
+import { data } from '../mocks/index.js';
 
 export function clearData(client: DbClient) {
 	return Promise.all([
@@ -38,7 +33,7 @@ export async function importData(client: DbClient) {
 	const storedActivities: string[] = [];
 
 	const activitiesData = await client.insert(activities).values(
-		activitiesDbData.data.map((data) => {
+		data.activitiesDbData.map((data) => {
 			const id = uuidv7();
 			activitiesId[data.id] = id;
 			storedActivities.push(data.id);
@@ -52,33 +47,39 @@ export async function importData(client: DbClient) {
 				locationName: data.location_name || "",
 				locationCountry: "",
 				type: ActivityType.RUN,
-				subtype: data.is_race ? ActivitySubType.ROAD : ActivitySubType.EASY_RUN,
-				isEvent: data.is_race || 0,
+				subtype: data.is_event ? ActivitySubType.ROAD : ActivitySubType.EASY_RUN,
+				isEvent: data.is_event || 0,
 				startLatitude: data.start_latitude || 0,
 				startLongitude: data.start_longitude || 0,
 				notes: data.notes || "",
 			};
 		}),
 	);
+
+	const extractBrandName = (name: string) => {
+		const [brandName] = name.split(' ') as [string]
+		return brandName.replace(/(?:^|\s|["'([{])+\S/g, match => match.toUpperCase())
+	}
+	
 	const gearsData = await client.insert(gears).values(
-		gearsDbData.data.map((data) => {
+		data.gearsDbData.map((data) => {
 			const id = uuidv7();
 			gearsId[data.id] = id;
 			return {
 				id,
 				name: data.name,
 				code: data.code,
-				brand: data.type === "insole" ? "sidas" : data.brand,
+				brand: extractBrandName(data.name),
 				type: data.type === "insole" ? GearType.INSOLE : GearType.SHOES,
 				dateBegin: data.date_begin,
 				dateEnd: data.date_end,
-				maximumDistance: data.maximum_distance,
+				maximumDistance: Number.parseInt(data.maximum_distance),
 			};
 		}),
 	);
 
 	const activityGearsData = await client.insert(activityGears).values(
-		activityGearsDbData.data
+		data.activityGearsDbData
 			.filter((data) => storedActivities.includes(data.activity_id))
 			.map((data) => {
 				const gearId = gearsId[data.gear_id];
@@ -99,7 +100,7 @@ export async function importData(client: DbClient) {
 	);
 
 	const providerGearsData = await client.insert(providerGears).values(
-		providerGearsDbData.data.map((data) => {
+		data.providerGearsDbData.map((data) => {
 			const id = uuidv7();
 			gearsId[data.id] = id;
 			return {
@@ -114,7 +115,7 @@ export async function importData(client: DbClient) {
 	const providerConnectionGearData = await client
 		.insert(gearsConnection)
 		.values(
-			gearsConnectionDbData.data.map((data) => {
+			data.gearsConnectionDbData.map((data) => {
 				const gearId = gearsId[data.gear_id];
 				const providerGearId = gearsId[data.provider_gear_id];
 				if (!gearId || !providerGearId) {
@@ -132,14 +133,14 @@ export async function importData(client: DbClient) {
 			}),
 		);
 
-	const storedProviderActivities = activitiesConnectionDbData.data.filter(
+	const storedProviderActivities = data.activitiesConnectionDbData.filter(
 		(data) => storedActivities.includes(data.activity_id),
 	);
 	const storedProviderActivitiesIds = storedProviderActivities.map(
 		({ provider_activity_id }) => provider_activity_id,
 	);
 	const providerActivityData = await client.insert(providerActivities).values(
-		providerActivitiesDbData.data
+		data.providerActivitiesDbData
 			.filter((data) => storedProviderActivitiesIds.includes(data.id))
 			.map((data) => {
 				activitiesId[data.id] = data.id.toString();
@@ -147,7 +148,7 @@ export async function importData(client: DbClient) {
 					id: data.id.toString(),
 					provider: data.provider,
 					timestamp: data.timestamp,
-					original: data.original,
+					original: data.original === '1' ? 1 : 0,
 					data: data.data,
 				};
 			}),

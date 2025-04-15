@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createDbClient } from "../client.js";
 import { webhooks } from "../schemas/webhooks.js";
-import { webhooks as webhooksData } from "./data.js";
+import { webhooks as webhooksData } from "../mocks/index.js";
 
 async function run() {
 	const db = createDbClient(
@@ -18,6 +18,9 @@ async function run() {
 	await db.insert(webhooks).values(
 		webhooksData.map((record) => ({
 			...record,
+			owner_id: record.owner_id.toString(),
+			object_id: record.object_id.toString(),
+			subscription_id: record.subscription_id.toString(),
 			event_time: record.created_at,
 		})),
 	);

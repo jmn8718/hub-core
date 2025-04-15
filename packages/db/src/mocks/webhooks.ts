@@ -4,11 +4,11 @@ export const webhooks = [
 		aspect_type: "update",
 		object_type: "activity",
 		updates: '{"title":"Afternoon Run at home"}',
-		event: null,
+		event: "",
 		owner_id: 5533532,
 		object_id: 5533532,
 		subscription_id: 5533532,
-		event_time: "event_time",
+		event_time: "2025-02-17T03:54:29.000Z",
 		created_at: "2025-02-17T03:54:29.000Z",
 	},
 	{
@@ -21,7 +21,7 @@ export const webhooks = [
 		owner_id: 5533532,
 		object_id: 5533532,
 		subscription_id: 5533532,
-		event_time: "event_time",
+		event_time: "2025-02-17T11:23:00.000Z",
 		created_at: "2025-02-17T11:23:00.000Z",
 	},
 	{
@@ -34,7 +34,7 @@ export const webhooks = [
 		owner_id: 5533532,
 		object_id: 5533532,
 		subscription_id: 5533532,
-		event_time: "event_time",
+		event_time: "2025-02-17T11:25:00.000Z",
 		created_at: "2025-02-17T11:25:00.000Z",
 	},
 	{
@@ -47,7 +47,7 @@ export const webhooks = [
 		owner_id: 5533532,
 		object_id: 5533532,
 		subscription_id: 5533532,
-		event_time: "event_time",
+		event_time: "2025-02-20T10:32:43.000Z",
 		created_at: "2025-02-20T10:32:43.000Z",
 	},
 	{
@@ -60,7 +60,7 @@ export const webhooks = [
 		owner_id: 5533532,
 		object_id: 5533532,
 		subscription_id: 5533532,
-		event_time: "event_time",
+		event_time: "2025-02-20T10:34:43.000Z",
 		created_at: "2025-02-20T10:34:43.000Z",
 	},
 	{
@@ -73,7 +73,7 @@ export const webhooks = [
 		owner_id: 5533532,
 		object_id: 5533532,
 		subscription_id: 5533532,
-		event_time: "event_time",
+		event_time: "2025-02-27T09:08:47.000Z",
 		created_at: "2025-02-27T09:08:47.000Z",
 	},
 	{
@@ -86,7 +86,7 @@ export const webhooks = [
 		owner_id: 5533532,
 		object_id: 5533532,
 		subscription_id: 5533532,
-		event_time: "event_time",
+		event_time: "2025-02-27T09:10:47.000Z",
 		created_at: "2025-02-27T09:10:47.000Z",
 	},
 	{
