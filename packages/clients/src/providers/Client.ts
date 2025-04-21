@@ -14,6 +14,11 @@ export abstract class Client {
 	abstract syncActivity(activityId: string): Promise<IInsertActivityPayload>;
 
 	abstract syncGears(): Promise<IInsertGearPayload[]>;
+	abstract linkActivityGear(activityId: string, gearId: string): Promise<void>;
+	abstract unlinkActivityGear(
+		activityId: string,
+		gearId: string,
+	): Promise<void>;
 
 	abstract getActivity(id: string): Promise<unknown>;
 }

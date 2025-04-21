@@ -12,9 +12,9 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "build": "rimraf dist & tsc",
     "check-types": "tsc --noEmit",
-    "clean": "rimraf .turbo node_modules",
+    "clean": "rimraf .turbo node_modules dist",
     "db:schema": "drizzle-kit generate --dialect sqlite --schema src/schemas/index.ts",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed:webhooks": "tsx src/seed/webhooks.ts",

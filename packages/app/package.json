@@ -16,7 +16,7 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "clean": "rimraf .turbo node_modules dist",
-    "build": "tailwindcss -i ./src/styles.css -o ./dist/styles.css && tsc",
+    "build": "rimraf dist & tailwindcss -i ./src/styles.css -o ./dist/styles.css && tsc",
     "dev:client": "vite"
   },
   "peerDependencies": {

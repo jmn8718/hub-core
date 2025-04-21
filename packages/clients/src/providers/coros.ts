@@ -170,4 +170,12 @@ export class CorosClient implements Client {
 	async syncGears(): Promise<IInsertGearPayload[]> {
 		throw new Error("Not supported");
 	}
+
+	async linkActivityGear(activityId: string, gearId: string) {
+		throw new Error("Not supported");
+	}
+
+	async unlinkActivityGear(activityId: string, gearId: string) {
+		throw new Error("Not supported");
+	}
 }

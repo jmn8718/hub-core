@@ -11,9 +11,9 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "build": "rimraf dist & tsc",
     "check-types": "tsc --noEmit",
-    "clean": "rimraf .turbo node_modules"
+    "clean": "rimraf .turbo node_modules dist"
   },
   "dependencies": {
     "dayjs": "1.11.13"

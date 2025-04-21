@@ -1,5 +1,5 @@
 // @ts-nocheck
- 
+
 import { ActivitySubType, ActivityType, GearType } from "@repo/types";
 import { uuidv7 } from "uuidv7";
 import type { DbClient } from "../client.js";
@@ -13,8 +13,7 @@ import {
 	providerGears,
 } from "../schemas/app.js";
 
-
-import { data } from '../mocks/index.js';
+import { data } from "../mocks/index.js";
 
 export function clearData(client: DbClient) {
 	return Promise.all([
@@ -49,7 +48,9 @@ export async function importData(client: DbClient) {
 				locationName: data.location_name || "",
 				locationCountry: "",
 				type: ActivityType.RUN,
-				subtype: data.is_event ? ActivitySubType.ROAD : ActivitySubType.EASY_RUN,
+				subtype: data.is_event
+					? ActivitySubType.ROAD
+					: ActivitySubType.EASY_RUN,
 				isEvent: data.is_event || 0,
 				startLatitude: data.start_latitude || 0,
 				startLongitude: data.start_longitude || 0,
@@ -59,10 +60,12 @@ export async function importData(client: DbClient) {
 	);
 
 	const extractBrandName = (name: string) => {
-		const [brandName] = name.split(' ') as [string]
-		return brandName.replace(/(?:^|\s|["'([{])+\S/g, match => match.toUpperCase())
-	}
-	
+		const [brandName] = name.split(" ") as [string];
+		return brandName.replace(/(?:^|\s|["'([{])+\S/g, (match) =>
+			match.toUpperCase(),
+		);
+	};
+
 	const gearsData = await client.insert(gears).values(
 		data.gearsDbData.map((data) => {
 			const id = uuidv7();
@@ -150,7 +153,7 @@ export async function importData(client: DbClient) {
 					id: data.id.toString(),
 					provider: data.provider,
 					timestamp: data.timestamp,
-					original: data.original === '1' ? 1 : 0,
+					original: data.original === "1" ? 1 : 0,
 					data: data.data,
 				};
 			}),
