@@ -2,6 +2,7 @@ import type { Db } from "@repo/db";
 import type {
 	ActivitiesData,
 	Credentials,
+	DbActivityPopulated,
 	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
@@ -66,6 +67,25 @@ export class WebClient implements Client {
 		}
 	}
 
+	async getActivity(activityId: string): Promise<
+		ProviderSuccessResponse<{
+			data?: DbActivityPopulated;
+		}>
+	> {
+		try {
+			const data = await this._db.getActivity(activityId);
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async editActivity(
 		id: string,
 		data: {
@@ -118,6 +138,40 @@ export class WebClient implements Client {
 
 	async setStoreValue(key: StorageKeys, value: Value): Promise<undefined> {
 		localStorage.setItem(key, JSON.stringify({ value }));
+	}
+
+	async providerGearLink(
+		activityId: string,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await this._manager.linkGear({ activityId, gearId });
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async providerGearUnlink(
+		activityId: string,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await this._manager.unlinkGear({ activityId, gearId });
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
 	}
 
 	async providerSyncGear(

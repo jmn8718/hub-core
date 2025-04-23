@@ -1,6 +1,7 @@
 import type {
 	ActivitiesData,
 	Credentials,
+	DbActivityPopulated,
 	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
@@ -23,6 +24,12 @@ export abstract class Client {
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
+		}>
+	>;
+
+	abstract getActivity(activityId: string): Promise<
+		ProviderSuccessResponse<{
+			data?: DbActivityPopulated;
 		}>
 	>;
 
@@ -52,6 +59,15 @@ export abstract class Client {
 	abstract providerSyncGear(
 		provider: Providers,
 	): Promise<ProviderSuccessResponse>;
+	abstract providerGearLink(
+		activityId: string,
+		gearId: string,
+	): Promise<ProviderSuccessResponse>;
+	abstract providerGearUnlink(
+		activityId: string,
+		gearId: string,
+	): Promise<ProviderSuccessResponse>;
+
 	abstract providerSync(provider: Providers): Promise<ProviderSuccessResponse>;
 	abstract providerConnect(
 		provider: Providers,

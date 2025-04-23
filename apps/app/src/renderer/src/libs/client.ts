@@ -3,6 +3,7 @@ import {
 	type ActivitiesData,
 	Channels,
 	type Credentials,
+	type DbActivityPopulated,
 	type GearsData,
 	type IOverviewData,
 	type ProviderSuccessResponse,
@@ -50,6 +51,28 @@ export class AppClient implements Client {
 				Channels.DB_ACTIVITIES,
 				params,
 			)) as Awaited<Promise<ActivitiesData>>;
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async getActivity(activityId: string): Promise<
+		ProviderSuccessResponse<{
+			data?: DbActivityPopulated;
+		}>
+	> {
+		try {
+			const data = (await window.electron.ipcRenderer.invoke(
+				Channels.DB_ACTIVITY,
+				activityId,
+			)) as Awaited<Promise<DbActivityPopulated | undefined>>;
 			return {
 				success: true,
 				data,
@@ -133,6 +156,46 @@ export class AppClient implements Client {
 		try {
 			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_SYNC_GEAR, {
 				provider,
+			});
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async providerGearLink(
+		activityId: string,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_GEAR_LINK, {
+				activityId,
+				gearId,
+			});
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async providerGearUnlink(
+		activityId: string,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_GEAR_UNLINK, {
+				activityId,
+				gearId,
 			});
 			return {
 				success: true,

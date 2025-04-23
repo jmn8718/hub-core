@@ -15,7 +15,7 @@ import {
 	Pencil,
 	Route,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import {
 	useDataClient,
@@ -54,38 +54,32 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 	);
 	const [activityNotes, setActivityNotes] = useState(activityData.notes || "");
 
+	useEffect(() => {
+		setActivityName(activityData.name || "");
+		setLocationName(activityData.locationName || "");
+		setLocationCountry(activityData.locationCountry || "");
+		setActivityNotes(activityData.notes || "");
+	}, [activityData]);
+
 	const refreshActivity = async () => {
-		// const result = (await window.electron.ipcRenderer.invoke(
-		//   Channels.DB_ACTIVITY_GET,
-		//   activityData.id,
-		// )) as ProviderIpcResponse<DbActivityPopulated | undefined>;
-		// if (result.success) {
-		//   if (result.data) setActivityData(result.data);
-		// } else {
-		//   toast.error(result.error, {
-		//     hideProgressBar: false,
-		//     closeOnClick: false,
-		//     transition: Bounce,
-		//   });
-		// }
+		const result = await client.getActivity(activityData.id);
+		if (result.success) {
+			if (result.data) setActivityData(result.data);
+		} else {
+			toast.error(result.error, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		}
 	};
 
 	const handleGearSelect = (type: GearType) => async (gearId: string) => {
 		setLocalLoading(true);
-		// const result = await window.electron.ipcRenderer.invoke(
-		//   Channels.ACTIVITY_GEAR_CONNECT,
-		//   {
-		//     gearId,
-		//     activityId: activityData.id,
-		//   } as IpcActivityGearParams,
-		// );
-		// if (result.success) {
-		//   setActivityData({
-		//     ...activityData,
-		//     [type === GearType.SHOES ? 'shoe_id' : 'insole_id']: gearId,
-		//   });
-		//   refreshActivity();
-		// }
+		const result = await client.providerGearLink(activityData.id, gearId);
+		if (result.success) {
+			refreshActivity();
+		}
 		setTimeout(() => {
 			setLocalLoading(false);
 		}, 250);
@@ -93,20 +87,10 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 
 	const handleGearRemove = (type: GearType) => async (gearId: string) => {
 		setLocalLoading(true);
-		// const result = await window.electron.ipcRenderer.invoke(
-		//   Channels.ACTIVITY_GEAR_REMOVE,
-		//   {
-		//     gearId,
-		//     activityId: activityData.id,
-		//   } as IpcActivityGearParams,
-		// );
-		// if (result.success) {
-		//   setActivityData({
-		//     ...activityData,
-		//     [type === GearType.SHOES ? 'shoe_id' : 'insole_id']: undefined,
-		//   });
-		//   refreshActivity();
-		// }
+		const result = await client.providerGearUnlink(activityData.id, gearId);
+		if (result.success) {
+			refreshActivity();
+		}
 		setTimeout(() => {
 			setLocalLoading(false);
 		}, 250);

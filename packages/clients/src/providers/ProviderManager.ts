@@ -79,4 +79,90 @@ export class ProviderManager {
 			return this._db.insertActivity(activityPayload);
 		});
 	}
+
+	public linkGear({
+		gearId,
+		activityId,
+	}: {
+		gearId: string;
+		activityId: string;
+	}) {
+		// first link on our local db
+		return (
+			this._db
+				.linkActivityGear(activityId, gearId)
+				// fetch providers data
+				.then(() => this._db.getGearConnections(gearId))
+				// link on provider
+				.then((connections) => {
+					return pMap(
+						connections,
+						async ({ provider, providerId }) => {
+							if (!provider || !this._clients[provider as Providers]) return;
+							// biome-ignore lint/style/noNonNullAssertion: <explanation>
+							const client = this._clients[provider as Providers]!;
+							const activityProvider = await this._db.getActivityProvider(
+								activityId,
+								provider as Providers,
+							);
+							// we can have only 1 activity on each provider
+							if (activityProvider[0]?.activityId) {
+								await client.linkActivityGear(
+									activityProvider[0].activityId,
+									// biome-ignore lint/style/noNonNullAssertion: <explanation>
+									providerId!,
+								);
+							}
+						},
+						{
+							concurrency: 1,
+							stopOnError: false,
+						},
+					);
+				})
+		);
+	}
+
+	public unlinkGear({
+		gearId,
+		activityId,
+	}: {
+		gearId: string;
+		activityId: string;
+	}) {
+		// first unlink on our local db
+		return (
+			this._db
+				.unlinkActivityGear(activityId, gearId)
+				// fetch providers data
+				.then(() => this._db.getGearConnections(gearId))
+				// unlink on provider
+				.then((connections) => {
+					return pMap(
+						connections,
+						async ({ provider, providerId }) => {
+							if (!provider || !this._clients[provider as Providers]) return;
+							// biome-ignore lint/style/noNonNullAssertion: <explanation>
+							const client = this._clients[provider as Providers]!;
+							const activityProvider = await this._db.getActivityProvider(
+								activityId,
+								provider as Providers,
+							);
+							// we can have only 1 activity on each provider
+							if (activityProvider[0]?.activityId) {
+								await client.unlinkActivityGear(
+									activityProvider[0].activityId,
+									// biome-ignore lint/style/noNonNullAssertion: <explanation>
+									providerId!,
+								);
+							}
+						},
+						{
+							concurrency: 1,
+							stopOnError: false,
+						},
+					);
+				})
+		);
+	}
 }

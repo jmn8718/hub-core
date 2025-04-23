@@ -136,7 +136,7 @@ export class CorosClient implements Client {
 					providerActivity: {
 						id: activityId,
 						provider: CorosClient.PROVIDER,
-						original: data.manufacturer.toLowerCase().includes("coros"),
+						original: data.manufacturer.toLowerCase().includes("COROS"),
 						timestamp: data.timestamp,
 						// at the moment it does not store all the raw data as it includes a lot of data
 						data: "{}", // JSON.stringify(activity),

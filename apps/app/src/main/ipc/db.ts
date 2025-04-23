@@ -23,6 +23,10 @@ ipcMain.handle(
 	},
 );
 
+ipcMain.handle(Channels.DB_ACTIVITY, async (_event, activityId: string) => {
+	return db.getActivity(activityId);
+});
+
 ipcMain.handle(
 	Channels.DB_ACTIVITY_EDIT,
 	async (

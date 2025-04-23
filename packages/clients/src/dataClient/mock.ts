@@ -1,6 +1,7 @@
 import type {
 	ActivitiesData,
 	Credentials,
+	DbActivityPopulated,
 	GearsData,
 	IOverviewData,
 	ProviderSuccessResponse,
@@ -44,6 +45,17 @@ export class MockClient implements Client {
 				cursor: "",
 				data: [],
 			},
+		};
+	}
+
+	async getActivity(activityId: string): Promise<
+		ProviderSuccessResponse<{
+			data?: DbActivityPopulated;
+		}>
+	> {
+		return {
+			success: true,
+			data: undefined,
 		};
 	}
 
@@ -93,6 +105,24 @@ export class MockClient implements Client {
 	}
 
 	async providerSyncGear(): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
+
+	async providerGearLink(
+		activityId: string,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
+
+	async providerGearUnlink(
+		activityId: string,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
 		return {
 			success: true,
 		};

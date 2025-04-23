@@ -34,3 +34,55 @@ ipcMain.handle(
 		await manager.connect(provider, credentials);
 	},
 );
+
+ipcMain.handle(
+	Channels.PROVIDERS_SYNC_GEAR,
+	async (
+		_event,
+		{
+			provider,
+		}: {
+			provider: Providers;
+		},
+	) => {
+		await manager.syncGear(provider);
+	},
+);
+
+ipcMain.handle(
+	Channels.PROVIDERS_GEAR_LINK,
+	async (
+		_event,
+		{
+			gearId,
+			activityId,
+		}: {
+			gearId: string;
+			activityId: string;
+		},
+	) => {
+		await manager.linkGear({
+			gearId,
+			activityId,
+		});
+	},
+);
+
+ipcMain.handle(
+	Channels.PROVIDERS_GEAR_UNLINK,
+	async (
+		_event,
+		{
+			gearId,
+			activityId,
+		}: {
+			gearId: string;
+			activityId: string;
+		},
+	) => {
+		await manager.unlinkGear({
+			gearId,
+			activityId,
+		});
+	},
+);
