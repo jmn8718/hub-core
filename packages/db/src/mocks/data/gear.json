@@ -1,3 +1,37 @@
 {
-  "data": []
+  "data": [
+    {
+      "id": "wzxh20u9wf54hbyd4sc02lgd",
+      "uuid": null,
+      "name": "Nike Infinity React 2",
+      "code": "nike-infinity-react-2-white",
+      "brand": "Other",
+      "type": "shoes",
+      "date_begin": "2023-09-02T00:00:00.0",
+      "date_end": null,
+      "maximum_distance": "700000"
+    },
+    {
+      "id": "mu0is2f6j12d9v5c9vrdosou",
+      "uuid": null,
+      "name": "SIDAS Insole XL 2",
+      "code": "XL-2",
+      "brand": "Other",
+      "type": "insole",
+      "date_begin": "2024-08-30T00:00:00.0",
+      "date_end": null,
+      "maximum_distance": "1000000"
+    },
+    {
+      "id": "m204wbth6oyldi9krrm5ue2o",
+      "uuid": null,
+      "name": "Nike Pegasus Shield",
+      "code": "nike-pegasus-shield-black",
+      "brand": "Other",
+      "type": "shoes",
+      "date_begin": "2024-11-14T00:00:00.0",
+      "date_end": null,
+      "maximum_distance": "700000"
+    }
+  ]
 }

@@ -36,6 +36,39 @@ import type {
 	IInsertGearPayload,
 } from "./types/index.js";
 
+function mapActivityRow({
+	connections,
+	gears,
+	isEvent,
+	...row
+}: {
+	gears: unknown;
+	connections: unknown;
+	id: string;
+	name: string;
+	timestamp: string;
+	distance: number | null;
+	duration: number | null;
+	manufacturer: string | null;
+	locationName: string | null;
+	locationCountry: string | null;
+	type: string;
+	subtype: string | null;
+	notes: string | null;
+	isEvent: number | null;
+	startLatitude: number | null;
+	startLongitude: number | null;
+}): DbActivityPopulated {
+	return {
+		...row,
+		isEvent: isEvent === 1 ? 1 : 0,
+		gears: (gears ? JSON.parse(gears as string) : []) as IGear[],
+		connections: (connections
+			? JSON.parse(connections as string)
+			: []) as IConnection[],
+	} as DbActivityPopulated;
+}
+
 export class Db {
 	private _client: DbClient;
 
@@ -72,6 +105,63 @@ export class Db {
 			month: row.month as string,
 		}));
 	}
+
+	getActivity(activityId: string): Promise<DbActivityPopulated | undefined> {
+		const connections = this._client.$with("connections").as(
+			this._client
+				.select({
+					activityId: activitiesConnection.activityId,
+					connections: sql`json_group_array(
+					json_object(
+						'id', provider_activities.id,
+						'provider', provider_activities.provider,
+						'original', provider_activities.original
+					)
+				)`.as("connections"),
+				})
+				.from(activitiesConnection)
+				.leftJoin(
+					providerActivities,
+					eq(activitiesConnection.providerActivityId, providerActivities.id),
+				)
+				.groupBy(activitiesConnection.activityId),
+		);
+
+		const groupedGears = this._client.$with("groupedGears").as(
+			this._client
+				.select({
+					activityId: activityGears.activityId,
+					gears: sql`json_group_array(
+						json_object(
+						'id', gears.id,
+						'type', gears.type
+					)
+						
+					)`.as("gears"),
+				})
+				.from(activityGears)
+				.leftJoin(gears, eq(activityGears.gearId, gears.id))
+				.groupBy(activityGears.activityId),
+		);
+
+		return this._client
+			.with(connections, groupedGears)
+			.select({
+				...getTableColumns(activities),
+				connections: connections.connections,
+				gears: groupedGears.gears,
+			})
+			.from(activities)
+			.where(eq(activities.id, activityId))
+			.leftJoin(connections, eq(activities.id, connections.activityId))
+			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId))
+			.limit(1)
+			.then((data) => {
+				if (!data[0]) return;
+				return mapActivityRow(data[0]);
+			});
+	}
+
 	async getActivities({
 		limit = 20,
 		cursor,
@@ -138,16 +228,7 @@ export class Db {
 		]);
 
 		const dataCount = result[0][0]?.count || 0;
-		const data = result[1].map(
-			({ connections, gears, ...row }) =>
-				({
-					...row,
-					gears: (gears ? JSON.parse(gears as string) : []) as IGear[],
-					connections: (connections
-						? JSON.parse(connections as string)
-						: []) as IConnection[],
-				}) as DbActivityPopulated,
-		);
+		const data = result[1].map(mapActivityRow);
 		return {
 			count: dataCount,
 			data,
@@ -305,7 +386,7 @@ export class Db {
 			.then((data) => data[0]);
 	}
 
-	async insertGear({ data, provider, providerId }: IInsertGearPayload) {
+	insertGear({ data, provider, providerId }: IInsertGearPayload) {
 		return this._client.transaction(async (tx) => {
 			const providerGear = await tx
 				.select({ id: providerGears.id })
@@ -387,20 +468,52 @@ export class Db {
 		});
 	}
 
-	async linkActivityGear(activityId: string, gearId: string) {
-		await this._client.insert(activityGears).values({
+	linkActivityGear(activityId: string, gearId: string) {
+		return this._client.insert(activityGears).values({
 			gearId,
 			activityId,
 		});
 	}
 
-	async unlinkActivityGear(activityId: string, gearId: string) {
-		await this._client
+	unlinkActivityGear(activityId: string, gearId: string) {
+		return this._client
 			.delete(activityGears)
 			.where(
 				and(
 					eq(activityGears.activityId, activityId),
 					eq(activityGears.gearId, gearId),
+				),
+			);
+	}
+
+	getGearConnections(gearId: string) {
+		return this._client
+			.select({
+				provider: providerGears.provider,
+				providerId: providerGears.providerId,
+			})
+			.from(gearsConnection)
+			.where(eq(gearsConnection.gearId, gearId))
+			.leftJoin(
+				providerGears,
+				eq(gearsConnection.providerGearId, providerGears.id),
+			);
+	}
+
+	getActivityProvider(activityId: string, provider: Providers) {
+		return this._client
+			.select({
+				activityId: providerActivities.id,
+			})
+			.from(activitiesConnection)
+			.leftJoin(
+				providerActivities,
+				eq(providerActivities.id, activitiesConnection.providerActivityId),
+			)
+			.where(
+				and(
+					eq(activitiesConnection.activityId, activityId),
+					eq(providerActivities.provider, provider),
 				),
 			);
 	}

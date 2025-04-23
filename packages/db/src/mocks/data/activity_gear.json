@@ -1,3 +1,20 @@
 {
-  "data": []
+  "data": [
+    {
+      "activity_id": "ziqhqnmpp04356kd3jmq4rbu",
+      "gear_id": "wzxh20u9wf54hbyd4sc02lgd"
+    },
+    {
+      "activity_id": "ziqhqnmpp04356kd3jmq4rbu",
+      "gear_id": "mu0is2f6j12d9v5c9vrdosou"
+    },
+    {
+      "activity_id": "baafvctyx0iw4parwyjr8e7r",
+      "gear_id": "mu0is2f6j12d9v5c9vrdosou"
+    },
+    {
+      "activity_id": "fvn6jqe65pm5bqbz2idpw8nz",
+      "gear_id": "m204wbth6oyldi9krrm5ue2o"
+    }
+  ]
 }

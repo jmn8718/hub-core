@@ -1,3 +1,16 @@
 {
-  "data": []
+  "data": [
+    {
+      "gear_id": "wzxh20u9wf54hbyd4sc02lgd",
+      "provider_gear_id": "34951733"
+    },
+    {
+      "gear_id": "mu0is2f6j12d9v5c9vrdosou",
+      "provider_gear_id": "41142267"
+    },
+    {
+      "gear_id": "m204wbth6oyldi9krrm5ue2o",
+      "provider_gear_id": "41079876"
+    }
+  ]
 }
