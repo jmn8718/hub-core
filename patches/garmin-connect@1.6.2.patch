@@ -144,10 +144,10 @@ deleted file mode 100644
 index 1943bb64881b6a4f0abaf5dc1984f5b812c45b61..0000000000000000000000000000000000000000
 diff --git a/dist/index.cjs b/dist/index.cjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d42a6e13f0
+index 0000000000000000000000000000000000000000..56fa7d81ae66739629c7b1bf15b6e0444c02ea08
 --- /dev/null
 +++ b/dist/index.cjs
-@@ -0,0 +1,991 @@
+@@ -0,0 +1,996 @@
 +"use strict";
 +var __create = Object.create;
 +var __defProp = Object.defineProperty;
@@ -192,7 +192,7 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +var import_form_data2 = __toESM(require("form-data"), 1);
 +var import_lodash2 = __toESM(require("lodash"), 1);
 +var import_luxon2 = require("luxon");
-+var fs2 = __toESM(require("fs"), 1);
++var fs = __toESM(require("fs"), 1);
 +var path = __toESM(require("path"), 1);
 +
 +// src/common/HttpClient.ts
@@ -203,10 +203,10 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +var import_oauth_1 = __toESM(require("oauth-1.0a"), 1);
 +var import_qs = __toESM(require("qs"), 1);
 +var import_crypto = require("crypto");
-+var CSRF_RE = new RegExp('name="_csrf"\\s+value="(.+?)"');
-+var TICKET_RE = new RegExp('ticket=([^"]+)"');
-+var ACCOUNT_LOCKED_RE = new RegExp('var statuss*=s*"([^"]*)"');
-+var PAGE_TITLE_RE = new RegExp("<title>([^<]*)</title>");
++var CSRF_RE = /name="_csrf"\s+value="(.+?)"/;
++var TICKET_RE = /ticket=([^"]+)"/;
++var ACCOUNT_LOCKED_RE = /var statuss*=s*"([^"]*)"/;
++var PAGE_TITLE_RE = /<title>([^<]*)<\/title>/;
 +var USER_AGENT_CONNECTMOBILE = "com.garmin.android.apps.connectmobile";
 +var USER_AGENT_BROWSER = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36";
 +var OAUTH_CONSUMER_URL = "https://thegarth.s3.amazonaws.com/oauth_consumer.json";
@@ -260,7 +260,7 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +    );
 +    this.client.interceptors.request.use(async (config2) => {
 +      if (this.oauth2Token) {
-+        config2.headers.Authorization = "Bearer " + this.oauth2Token.access_token;
++        config2.headers.Authorization = `Bearer ${this.oauth2Token.access_token}`;
 +      }
 +      return config2;
 +    });
@@ -280,18 +280,22 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +      }
 +    }
 +  }
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async get(url, config2) {
 +    const response = await this.client.get(url, config2);
 +    return response?.data;
 +  }
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async post(url, data, config2) {
 +    const response = await this.client.post(url, data, config2);
 +    return response?.data;
 +  }
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async put(url, data, config2) {
 +    const response = await this.client.put(url, data, config2);
 +    return response?.data;
 +  }
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async delete(url, config2) {
 +    const response = await this.client.post(url, null, {
 +      ...config2,
@@ -418,6 +422,7 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +      throw new Error("No Oauth2Token or Oauth1Token");
 +    }
 +    const oauth1 = {
++      // biome-ignore lint/style/noNonNullAssertion: <explanation>
 +      oauth: this.getOauthClient(this.OAUTH_CONSUMER),
 +      token: this.oauth1Token
 +    };
@@ -484,26 +489,24 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +    this.oauth2Token = this.setOauth2TokenExpiresAt(response);
 +  }
 +  setOauth2TokenExpiresAt(token) {
-+    token["last_update_date"] = import_luxon.DateTime.now().toLocal().toString();
-+    token["expires_date"] = import_luxon.DateTime.fromSeconds(import_luxon.DateTime.now().toSeconds() + token["expires_in"]).toLocal().toString();
-+    token["expires_at"] = import_luxon.DateTime.now().toSeconds() + token["expires_in"];
-+    token["refresh_token_expires_at"] = import_luxon.DateTime.now().toSeconds() + token["refresh_token_expires_in"];
++    token.last_update_date = import_luxon.DateTime.now().toLocal().toString();
++    token.expires_date = import_luxon.DateTime.fromSeconds(import_luxon.DateTime.now().toSeconds() + token.expires_in).toLocal().toString();
++    token.expires_at = import_luxon.DateTime.now().toSeconds() + token.expires_in;
++    token.refresh_token_expires_at = import_luxon.DateTime.now().toSeconds() + token.refresh_token_expires_in;
 +    return token;
 +  }
 +};
 +
 +// src/utils.ts
-+var fs = __toESM(require("fs"), 1);
++var import_node_fs = require("fs");
 +var checkIsDirectory = /* @__PURE__ */ __name((filePath) => {
-+  return fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory();
++  return (0, import_node_fs.existsSync)(filePath) && (0, import_node_fs.lstatSync)(filePath).isDirectory();
 +}, "checkIsDirectory");
 +var createDirectory = /* @__PURE__ */ __name((directoryPath) => {
-+  fs.mkdirSync(directoryPath);
++  (0, import_node_fs.mkdirSync)(directoryPath);
 +}, "createDirectory");
 +var writeToFile = /* @__PURE__ */ __name((filePath, data) => {
-+  fs.writeFileSync(filePath, data, (error) => {
-+    if (error) throw error;
-+  });
++  (0, import_node_fs.writeFileSync)(filePath, data);
 +}, "writeToFile");
 +
 +// src/garmin/UrlClass.ts
@@ -814,14 +817,12 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +  }
 +  loadTokenByFile(dirPath) {
 +    if (!checkIsDirectory(dirPath)) {
-+      throw new Error("loadTokenByFile: Directory not found: " + dirPath);
++      throw new Error(`loadTokenByFile: Directory not found: ${dirPath}`);
 +    }
-+    let oauth1Data = fs2.readFileSync(path.join(dirPath, "oauth1_token.json"));
-+    const oauth1 = JSON.parse(oauth1Data);
-+    this.client.oauth1Token = oauth1;
-+    let oauth2Data = fs2.readFileSync(path.join(dirPath, "oauth2_token.json"));
-+    const oauth2 = JSON.parse(oauth2Data);
-+    this.client.oauth2Token = oauth2;
++    const oauth1Data = fs.readFileSync(path.join(dirPath, "oauth1_token.json"));
++    this.client.oauth1Token = JSON.parse(oauth1Data);
++    const oauth2Data = fs.readFileSync(path.join(dirPath, "oauth2_token.json"));
++    this.client.oauth2Token = JSON.parse(oauth2Data);
 +  }
 +  exportToken() {
 +    if (!this.client.oauth1Token || !this.client.oauth2Token) {
@@ -837,22 +838,22 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +    this.client.oauth1Token = oauth1;
 +    this.client.oauth2Token = oauth2;
 +  }
-+  async getUserSettings() {
++  getUserSettings() {
 +    return this.client.get(this.url.USER_SETTINGS);
 +  }
-+  async getUserProfile() {
++  getUserProfile() {
 +    return this.client.get(this.url.USER_PROFILE);
 +  }
-+  async getActivities(start, limit, activityType, subActivityType) {
++  getActivities(start, limit, activityType, subActivityType) {
 +    return this.client.get(this.url.ACTIVITIES, {
 +      params: { start, limit, activityType, subActivityType }
 +    });
 +  }
-+  async getActivity(activity) {
++  getActivity(activity) {
 +    if (!activity.activityId) throw new Error("Missing activityId");
 +    return this.client.get(this.url.ACTIVITY + activity.activityId);
 +  }
-+  async countActivities() {
++  countActivities() {
 +    return this.client.get(this.url.STAT_ACTIVITIES, {
 +      params: {
 +        aggregation: "lifetime",
@@ -862,17 +863,24 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +      }
 +    });
 +  }
-+  async getActivityGear(activityId) {
++  getGears(userProfilePk) {
++    return this.client.get(this.url.ACTIVITY_GEAR, {
++      params: {
++        userProfilePk
++      }
++    });
++  }
++  getActivityGear(activityId) {
 +    return this.client.get(this.url.ACTIVITY_GEAR, {
 +      params: {
 +        activityId
 +      }
 +    });
 +  }
-+  async linkActivityGear(gearUuid, activityId) {
++  linkActivityGear(gearUuid, activityId) {
 +    return this.client.put(this.url.ACTIVITY_GEAR_LINK(gearUuid, activityId), {});
 +  }
-+  async unlinkActivityGear(gearUuid, activityId) {
++  unlinkActivityGear(gearUuid, activityId) {
 +    return this.client.put(this.url.ACTIVITY_GEAR_UNLINK(gearUuid, activityId), {});
 +  }
 +  async downloadOriginalActivityData(activity, dir, type = "zip") {
@@ -892,35 +900,33 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +        responseType: "arraybuffer"
 +      });
 +    } else {
-+      throw new Error("downloadOriginalActivityData - Invalid type: " + type);
++      throw new Error(`downloadOriginalActivityData - Invalid type: ${type}`);
 +    }
 +    writeToFile(path.join(dir, `${activity.activityId}.${type}`), fileBuffer);
 +  }
-+  async uploadActivity(file, format = "fit") {
++  uploadActivity(file, format = "fit") {
 +    const detectedFormat = (format || path.extname(file))?.toLowerCase();
 +    if (!import_lodash2.default.includes(UploadFileType, detectedFormat)) {
-+      throw new Error("uploadActivity - Invalid format: " + format);
++      throw new Error(`uploadActivity - Invalid format: ${format}`);
 +    }
-+    const fileBuffer = fs2.createReadStream(file);
++    const fileBuffer = fs.createReadStream(file);
 +    const form = new import_form_data2.default();
 +    form.append("userfile", fileBuffer);
-+    const response = await this.client.post(this.url.UPLOAD(format), form, {
++    return this.client.post(this.url.UPLOAD(format), form, {
 +      headers: {
 +        "Content-Type": form.getHeaders()["content-type"]
 +      }
 +    });
-+    return response;
 +  }
-+  async getUploadActivityDetails(uploadCreationDate, activityId) {
++  getUploadActivityDetails(uploadCreationDate, activityId) {
 +    const creationDate = new Date(uploadCreationDate);
-+    const response = await this.client.get(this.url.UPLOAD_ACTIVITY_STATUS(creationDate.getTime(), activityId));
-+    return response;
++    return this.client.get(this.url.UPLOAD_ACTIVITY_STATUS(creationDate.getTime(), activityId));
 +  }
-+  async deleteActivity(activity) {
++  deleteActivity(activity) {
 +    if (!activity.activityId) throw new Error("Missing activityId");
-+    await this.client.delete(this.url.ACTIVITY + activity.activityId);
++    return this.client.delete(this.url.ACTIVITY + activity.activityId);
 +  }
-+  async getWorkouts(start, limit) {
++  getWorkouts(start, limit) {
 +    return this.client.get(this.url.WORKOUTS, {
 +      params: {
 +        start,
@@ -928,11 +934,11 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +      }
 +    });
 +  }
-+  async getWorkoutDetail(workout) {
++  getWorkoutDetail(workout) {
 +    if (!workout.workoutId) throw new Error("Missing workoutId");
 +    return this.client.get(this.url.WORKOUT(workout.workoutId));
 +  }
-+  async addWorkout(workout) {
++  addWorkout(workout) {
 +    if (!workout) throw new Error("Missing workout");
 +    if (workout instanceof Running) {
 +      if (workout.isValid()) {
@@ -949,18 +955,18 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +    }
 +    return this.client.post(this.url.WORKOUT(), newWorkout);
 +  }
-+  async addRunningWorkout(name, meters, description) {
++  addRunningWorkout(name, meters, description) {
 +    const running = new Running();
 +    running.name = name;
 +    running.distance = meters;
 +    running.description = description;
 +    return this.addWorkout(running);
 +  }
-+  async deleteWorkout(workout) {
++  deleteWorkout(workout) {
 +    if (!workout.workoutId) throw new Error("Missing workout");
 +    return this.client.delete(this.url.WORKOUT(workout.workoutId));
 +  }
-+  async addActivity(activity) {
++  addActivity(activity) {
 +    return this.client.post(this.url.ACTIVITY, activity);
 +  }
 +  async getSteps(date = /* @__PURE__ */ new Date()) {
@@ -1017,9 +1023,8 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +    const weightData = await this.getDailyWeightData(date);
 +    if (weightData.totalAverage && typeof weightData.totalAverage.weight === "number") {
 +      return gramsToPounds(weightData.totalAverage.weight);
-+    } else {
-+      throw new Error("Can't find valid daily weight for this date.");
 +    }
++    throw new Error("Can't find valid daily weight for this date.");
 +  }
 +  async getDailyHydration(date = /* @__PURE__ */ new Date()) {
 +    try {
@@ -1033,7 +1038,7 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +      throw new Error(`Error in getDailyHydration: ${error.message}`);
 +    }
 +  }
-+  async updateWeight(date = /* @__PURE__ */ new Date(), lbs, timezone) {
++  async updateWeight(date, lbs, timezone) {
 +    try {
 +      const weightData = await this.client.post(`${this.url.UPDATE_WEIGHT}`, {
 +        dateTimestamp: getLocalTimestamp(date, timezone),
@@ -1046,7 +1051,7 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +      throw new Error(`Error in updateWeight: ${error.message}`);
 +    }
 +  }
-+  async updateHydrationLogOunces(date = /* @__PURE__ */ new Date(), valueInOz) {
++  async updateHydrationLogOunces(date, valueInOz) {
 +    try {
 +      const dateString = toDateString(date);
 +      const hydrationData = await this.client.put(`${this.url.HYDRATION_LOG}`, {
@@ -1095,17 +1100,17 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +      throw new Error(`Error in getHeartRate: ${error.message}`);
 +    }
 +  }
-+  async get(url, data) {
-+    const response = await this.client.get(url, data);
-+    return response;
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
++  get(url, data) {
++    return this.client.get(url, data);
 +  }
-+  async post(url, data) {
-+    const response = await this.client.post(url, data, {});
-+    return response;
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
++  post(url, data) {
++    return this.client.post(url, data, {});
 +  }
-+  async put(url, data) {
-+    const response = await this.client.put(url, data, {});
-+    return response;
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
++  put(url, data) {
++    return this.client.put(url, data, {});
 +  }
 +};
 +
@@ -1141,10 +1146,10 @@ index 0000000000000000000000000000000000000000..9da3a5c38298cc589c912768557cf5d4
 +});
 diff --git a/dist/index.d.cts b/dist/index.d.cts
 new file mode 100644
-index 0000000000000000000000000000000000000000..047c448eced2c47a2163927d7519fee1530fe038
+index 0000000000000000000000000000000000000000..071f25fc04dbd8ae64149d5407a372c6bd63c6d1
 --- /dev/null
 +++ b/dist/index.d.cts
-@@ -0,0 +1,1298 @@
+@@ -0,0 +1,1299 @@
 +import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders, AxiosResponse } from 'axios';
 +import OAuth$1 from 'oauth-1.0a';
 +
@@ -1238,8 +1243,8 @@ index 0000000000000000000000000000000000000000..047c448eced2c47a2163927d7519fee1
 +    userProfilePk: GCUserProfileId;
 +    gearMakeName: string;
 +    gearModelName: string;
-+    gearTypeName: string;
-+    gearStatusName: string;
++    gearTypeName: 'Shoes' | 'Bike' | 'Other' | string;
++    gearStatusName: 'retired' | 'active';
 +    displayName: string | null;
 +    customMakeModel: string;
 +    imageNameLarge: string | null;
@@ -2402,6 +2407,7 @@ index 0000000000000000000000000000000000000000..047c448eced2c47a2163927d7519fee1
 +        activityId: GCActivityId;
 +    }): Promise<IActivityDetails>;
 +    countActivities(): Promise<ICountActivities>;
++    getGears(userProfilePk: string | number): Promise<Gear[]>;
 +    getActivityGear(activityId: string): Promise<Gear[]>;
 +    linkActivityGear(gearUuid: GCGearUuid, activityId: GCActivityId): Promise<Gear>;
 +    unlinkActivityGear(gearUuid: GCGearUuid, activityId: GCActivityId): Promise<Gear>;
@@ -2432,8 +2438,8 @@ index 0000000000000000000000000000000000000000..047c448eced2c47a2163927d7519fee1
 +    getDailyWeightData(date?: Date): Promise<WeightData>;
 +    getDailyWeightInPounds(date?: Date): Promise<number>;
 +    getDailyHydration(date?: Date): Promise<number>;
-+    updateWeight(date: Date | undefined, lbs: number, timezone: string): Promise<UpdateWeight>;
-+    updateHydrationLogOunces(date: Date | undefined, valueInOz: number): Promise<WaterIntake>;
++    updateWeight(date: Date, lbs: number, timezone: string): Promise<UpdateWeight>;
++    updateHydrationLogOunces(date: Date, valueInOz: number): Promise<WaterIntake>;
 +    getGolfSummary(): Promise<GolfSummary>;
 +    getGolfScorecard(scorecardId: number): Promise<GolfScorecard>;
 +    getHeartRate(date?: Date): Promise<HeartRate>;
@@ -2444,10 +2450,10 @@ index 0000000000000000000000000000000000000000..047c448eced2c47a2163927d7519fee1
 +
 +export { ActivitySubType, ActivityType, GarminConnect, type Gear, type IActivity, type IActivityDetails };
 diff --git a/dist/index.d.ts b/dist/index.d.ts
-index e38e9cc05dd81ea98991caad686af9341a3c87d3..047c448eced2c47a2163927d7519fee1530fe038 100644
+index e38e9cc05dd81ea98991caad686af9341a3c87d3..071f25fc04dbd8ae64149d5407a372c6bd63c6d1 100644
 --- a/dist/index.d.ts
 +++ b/dist/index.d.ts
-@@ -1 +1,1298 @@
+@@ -1 +1,1299 @@
 -export { default as GarminConnect } from './garmin/GarminConnect';
 +import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders, AxiosResponse } from 'axios';
 +import OAuth$1 from 'oauth-1.0a';
@@ -2542,8 +2548,8 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..047c448eced2c47a2163927d7519fee1
 +    userProfilePk: GCUserProfileId;
 +    gearMakeName: string;
 +    gearModelName: string;
-+    gearTypeName: string;
-+    gearStatusName: string;
++    gearTypeName: 'Shoes' | 'Bike' | 'Other' | string;
++    gearStatusName: 'retired' | 'active';
 +    displayName: string | null;
 +    customMakeModel: string;
 +    imageNameLarge: string | null;
@@ -3706,6 +3712,7 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..047c448eced2c47a2163927d7519fee1
 +        activityId: GCActivityId;
 +    }): Promise<IActivityDetails>;
 +    countActivities(): Promise<ICountActivities>;
++    getGears(userProfilePk: string | number): Promise<Gear[]>;
 +    getActivityGear(activityId: string): Promise<Gear[]>;
 +    linkActivityGear(gearUuid: GCGearUuid, activityId: GCActivityId): Promise<Gear>;
 +    unlinkActivityGear(gearUuid: GCGearUuid, activityId: GCActivityId): Promise<Gear>;
@@ -3736,8 +3743,8 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..047c448eced2c47a2163927d7519fee1
 +    getDailyWeightData(date?: Date): Promise<WeightData>;
 +    getDailyWeightInPounds(date?: Date): Promise<number>;
 +    getDailyHydration(date?: Date): Promise<number>;
-+    updateWeight(date: Date | undefined, lbs: number, timezone: string): Promise<UpdateWeight>;
-+    updateHydrationLogOunces(date: Date | undefined, valueInOz: number): Promise<WaterIntake>;
++    updateWeight(date: Date, lbs: number, timezone: string): Promise<UpdateWeight>;
++    updateHydrationLogOunces(date: Date, valueInOz: number): Promise<WaterIntake>;
 +    getGolfSummary(): Promise<GolfSummary>;
 +    getGolfScorecard(scorecardId: number): Promise<GolfScorecard>;
 +    getHeartRate(date?: Date): Promise<HeartRate>;
@@ -3755,10 +3762,10 @@ deleted file mode 100644
 index 527f7858a51fc6d7310c68185d5ef885e10ae2b8..0000000000000000000000000000000000000000
 diff --git a/dist/index.mjs b/dist/index.mjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cecb8e4f044
+index 0000000000000000000000000000000000000000..b6f284573626500681107c19b21238cdbdca5119
 --- /dev/null
 +++ b/dist/index.mjs
-@@ -0,0 +1,954 @@
+@@ -0,0 +1,959 @@
 +var __defProp = Object.defineProperty;
 +var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 +
@@ -3767,8 +3774,8 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +import FormData2 from "form-data";
 +import _2 from "lodash";
 +import { DateTime as DateTime2 } from "luxon";
-+import * as fs2 from "fs";
-+import * as path from "path";
++import * as fs from "node:fs";
++import * as path from "node:path";
 +
 +// src/common/HttpClient.ts
 +import axios from "axios";
@@ -3778,10 +3785,10 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +import OAuth from "oauth-1.0a";
 +import qs from "qs";
 +import { createHmac } from "crypto";
-+var CSRF_RE = new RegExp('name="_csrf"\\s+value="(.+?)"');
-+var TICKET_RE = new RegExp('ticket=([^"]+)"');
-+var ACCOUNT_LOCKED_RE = new RegExp('var statuss*=s*"([^"]*)"');
-+var PAGE_TITLE_RE = new RegExp("<title>([^<]*)</title>");
++var CSRF_RE = /name="_csrf"\s+value="(.+?)"/;
++var TICKET_RE = /ticket=([^"]+)"/;
++var ACCOUNT_LOCKED_RE = /var statuss*=s*"([^"]*)"/;
++var PAGE_TITLE_RE = /<title>([^<]*)<\/title>/;
 +var USER_AGENT_CONNECTMOBILE = "com.garmin.android.apps.connectmobile";
 +var USER_AGENT_BROWSER = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36";
 +var OAUTH_CONSUMER_URL = "https://thegarth.s3.amazonaws.com/oauth_consumer.json";
@@ -3835,7 +3842,7 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +    );
 +    this.client.interceptors.request.use(async (config2) => {
 +      if (this.oauth2Token) {
-+        config2.headers.Authorization = "Bearer " + this.oauth2Token.access_token;
++        config2.headers.Authorization = `Bearer ${this.oauth2Token.access_token}`;
 +      }
 +      return config2;
 +    });
@@ -3855,18 +3862,22 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +      }
 +    }
 +  }
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async get(url, config2) {
 +    const response = await this.client.get(url, config2);
 +    return response?.data;
 +  }
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async post(url, data, config2) {
 +    const response = await this.client.post(url, data, config2);
 +    return response?.data;
 +  }
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async put(url, data, config2) {
 +    const response = await this.client.put(url, data, config2);
 +    return response?.data;
 +  }
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async delete(url, config2) {
 +    const response = await this.client.post(url, null, {
 +      ...config2,
@@ -3993,6 +4004,7 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +      throw new Error("No Oauth2Token or Oauth1Token");
 +    }
 +    const oauth1 = {
++      // biome-ignore lint/style/noNonNullAssertion: <explanation>
 +      oauth: this.getOauthClient(this.OAUTH_CONSUMER),
 +      token: this.oauth1Token
 +    };
@@ -4059,26 +4071,24 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +    this.oauth2Token = this.setOauth2TokenExpiresAt(response);
 +  }
 +  setOauth2TokenExpiresAt(token) {
-+    token["last_update_date"] = DateTime.now().toLocal().toString();
-+    token["expires_date"] = DateTime.fromSeconds(DateTime.now().toSeconds() + token["expires_in"]).toLocal().toString();
-+    token["expires_at"] = DateTime.now().toSeconds() + token["expires_in"];
-+    token["refresh_token_expires_at"] = DateTime.now().toSeconds() + token["refresh_token_expires_in"];
++    token.last_update_date = DateTime.now().toLocal().toString();
++    token.expires_date = DateTime.fromSeconds(DateTime.now().toSeconds() + token.expires_in).toLocal().toString();
++    token.expires_at = DateTime.now().toSeconds() + token.expires_in;
++    token.refresh_token_expires_at = DateTime.now().toSeconds() + token.refresh_token_expires_in;
 +    return token;
 +  }
 +};
 +
 +// src/utils.ts
-+import * as fs from "fs";
++import { existsSync, lstatSync, mkdirSync, writeFileSync } from "node:fs";
 +var checkIsDirectory = /* @__PURE__ */ __name((filePath) => {
-+  return fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory();
++  return existsSync(filePath) && lstatSync(filePath).isDirectory();
 +}, "checkIsDirectory");
 +var createDirectory = /* @__PURE__ */ __name((directoryPath) => {
-+  fs.mkdirSync(directoryPath);
++  mkdirSync(directoryPath);
 +}, "createDirectory");
 +var writeToFile = /* @__PURE__ */ __name((filePath, data) => {
-+  fs.writeFileSync(filePath, data, (error) => {
-+    if (error) throw error;
-+  });
++  writeFileSync(filePath, data);
 +}, "writeToFile");
 +
 +// src/garmin/UrlClass.ts
@@ -4389,14 +4399,12 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +  }
 +  loadTokenByFile(dirPath) {
 +    if (!checkIsDirectory(dirPath)) {
-+      throw new Error("loadTokenByFile: Directory not found: " + dirPath);
++      throw new Error(`loadTokenByFile: Directory not found: ${dirPath}`);
 +    }
-+    let oauth1Data = fs2.readFileSync(path.join(dirPath, "oauth1_token.json"));
-+    const oauth1 = JSON.parse(oauth1Data);
-+    this.client.oauth1Token = oauth1;
-+    let oauth2Data = fs2.readFileSync(path.join(dirPath, "oauth2_token.json"));
-+    const oauth2 = JSON.parse(oauth2Data);
-+    this.client.oauth2Token = oauth2;
++    const oauth1Data = fs.readFileSync(path.join(dirPath, "oauth1_token.json"));
++    this.client.oauth1Token = JSON.parse(oauth1Data);
++    const oauth2Data = fs.readFileSync(path.join(dirPath, "oauth2_token.json"));
++    this.client.oauth2Token = JSON.parse(oauth2Data);
 +  }
 +  exportToken() {
 +    if (!this.client.oauth1Token || !this.client.oauth2Token) {
@@ -4412,22 +4420,22 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +    this.client.oauth1Token = oauth1;
 +    this.client.oauth2Token = oauth2;
 +  }
-+  async getUserSettings() {
++  getUserSettings() {
 +    return this.client.get(this.url.USER_SETTINGS);
 +  }
-+  async getUserProfile() {
++  getUserProfile() {
 +    return this.client.get(this.url.USER_PROFILE);
 +  }
-+  async getActivities(start, limit, activityType, subActivityType) {
++  getActivities(start, limit, activityType, subActivityType) {
 +    return this.client.get(this.url.ACTIVITIES, {
 +      params: { start, limit, activityType, subActivityType }
 +    });
 +  }
-+  async getActivity(activity) {
++  getActivity(activity) {
 +    if (!activity.activityId) throw new Error("Missing activityId");
 +    return this.client.get(this.url.ACTIVITY + activity.activityId);
 +  }
-+  async countActivities() {
++  countActivities() {
 +    return this.client.get(this.url.STAT_ACTIVITIES, {
 +      params: {
 +        aggregation: "lifetime",
@@ -4437,17 +4445,24 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +      }
 +    });
 +  }
-+  async getActivityGear(activityId) {
++  getGears(userProfilePk) {
++    return this.client.get(this.url.ACTIVITY_GEAR, {
++      params: {
++        userProfilePk
++      }
++    });
++  }
++  getActivityGear(activityId) {
 +    return this.client.get(this.url.ACTIVITY_GEAR, {
 +      params: {
 +        activityId
 +      }
 +    });
 +  }
-+  async linkActivityGear(gearUuid, activityId) {
++  linkActivityGear(gearUuid, activityId) {
 +    return this.client.put(this.url.ACTIVITY_GEAR_LINK(gearUuid, activityId), {});
 +  }
-+  async unlinkActivityGear(gearUuid, activityId) {
++  unlinkActivityGear(gearUuid, activityId) {
 +    return this.client.put(this.url.ACTIVITY_GEAR_UNLINK(gearUuid, activityId), {});
 +  }
 +  async downloadOriginalActivityData(activity, dir, type = "zip") {
@@ -4467,35 +4482,33 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +        responseType: "arraybuffer"
 +      });
 +    } else {
-+      throw new Error("downloadOriginalActivityData - Invalid type: " + type);
++      throw new Error(`downloadOriginalActivityData - Invalid type: ${type}`);
 +    }
 +    writeToFile(path.join(dir, `${activity.activityId}.${type}`), fileBuffer);
 +  }
-+  async uploadActivity(file, format = "fit") {
++  uploadActivity(file, format = "fit") {
 +    const detectedFormat = (format || path.extname(file))?.toLowerCase();
 +    if (!_2.includes(UploadFileType, detectedFormat)) {
-+      throw new Error("uploadActivity - Invalid format: " + format);
++      throw new Error(`uploadActivity - Invalid format: ${format}`);
 +    }
-+    const fileBuffer = fs2.createReadStream(file);
++    const fileBuffer = fs.createReadStream(file);
 +    const form = new FormData2();
 +    form.append("userfile", fileBuffer);
-+    const response = await this.client.post(this.url.UPLOAD(format), form, {
++    return this.client.post(this.url.UPLOAD(format), form, {
 +      headers: {
 +        "Content-Type": form.getHeaders()["content-type"]
 +      }
 +    });
-+    return response;
 +  }
-+  async getUploadActivityDetails(uploadCreationDate, activityId) {
++  getUploadActivityDetails(uploadCreationDate, activityId) {
 +    const creationDate = new Date(uploadCreationDate);
-+    const response = await this.client.get(this.url.UPLOAD_ACTIVITY_STATUS(creationDate.getTime(), activityId));
-+    return response;
++    return this.client.get(this.url.UPLOAD_ACTIVITY_STATUS(creationDate.getTime(), activityId));
 +  }
-+  async deleteActivity(activity) {
++  deleteActivity(activity) {
 +    if (!activity.activityId) throw new Error("Missing activityId");
-+    await this.client.delete(this.url.ACTIVITY + activity.activityId);
++    return this.client.delete(this.url.ACTIVITY + activity.activityId);
 +  }
-+  async getWorkouts(start, limit) {
++  getWorkouts(start, limit) {
 +    return this.client.get(this.url.WORKOUTS, {
 +      params: {
 +        start,
@@ -4503,11 +4516,11 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +      }
 +    });
 +  }
-+  async getWorkoutDetail(workout) {
++  getWorkoutDetail(workout) {
 +    if (!workout.workoutId) throw new Error("Missing workoutId");
 +    return this.client.get(this.url.WORKOUT(workout.workoutId));
 +  }
-+  async addWorkout(workout) {
++  addWorkout(workout) {
 +    if (!workout) throw new Error("Missing workout");
 +    if (workout instanceof Running) {
 +      if (workout.isValid()) {
@@ -4524,18 +4537,18 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +    }
 +    return this.client.post(this.url.WORKOUT(), newWorkout);
 +  }
-+  async addRunningWorkout(name, meters, description) {
++  addRunningWorkout(name, meters, description) {
 +    const running = new Running();
 +    running.name = name;
 +    running.distance = meters;
 +    running.description = description;
 +    return this.addWorkout(running);
 +  }
-+  async deleteWorkout(workout) {
++  deleteWorkout(workout) {
 +    if (!workout.workoutId) throw new Error("Missing workout");
 +    return this.client.delete(this.url.WORKOUT(workout.workoutId));
 +  }
-+  async addActivity(activity) {
++  addActivity(activity) {
 +    return this.client.post(this.url.ACTIVITY, activity);
 +  }
 +  async getSteps(date = /* @__PURE__ */ new Date()) {
@@ -4592,9 +4605,8 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +    const weightData = await this.getDailyWeightData(date);
 +    if (weightData.totalAverage && typeof weightData.totalAverage.weight === "number") {
 +      return gramsToPounds(weightData.totalAverage.weight);
-+    } else {
-+      throw new Error("Can't find valid daily weight for this date.");
 +    }
++    throw new Error("Can't find valid daily weight for this date.");
 +  }
 +  async getDailyHydration(date = /* @__PURE__ */ new Date()) {
 +    try {
@@ -4608,7 +4620,7 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +      throw new Error(`Error in getDailyHydration: ${error.message}`);
 +    }
 +  }
-+  async updateWeight(date = /* @__PURE__ */ new Date(), lbs, timezone) {
++  async updateWeight(date, lbs, timezone) {
 +    try {
 +      const weightData = await this.client.post(`${this.url.UPDATE_WEIGHT}`, {
 +        dateTimestamp: getLocalTimestamp(date, timezone),
@@ -4621,7 +4633,7 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +      throw new Error(`Error in updateWeight: ${error.message}`);
 +    }
 +  }
-+  async updateHydrationLogOunces(date = /* @__PURE__ */ new Date(), valueInOz) {
++  async updateHydrationLogOunces(date, valueInOz) {
 +    try {
 +      const dateString = toDateString(date);
 +      const hydrationData = await this.client.put(`${this.url.HYDRATION_LOG}`, {
@@ -4670,17 +4682,17 @@ index 0000000000000000000000000000000000000000..2fde05aef7ad624acbcecab7e5dd7cec
 +      throw new Error(`Error in getHeartRate: ${error.message}`);
 +    }
 +  }
-+  async get(url, data) {
-+    const response = await this.client.get(url, data);
-+    return response;
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
++  get(url, data) {
++    return this.client.get(url, data);
 +  }
-+  async post(url, data) {
-+    const response = await this.client.post(url, data, {});
-+    return response;
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
++  post(url, data) {
++    return this.client.post(url, data, {});
 +  }
-+  async put(url, data) {
-+    const response = await this.client.put(url, data, {});
-+    return response;
++  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
++  put(url, data) {
++    return this.client.put(url, data, {});
 +  }
 +};
 +
