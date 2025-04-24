@@ -1,11 +1,11 @@
 {
   "extends": "@repo/typescript-config/base.json",
   "include": ["src"],
-  "exclude": ["dist", "node_modules", "**/mocks/**", "**/*.test.ts", "drizzle", "**/migrate.ts", "**/seed/**"],
+  "exclude": ["dist", "node_modules"],
   "compilerOptions": {
     "types": ["node"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "es2022",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "outDir": "dist"

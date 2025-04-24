@@ -21,7 +21,7 @@ import {
 	sum,
 } from "drizzle-orm";
 import { uuidv7 } from "uuidv7";
-import type { DbClient } from "./client.js";
+import type { DbClient } from "./client";
 import {
 	activities,
 	activitiesConnection,
@@ -30,11 +30,8 @@ import {
 	gearsConnection,
 	providerActivities,
 	providerGears,
-} from "./schemas/app.js";
-import type {
-	IInsertActivityPayload,
-	IInsertGearPayload,
-} from "./types/index.js";
+} from "./schemas/app";
+import type { IInsertActivityPayload, IInsertGearPayload } from "./types/index";
 
 function mapActivityRow({
 	connections,
