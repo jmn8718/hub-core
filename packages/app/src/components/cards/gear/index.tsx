@@ -47,7 +47,7 @@ export const GearCard: FC<GearCardProps> = ({ data }) => {
 		value: string | number,
 	) => {
 		setLocalLoading(true);
-		const result = await client.editActivity(gearId, { [field]: value });
+		const result = await client.editGear(gearId, { [field]: value });
 		if (!result.success) {
 			// handle error
 			toast.error(result.error, {
