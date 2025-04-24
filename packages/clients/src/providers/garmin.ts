@@ -33,7 +33,7 @@ function mapActivity({
 		: activity.manualActivity;
 	const deviceId = isActivityDetails
 		? activity.metadataDTO.deviceMetaDataDTO.deviceId
-		: activity.deviceId;
+		: activity.deviceId || "";
 	return {
 		id: activity.activityId.toString(),
 		timestamp: new Date(
@@ -50,7 +50,8 @@ function mapActivity({
 		),
 		manufacturer:
 			manufacturer ||
-			(isManual || deviceId.toString() !== "0" ? "garmin" : "coros"),
+			(isManual || deviceId.toString() !== "0" ? "garmin" : "coros") ||
+			"",
 		locationName: activity.locationName || "",
 		locationCountry: "",
 		startLatitude:
@@ -212,22 +213,29 @@ export class GarminClient implements Client {
 		if (!activity) {
 			throw new Error(`Missing activity ${activityId}`);
 		}
-		const gears = await this.populateActivityGear(activity.activityId);
-		const dbActivity = mapActivity({ isActivityDetails: true, activity });
-		return {
-			activity: {
-				data: dbActivity,
-				providerActivity: {
-					id: dbActivity.id,
-					provider: GarminClient.PROVIDER,
-					original: dbActivity.manufacturer.toLowerCase().includes("GARMIN"),
-					timestamp: dbActivity.timestamp,
-					// at the moment it does not store all the raw data as it includes a lot of data
-					data: "{}", // JSON.stringify(activity),
+		try {
+			const dbActivity = mapActivity({ isActivityDetails: true, activity });
+			const gears = await this.populateActivityGear(activity.activityId);
+			return {
+				activity: {
+					data: dbActivity,
+					providerActivity: {
+						id: dbActivity.id,
+						provider: GarminClient.PROVIDER,
+						original: dbActivity.manufacturer.toLowerCase().includes("GARMIN"),
+						timestamp: dbActivity.timestamp,
+						// at the moment it does not store all the raw data as it includes a lot of data
+						data: "{}", // JSON.stringify(activity),
+					},
 				},
-			},
-			gears: gears.map((currentGear) => mapGear(currentGear)),
-		};
+				gears: gears.map((currentGear) => mapGear(currentGear)),
+			};
+		} catch (err) {
+			console.error({
+				activity,
+			});
+			throw err;
+		}
 	}
 
 	async sync({
