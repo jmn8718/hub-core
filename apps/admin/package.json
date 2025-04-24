@@ -11,7 +11,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@libsql/client": "0.15.0",
+    "@libsql/client": "0.15.4",
     "@repo/clients": "workspace:*",
     "@repo/dates": "workspace:*",
     "@repo/db": "workspace:*",

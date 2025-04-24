@@ -23,7 +23,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@libsql/client": "0.15.0",
+    "@libsql/client": "0.15.4",
     "@repo/types": "workspace:*",
     "drizzle-orm": "0.41.0",
     "uuidv7": "1.0.2"

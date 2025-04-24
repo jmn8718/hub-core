@@ -24,7 +24,7 @@
     "@repo/clients": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/ui": "workspace:*",
-    "electron-store": "^10.0.1",
+    "electron-store": "10.0.1",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },

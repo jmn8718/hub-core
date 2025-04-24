@@ -1,6 +1,6 @@
 /* eslint-disable turbo/no-undeclared-env-vars */
 import db from "@/lib/db";
-import { webhooks } from "@repo/db";
+import { and, eq, webhooks } from "@repo/db";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -20,16 +20,36 @@ export async function POST(req: NextRequest) {
 	const body = await req.json();
 	console.log("Received webhook:", body);
 	try {
-		await db.insert(webhooks).values({
-			owner_id: body.owner_id.toString(),
-			aspect_type: body.aspect_type,
-			subscription_id: body.subscription_id.toString(),
-			object_id: body.object_id.toString(),
-			object_type: body.object_type,
-			updates: JSON.stringify(body.updates || {}),
-			event_time: new Date(body.event_time * 1000).toISOString(),
-			event: JSON.stringify(body),
-		});
+		let recordEvent = true;
+		if (body.object_type === "activity" && body.aspect_type === "create") {
+			const result = await db
+				.select({ id: webhooks.id })
+				.from(webhooks)
+				.where(
+					and(
+						eq(webhooks.object_id, body.object_id.toString()),
+						eq(webhooks.aspect_type, body.aspect_type),
+					),
+				)
+				.limit(1);
+			if (result.length === 1) {
+				console.log(`Existing event for ${body.object_id}`);
+				console.log(result);
+				recordEvent = false;
+			}
+		}
+		if (recordEvent) {
+			await db.insert(webhooks).values({
+				owner_id: body.owner_id.toString(),
+				aspect_type: body.aspect_type,
+				subscription_id: body.subscription_id.toString(),
+				object_id: body.object_id.toString(),
+				object_type: body.object_type,
+				updates: JSON.stringify(body.updates || {}),
+				event_time: new Date(body.event_time * 1000).toISOString(),
+				event: JSON.stringify(body),
+			});
+		}
 	} catch (err) {
 		console.error(err);
 		return NextResponse.json(
