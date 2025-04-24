@@ -17,6 +17,22 @@
       "is_event": null
     },
     {
+      "id": "baafvctyx0iw4parwyjr8e8r",
+      "name": "50' easy",
+      "timestamp": "2024-11-01T13:26:58.000Z",
+      "distance": 11694,
+      "duration": 3062,
+      "manufacturer": "COROS PACE 2 89DF3A",
+      "location_name": "seoul",
+      "notes": null,
+      "type": "run",
+      "start_latitude": 37.5263167,
+      "start_longitude": 126.6413891,
+      "is_race": "0",
+      "subtype": "",
+      "is_event": null
+    },
+    {
       "id": "baafvctyx0iw4parwyjr8e7r",
       "name": "50' easy",
       "timestamp": "2024-11-06T03:26:58.000Z",

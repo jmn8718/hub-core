@@ -3,6 +3,7 @@ import type {
 	Credentials,
 	DbActivityPopulated,
 	GearsData,
+	IDbGearWithDistance,
 	IOverviewData,
 	ProviderSuccessResponse,
 	Providers,
@@ -59,6 +60,27 @@ export class MockClient implements Client {
 		};
 	}
 
+	async editActivity(
+		id: string,
+		data: {
+			locationName?: string;
+			locationCountry?: string;
+			notes?: string;
+			name?: string;
+		},
+	): Promise<ProviderSuccessResponse> {
+		try {
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async getGears(_params: {
 		cursor?: string;
 		limit?: number;
@@ -74,13 +96,31 @@ export class MockClient implements Client {
 		};
 	}
 
-	async editActivity(
+	async getGear(gearId: string): Promise<
+		ProviderSuccessResponse<{
+			data?: IDbGearWithDistance;
+		}>
+	> {
+		try {
+			return {
+				success: true,
+				data: undefined,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async editGear(
 		id: string,
 		data: {
-			locationName?: string;
-			locationCountry?: string;
-			notes?: string;
+			dateEnd?: string;
+			code?: string;
 			name?: string;
+			maximumDistance?: string;
 		},
 	): Promise<ProviderSuccessResponse> {
 		try {

@@ -4,6 +4,7 @@ import type {
 	Credentials,
 	DbActivityPopulated,
 	GearsData,
+	IDbGearWithDistance,
 	IOverviewData,
 	ProviderSuccessResponse,
 	Providers,
@@ -122,6 +123,47 @@ export class WebClient implements Client {
 			return {
 				success: true,
 				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async getGear(gearId: string): Promise<
+		ProviderSuccessResponse<{
+			data?: IDbGearWithDistance;
+		}>
+	> {
+		try {
+			const data = await this._db.getGear(gearId);
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async editGear(
+		id: string,
+		data: {
+			dateEnd?: string;
+			code?: string;
+			name?: string;
+			maximumDistance?: string;
+		},
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await this._db.editGear(id, data);
+			return {
+				success: true,
 			};
 		} catch (err) {
 			return {

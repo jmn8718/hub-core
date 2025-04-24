@@ -5,6 +5,7 @@ import {
 	type Credentials,
 	type DbActivityPopulated,
 	type GearsData,
+	type IDbGearWithDistance,
 	type IOverviewData,
 	type ProviderSuccessResponse,
 	type Providers,
@@ -85,46 +86,6 @@ export class AppClient implements Client {
 		}
 	}
 
-	async getGears(params: {
-		cursor?: string;
-		limit?: number;
-		offset?: number;
-	}): Promise<
-		ProviderSuccessResponse<{
-			data: GearsData;
-		}>
-	> {
-		try {
-			const data = (await window.electron.ipcRenderer.invoke(
-				Channels.DB_GEAR,
-				params,
-			)) as Awaited<Promise<GearsData>>;
-			return {
-				success: true,
-				data,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
-	}
-
-	async getStoreValue<T = Value>(key: StorageKeys): Promise<T | undefined> {
-		return window.electron.ipcRenderer
-			.invoke(Channels.STORE_GET, { key })
-			.then((data: T | undefined) => data);
-	}
-
-	async setStoreValue(key: StorageKeys, value: Value): Promise<undefined> {
-		await window.electron.ipcRenderer.invoke(Channels.STORE_SET, {
-			key,
-			value,
-		});
-		localStorage.setItem(key, JSON.stringify({ value }));
-	}
-
 	async editActivity(
 		id: string,
 		data: {
@@ -148,6 +109,93 @@ export class AppClient implements Client {
 				error: (err as Error).message,
 			};
 		}
+	}
+
+	async getGears(params: {
+		cursor?: string;
+		limit?: number;
+		offset?: number;
+	}): Promise<
+		ProviderSuccessResponse<{
+			data: GearsData;
+		}>
+	> {
+		try {
+			const data = (await window.electron.ipcRenderer.invoke(
+				Channels.DB_GEARS,
+				params,
+			)) as Awaited<Promise<GearsData>>;
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async getGear(gearId: string): Promise<
+		ProviderSuccessResponse<{
+			data?: IDbGearWithDistance;
+		}>
+	> {
+		try {
+			const data = (await window.electron.ipcRenderer.invoke(
+				Channels.DB_GEAR,
+				gearId,
+			)) as Awaited<Promise<IDbGearWithDistance | undefined>>;
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async editGear(
+		id: string,
+		data: {
+			dateEnd?: string;
+			code?: string;
+			name?: string;
+			maximumDistance?: string;
+		},
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.DB_GEAR_EDIT, {
+				gearId: id,
+				data,
+			});
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async getStoreValue<T = Value>(key: StorageKeys): Promise<T | undefined> {
+		return window.electron.ipcRenderer
+			.invoke(Channels.STORE_GET, { key })
+			.then((data: T | undefined) => data);
+	}
+
+	async setStoreValue(key: StorageKeys, value: Value): Promise<undefined> {
+		await window.electron.ipcRenderer.invoke(Channels.STORE_SET, {
+			key,
+			value,
+		});
+		localStorage.setItem(key, JSON.stringify({ value }));
 	}
 
 	async providerSyncGear(

@@ -19,6 +19,7 @@ export const activities = sqliteTable(
 		distance: real("distance").default(0),
 		duration: real("duration").default(0),
 		manufacturer: text("manufacturer").default(""),
+		device: text("device").default(""),
 		locationName: text("location_name").default(""),
 		locationCountry: text("location_country").default(""),
 		type: text("type").notNull(),

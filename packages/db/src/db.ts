@@ -3,7 +3,7 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IConnection,
-	IDbGear,
+	IDbGearWithDistance,
 	IGear,
 	IOverviewData,
 	Providers,
@@ -80,7 +80,6 @@ export class Db {
 		const subquery = await this._client
 			.select({
 				distance: min(activities.distance).as("distance"),
-				count: count().as("count"),
 				timestamp: activities.timestamp,
 				month: sql`strftime('%Y %m', timestamp)`.as("month"),
 			})
@@ -245,20 +244,85 @@ export class Db {
 		limit?: number;
 		offset?: number;
 	}): Promise<GearsData> {
+		const subquery = await this._client
+			.select({
+				gearId: activityGears.gearId,
+				distance: sum(activities.distance).as("distance"),
+				count: count().as("count"),
+			})
+			.from(activityGears)
+			.leftJoin(activities, eq(activityGears.activityId, activities.id))
+			.groupBy(activityGears.gearId)
+			.as("subquery");
+
 		const dataQuery = cursor
-			? this._client.select().from(gears).where(gt(gears.id, cursor))
-			: this._client.select().from(gears);
+			? this._client
+					.select({
+						...getTableColumns(gears),
+						distance: sql`COALESCE(subquery.distance, 0)`.as("distance"),
+					})
+					.from(gears)
+					.leftJoin(subquery, eq(gears.id, subquery.gearId))
+					.where(gt(gears.id, cursor))
+			: this._client
+					.select({
+						...getTableColumns(gears),
+						distance: sql`COALESCE(subquery.distance, 0)`.as("distance"),
+					})
+					.from(gears)
+					.leftJoin(subquery, eq(gears.id, subquery.gearId));
+
 		const result = await this._client.batch([
 			this._client.select({ count: count() }).from(gears),
 			dataQuery.limit(limit).offset(offset),
 		]);
 		const dataCount = result[0][0]?.count || 0;
-		const data = result[1].map((record) => ({ ...record }) as IDbGear);
+		const data = result[1].map(
+			(record) =>
+				({
+					...record,
+					distance: Number.parseFloat(record.distance as string),
+				}) as IDbGearWithDistance,
+		);
 		return {
 			count: dataCount,
 			data,
 			cursor: dataCount !== data.length ? data[data.length - 1]?.id || "" : "",
 		};
+	}
+
+	async getGear(gearId: string): Promise<IDbGearWithDistance | undefined> {
+		const subquery = await this._client
+			.select({
+				gearId: activityGears.gearId,
+				distance: sum(activities.distance).as("distance"),
+				count: count().as("count"),
+			})
+			.from(activityGears)
+			.leftJoin(activities, eq(activityGears.activityId, activities.id))
+			.groupBy(activityGears.gearId)
+			.as("subquery");
+
+		const result = await this._client
+			.select({
+				...getTableColumns(gears),
+				distance: sql`COALESCE(subquery.distance, 0)`.as("distance"),
+			})
+			.from(gears)
+			.leftJoin(subquery, eq(gears.id, subquery.gearId))
+			.where(eq(gears.id, gearId))
+			.limit(1);
+
+		const record = result[0];
+		if (!record) return;
+		return {
+			...record,
+			distance: Number.parseFloat(record.distance as string),
+		} as IDbGearWithDistance;
+	}
+
+	editGear(id: string, data: Record<string, string>) {
+		return this._client.update(gears).set(data).where(eq(gears.id, id));
 	}
 
 	editActivity(id: string, data: Record<string, string>) {

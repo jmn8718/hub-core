@@ -46,7 +46,7 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
-	Channels.DB_GEAR,
+	Channels.DB_GEARS,
 	async (
 		_event,
 		params: {
@@ -56,5 +56,27 @@ ipcMain.handle(
 		},
 	) => {
 		return db.getGears(params);
+	},
+);
+
+ipcMain.handle(Channels.DB_GEAR, async (_event, gearId: string) => {
+	return db.getGear(gearId);
+});
+
+ipcMain.handle(
+	Channels.DB_GEAR_EDIT,
+	async (
+		_event,
+		params: {
+			gearId: string;
+			data: {
+				dateEnd?: string;
+				code?: string;
+				name?: string;
+				maximumDistance?: string;
+			};
+		},
+	) => {
+		return db.editGear(params.gearId, params.data);
 	},
 );

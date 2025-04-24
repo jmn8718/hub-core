@@ -34,13 +34,17 @@ describe("db", () => {
 	test("should get accumulated data", async () => {
 		const result = await db.getActivitiesOverview(12);
 		expect(result.length).eq(3);
-		expect(result[0].distance).eq(10694);
+		expect(result[0].distance).eq(22388);
 		expect(result[1].distance).eq(8181);
 		expect(result[2].distance).eq(1514);
 
 		expect(result[0].month).eq("2024 11");
 		expect(result[1].month).eq("2024 07");
 		expect(result[2].month).eq("2015 10");
+
+		expect(result[0].count).eq(2);
+		expect(result[1].count).eq(1);
+		expect(result[2].count).eq(1);
 	});
 
 	test("should get activities with limit", async () => {
@@ -63,6 +67,17 @@ describe("db", () => {
 	test("should get one activity", async () => {
 		const result = await db.getActivity(activityId);
 		expect(result?.id).eq(activityId);
+	});
+
+	test("should get gears with distance", async () => {
+		const result = await db.getGears({});
+		expect(result.count).to.eq(3);
+		expect(result.data.length).to.eq(3);
+
+		// validate distance
+		expect(result.data[0].distance).to.eq(13208);
+		expect(result.data[1].distance).to.eq(23902);
+		expect(result.data[2].distance).to.eq(8181);
 	});
 
 	test("should get all gear connections", async () => {

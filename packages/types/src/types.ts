@@ -65,8 +65,12 @@ export interface IDbGear {
 	brand: string;
 }
 
+export interface IDbGearWithDistance extends IDbGear {
+	distance: number;
+}
+
 export type GearsData = {
-	data: IDbGear[];
+	data: IDbGearWithDistance[];
 	count: number;
 	cursor: string;
 };

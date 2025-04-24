@@ -3,6 +3,7 @@ import type {
 	Credentials,
 	DbActivityPopulated,
 	GearsData,
+	IDbGearWithDistance,
 	IOverviewData,
 	ProviderSuccessResponse,
 	Providers,
@@ -33,6 +34,16 @@ export abstract class Client {
 		}>
 	>;
 
+	abstract editActivity(
+		id: string,
+		data: {
+			locationName?: string;
+			locationCountry?: string;
+			notes?: string;
+			name?: string;
+		},
+	): Promise<ProviderSuccessResponse>;
+
 	abstract getGears(params: {
 		cursor?: string;
 		limit?: number;
@@ -43,13 +54,19 @@ export abstract class Client {
 		}>
 	>;
 
-	abstract editActivity(
+	abstract getGear(activityId: string): Promise<
+		ProviderSuccessResponse<{
+			data?: IDbGearWithDistance;
+		}>
+	>;
+
+	abstract editGear(
 		id: string,
 		data: {
-			locationName?: string;
-			locationCountry?: string;
-			notes?: string;
+			dateEnd?: string;
+			code?: string;
 			name?: string;
+			maximumDistance?: string;
 		},
 	): Promise<ProviderSuccessResponse>;
 

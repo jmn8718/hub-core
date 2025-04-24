@@ -27,6 +27,11 @@ export function clearData(client: DbClient) {
 	]);
 }
 
+function mapDevice(manufacturer = "") {
+	if (manufacturer.toLowerCase().includes("coros")) return "COROS PACE 2";
+	return manufacturer;
+}
+
 export async function importData(client: DbClient) {
 	const activitiesId: Record<string, string> = {};
 	const gearsId: Record<string, string> = {};
@@ -46,6 +51,7 @@ export async function importData(client: DbClient) {
 					distance: data.distance || 0,
 					duration: data.duration || 0,
 					manufacturer: data.manufacturer || "",
+					device: mapDevice(data.manufacturer),
 					locationName: data.location_name || "",
 					locationCountry: "",
 					type: ActivityType.RUN,

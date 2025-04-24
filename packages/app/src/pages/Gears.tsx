@@ -1,7 +1,11 @@
-import { GearType, type GearsData, type IDbGear } from "@repo/types";
+import {
+	GearType,
+	type GearsData,
+	type IDbGearWithDistance,
+} from "@repo/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bounce, toast } from "react-toastify";
-import { Box, GearCard, GearFilters, H2 } from "../components/index.js";
+import { GearCard, GearFilters, H2 } from "../components/index.js";
 import { useDataClient, useLoading } from "../contexts/index.js";
 
 export function Gears() {
@@ -80,7 +84,7 @@ export function Gears() {
 				[GearType.INSOLE]: [],
 				[GearType.BIKE]: [],
 				[GearType.OTHER]: [],
-			} as Record<GearType, IDbGear[]>,
+			} as Record<GearType, IDbGearWithDistance[]>,
 		);
 	}, [search, showRetired, gears]);
 
