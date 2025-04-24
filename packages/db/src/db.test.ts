@@ -7,7 +7,7 @@ import { clearData, importData } from "./seed/common";
 
 describe("db", () => {
 	const client = createDbClient({
-		url: "file:test.sqlite",
+		url: "file:../../test.sqlite",
 		logger: false,
 	});
 	const db = new Db(client);

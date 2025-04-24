@@ -386,19 +386,19 @@ export class Db {
 			.then((data) => data[0]);
 	}
 
-	insertGear({ data, provider, providerId }: IInsertGearPayload) {
+	insertGear({ data, providerGear }: IInsertGearPayload) {
 		return this._client.transaction(async (tx) => {
-			const providerGear = await tx
+			const dbProviderGear = await tx
 				.select({ id: providerGears.id })
 				.from(providerGears)
 				.where(
 					and(
-						eq(providerGears.provider, provider),
-						eq(providerGears.providerId, providerId),
+						eq(providerGears.provider, providerGear.provider),
+						eq(providerGears.providerId, providerGear.id),
 					),
 				)
 				.limit(1);
-			let providerGearId = providerGear[0]?.id;
+			let providerGearId = dbProviderGear[0]?.id;
 			if (providerGearId) {
 				// update data
 				await tx
@@ -412,8 +412,8 @@ export class Db {
 				providerGearId = uuidv7();
 				await tx.insert(providerGears).values({
 					id: providerGearId,
-					providerId,
-					provider,
+					providerId: providerGear.id,
+					provider: providerGear.provider,
 					data: JSON.stringify(data),
 				});
 			}
@@ -438,7 +438,8 @@ export class Db {
 							.set({
 								dateEnd: data.dateEnd,
 							})
-							.where(eq(gears.id, gearId));
+							.where(eq(gears.id, gearId))
+							.returning();
 					}
 				}
 			} else {
@@ -455,14 +456,18 @@ export class Db {
 							.set({
 								dateEnd: data.dateEnd,
 							})
-							.where(eq(gears.id, gearId));
+							.where(eq(gears.id, gearId))
+							.returning();
 					}
 				} else {
 					gearId = uuidv7();
-					await tx.insert(gears).values({
-						...data,
-						id: gearId,
-					});
+					await tx
+						.insert(gears)
+						.values({
+							...data,
+							id: gearId,
+						})
+						.returning();
 				}
 			}
 		});

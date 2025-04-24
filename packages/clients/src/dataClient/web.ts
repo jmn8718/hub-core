@@ -178,7 +178,7 @@ export class WebClient implements Client {
 		provider: Providers,
 	): Promise<ProviderSuccessResponse> {
 		try {
-			await this._manager.syncGear(provider);
+			await this._manager.syncGears(provider);
 			return {
 				success: true,
 			};

@@ -13,6 +13,7 @@ export enum GearType {
 	SHOES = "shoes",
 	INSOLE = "insole",
 	BIKE = "bike",
+	OTHER = "other",
 }
 
 export enum ActivityType {

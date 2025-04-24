@@ -5,7 +5,6 @@ import {
 	ActivityType,
 	GearType,
 	type IDbActivity,
-	type IDbGear,
 	Providers,
 } from "@repo/types";
 import {
@@ -68,18 +67,34 @@ function mapActivity({
 	};
 }
 
-function mapGear(gear: Gear): { id: string; data: Omit<IDbGear, "id"> } {
+function mapGearType(gearTypeName: Gear["gearTypeName"]): GearType {
+	switch (gearTypeName) {
+		case "Shoes":
+			return GearType.SHOES;
+		case "Other":
+			return GearType.INSOLE;
+		case "Bike":
+			return GearType.BIKE;
+		default:
+			return GearType.OTHER;
+	}
+}
+function mapGear(gear: Gear): IInsertGearPayload {
 	const codeName = gear.displayName || gear.customMakeModel || "n/a";
 	const code = codeName.toLowerCase().replaceAll(" ", "-");
 	return {
-		id: gear.gearPk.toString(),
+		providerGear: {
+			id: gear.uuid.toString(),
+			provider: GarminClient.PROVIDER,
+			data: JSON.stringify(gear),
+		},
 		data: {
 			name: gear.customMakeModel || gear.displayName || "",
 			code,
 			dateBegin: gear.dateBegin,
 			dateEnd: gear.dateEnd || undefined,
 			maximumDistance: gear.maximumMeters || 0,
-			type: gear.gearTypeName === "Shoes" ? GearType.SHOES : GearType.INSOLE,
+			type: mapGearType(gear.gearTypeName),
 			brand: gear.gearMakeName || "n/a",
 		},
 	};
@@ -211,17 +226,7 @@ export class GarminClient implements Client {
 					data: "{}", // JSON.stringify(activity),
 				},
 			},
-			gears: gears.map((currentGear) => {
-				const { id, data } = mapGear(currentGear);
-				return {
-					data,
-					providerGear: {
-						id,
-						provider: GarminClient.PROVIDER,
-						data: JSON.stringify(currentGear),
-					},
-				};
-			}),
+			gears: gears.map((currentGear) => mapGear(currentGear)),
 		};
 	}
 
@@ -261,8 +266,11 @@ export class GarminClient implements Client {
 		);
 	}
 
-	async syncGears(): Promise<IInsertGearPayload[]> {
-		throw new Error("Not supported");
+	syncGears(): Promise<IInsertGearPayload[]> {
+		return this._client
+			.getUserSettings()
+			.then((settings) => this._client.getGears(settings.id))
+			.then((gears) => gears.map((currentGear) => mapGear(currentGear)));
 	}
 
 	async linkActivityGear(activityId: string, gearId: string) {

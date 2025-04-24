@@ -40,7 +40,7 @@ export class ProviderManager {
 		return client.connect(credentials);
 	}
 
-	public syncGear(provider: Providers) {
+	public syncGears(provider: Providers) {
 		const client = this._getProvider(provider);
 		return client.syncGears().then((gears) => {
 			if (gears.length === 0) return [];

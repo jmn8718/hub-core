@@ -79,6 +79,7 @@ export function Gears() {
 				[GearType.SHOES]: [],
 				[GearType.INSOLE]: [],
 				[GearType.BIKE]: [],
+				[GearType.OTHER]: [],
 			} as Record<GearType, IDbGear[]>,
 		);
 	}, [search, showRetired, gears]);

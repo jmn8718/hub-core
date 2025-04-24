@@ -11,18 +11,14 @@ export interface IInsertActivityPayload {
 			data: string;
 		};
 	};
-	gears?: {
-		data: Omit<IDbGear, "id">;
-		providerGear?: {
-			id: string;
-			provider: Providers;
-			data: string;
-		};
-	}[];
+	gears?: IInsertGearPayload[];
 }
 
 export interface IInsertGearPayload {
 	data: Omit<IDbGear, "id">;
-	provider: Providers;
-	providerId: string;
+	providerGear: {
+		id: string;
+		provider: Providers;
+		data: string;
+	};
 }

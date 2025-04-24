@@ -45,7 +45,7 @@ ipcMain.handle(
 			provider: Providers;
 		},
 	) => {
-		await manager.syncGear(provider);
+		await manager.syncGears(provider);
 	},
 );
 
