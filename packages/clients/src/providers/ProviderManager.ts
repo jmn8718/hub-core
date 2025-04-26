@@ -3,15 +3,16 @@ import { type Credentials, Providers } from "@repo/types";
 import pMap from "p-map";
 import pQueue from "p-queue";
 import type { Client } from "./Client.js";
+import { Cache } from "./cache.js";
 import { CorosClient } from "./coros.js";
 import { GarminClient } from "./garmin.js";
 
-const initializeProviderClient = (provider: Providers) => {
+const initializeProviderClient = (provider: Providers, cache: Cache) => {
 	if (provider === Providers.COROS) {
-		return new CorosClient();
+		return new CorosClient(cache);
 	}
 	if (provider === Providers.GARMIN) {
-		return new GarminClient();
+		return new GarminClient(cache);
 	}
 	throw new Error("Invalid client");
 };
@@ -22,8 +23,11 @@ export class ProviderManager {
 	// @ts-expect-error no need to initialize with undefined
 	private _clients: Record<Providers, Client | undefined> = {};
 
-	constructor(db: Db) {
+	private _cache: Cache;
+
+	constructor(db: Db, dirname?: string) {
 		this._db = db;
+		this._cache = new Cache(dirname);
 	}
 
 	private _getProvider(provider: Providers) {
@@ -34,7 +38,7 @@ export class ProviderManager {
 
 	public initializeClient(provider: Providers) {
 		if (this._clients[provider]) return;
-		this._clients[provider] = initializeProviderClient(provider);
+		this._clients[provider] = initializeProviderClient(provider, this._cache);
 	}
 
 	public connect(provider: Providers, credentials: Credentials) {

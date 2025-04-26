@@ -1,9 +1,10 @@
 import { ProviderManager } from "@repo/clients";
 import { type Credentials, Providers, StorageKeys } from "@repo/types";
+import { app } from "electron";
 import { db } from "./db.js";
 import { storage } from "./storage.js";
 
-export const manager = new ProviderManager(db);
+export const manager = new ProviderManager(db, app.getPath("userData"));
 
 export const initializeClients = async () => {
 	const corosCredentials = storage.getValue<Credentials>(

@@ -15,9 +15,9 @@ import {
 	type IActivityDetails,
 } from "garmin-connect";
 import pMap from "p-map";
+import pQueue from "p-queue";
 import type { Client } from "./Client.js";
-
-const localCache: Record<string, Gear[]> = {};
+import type { Cache } from "./cache.js";
 
 function mapActivity({
 	isActivityDetails,
@@ -112,12 +112,17 @@ export class GarminClient implements Client {
 
 	public static PROVIDER = Providers.GARMIN;
 
-	constructor() {
+	private _queue = new pQueue({ concurrency: 4 });
+
+	private _cache: Cache;
+
+	constructor(cache: Cache) {
 		this._client = new GarminConnect({
 			username: "",
 			password: "",
 		});
 		this._signedIn = false;
+		this._cache = cache;
 	}
 
 	async connect({
@@ -136,15 +141,19 @@ export class GarminClient implements Client {
 	}
 
 	private populateActivityGear(activityId: number) {
-		const cacheValue = localCache[activityId.toString()];
-		if (cacheValue) {
-			return Promise.resolve(cacheValue);
-		}
+		const cacheKey = `garmin_gears_${activityId}`;
+
+		const cacheValue =
+			this._cache.get<Awaited<ReturnType<typeof this._client.getActivityGear>>>(
+				cacheKey,
+			);
+		if (cacheValue) return Promise.resolve(cacheValue);
+
 		console.debug(
 			`${GarminClient.PROVIDER}: fetching activity gear ${activityId}`,
 		);
 		return this._client.getActivityGear(activityId.toString()).then((gears) => {
-			localCache[activityId.toString()] = gears;
+			this._cache.set(cacheKey, gears);
 			return gears;
 		});
 	}
@@ -200,10 +209,20 @@ export class GarminClient implements Client {
 		return data;
 	}
 
-	getActivity(id: string) {
-		return this._client.getActivity({
+	async getActivity(id: string) {
+		const cacheKey = `garmin_activity_${id}`;
+		const cacheValue =
+			this._cache.get<Awaited<ReturnType<typeof this._client.getActivity>>>(
+				cacheKey,
+			);
+		if (cacheValue) return cacheValue;
+		const data = await this._client.getActivity({
 			activityId: Number(id),
 		});
+		if (data) {
+			this._cache.set(cacheKey, data);
+		}
+		return data;
 	}
 
 	public async syncActivity(
@@ -265,13 +284,14 @@ export class GarminClient implements Client {
 			);
 			return [];
 		}
-		return pMap(
-			newActivities,
-			(activity) => this.syncActivity(activity.activityId.toString()),
-			{
-				concurrency: 1,
-			},
+		const results = await pMap(newActivities, (activity) =>
+			this._queue
+				.add(() => this.syncActivity(activity.activityId.toString()))
+				.catch((err) => {
+					console.error(err);
+				}),
 		);
+		return results.filter((value) => !!value) as IInsertActivityPayload[];
 	}
 
 	syncGears(): Promise<IInsertGearPayload[]> {

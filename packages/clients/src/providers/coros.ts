@@ -8,7 +8,9 @@ import {
 } from "@repo/types";
 import { type ActivityData, CorosApi } from "coros-connect";
 import pMap from "p-map";
+import pQueue from "p-queue";
 import type { Client } from "./Client.js";
+import type { Cache } from "./cache.js";
 
 const EXPORT_FILE_EXTENSION = "fit";
 
@@ -45,12 +47,17 @@ export class CorosClient implements Client {
 
 	public static PROVIDER = Providers.COROS;
 
-	constructor() {
+	private _queue = new pQueue({ concurrency: 3 });
+
+	private _cache: Cache;
+
+	constructor(cache: Cache) {
 		this._client = new CorosApi({
 			email: "",
 			password: "",
 		});
 		this._signedIn = false;
+		this._cache = cache;
 	}
 
 	async connect({
@@ -123,8 +130,18 @@ export class CorosClient implements Client {
 		});
 	}
 
-	getActivity(id: string) {
-		return this._client.getActivityDetails(id);
+	async getActivity(id: string) {
+		const cacheKey = `coros_activity_${id}`;
+		const cacheValue =
+			this._cache.get<
+				Awaited<ReturnType<typeof this._client.getActivityDetails>>
+			>(cacheKey);
+		if (cacheValue) return cacheValue;
+		const data = await this._client.getActivityDetails(id);
+		if (data) {
+			this._cache.set(cacheKey, data);
+		}
+		return data;
 	}
 
 	public syncActivity(activityId: string): Promise<IInsertActivityPayload> {
@@ -158,13 +175,14 @@ export class CorosClient implements Client {
 		if (newActivities.length === 0) {
 			return [];
 		}
-		return pMap(
-			newActivities,
-			async (activity) => this.syncActivity(activity.labelId),
-			{
-				concurrency: 1,
-			},
+		const results = await pMap(newActivities, async (activity) =>
+			this._queue
+				.add(() => this.syncActivity(activity.labelId))
+				.catch((err) => {
+					console.error(err);
+				}),
 		);
+		return results.filter((value) => !!value) as IInsertActivityPayload[];
 	}
 
 	async syncGears(): Promise<IInsertGearPayload[]> {
