@@ -232,9 +232,12 @@ export class WebClient implements Client {
 		}
 	}
 
-	async providerSync(provider: Providers): Promise<ProviderSuccessResponse> {
+	async providerSync(
+		provider: Providers,
+		force = false,
+	): Promise<ProviderSuccessResponse> {
 		try {
-			await this._manager.sync(provider);
+			await this._manager.sync(provider, force);
 			return {
 				success: true,
 			};

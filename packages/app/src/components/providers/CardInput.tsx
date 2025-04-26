@@ -171,7 +171,7 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 		setLocalLoading(true);
 
 		try {
-			const result = await client.providerSync(provider);
+			const result = await client.providerSync(provider, true);
 			if (result.success) {
 				toast.success("Activities synced", { transition: Bounce });
 				setValue(

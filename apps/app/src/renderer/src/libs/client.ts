@@ -256,10 +256,14 @@ export class AppClient implements Client {
 		}
 	}
 
-	async providerSync(provider: Providers): Promise<ProviderSuccessResponse> {
+	async providerSync(
+		provider: Providers,
+		force = false,
+	): Promise<ProviderSuccessResponse> {
 		try {
 			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_SYNC, {
 				provider,
+				force,
 			});
 			return {
 				success: true,

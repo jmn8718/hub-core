@@ -1,6 +1,7 @@
 import type { Db } from "@repo/db";
 import { type Credentials, Providers } from "@repo/types";
 import pMap from "p-map";
+import pQueue from "p-queue";
 import type { Client } from "./Client.js";
 import { CorosClient } from "./coros.js";
 import { GarminClient } from "./garmin.js";
@@ -16,6 +17,7 @@ const initializeProviderClient = (provider: Providers) => {
 };
 
 export class ProviderManager {
+	private _queue = new pQueue({ concurrency: 1 });
 	private _db: Db;
 	// @ts-expect-error no need to initialize with undefined
 	private _clients: Record<Providers, Client | undefined> = {};
@@ -50,26 +52,32 @@ export class ProviderManager {
 		});
 	}
 
-	public sync(provider: Providers) {
+	public sync(provider: Providers, force = false) {
 		const client = this._getProvider(provider);
-		return this._db
-			.getLastProviderActivity(provider)
-			.then((lastDbProviderActivity) =>
-				client.sync({
-					id: lastDbProviderActivity?.id,
-					lastTimestamp: lastDbProviderActivity?.timestamp,
-				}),
-			)
-			.then((activities) => {
-				if (activities.length === 0) return [];
-				return pMap(
-					activities,
-					(activityPayload) => this._db.insertActivity(activityPayload),
-					{
-						concurrency: 1,
-					},
-				);
-			});
+		return (
+			force
+				? client.sync({})
+				: this._db
+						.getLastProviderActivity(provider)
+						.then((lastDbProviderActivity) =>
+							client.sync({
+								id: lastDbProviderActivity?.id,
+								lastTimestamp: lastDbProviderActivity?.timestamp,
+							}),
+						)
+		).then((activities) => {
+			if (activities.length === 0) return [];
+			return pMap(activities, (activityPayload) =>
+				this._queue
+					.add(() => this._db.insertActivity(activityPayload))
+					.catch((err) => {
+						console.warn(
+							`error on ${activityPayload.activity.providerActivity?.id}`,
+						);
+						console.error(err);
+					}),
+			);
+		});
 	}
 
 	public syncActivity(provider: Providers, activityId: string) {

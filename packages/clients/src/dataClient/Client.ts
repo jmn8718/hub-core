@@ -85,7 +85,10 @@ export abstract class Client {
 		gearId: string,
 	): Promise<ProviderSuccessResponse>;
 
-	abstract providerSync(provider: Providers): Promise<ProviderSuccessResponse>;
+	abstract providerSync(
+		provider: Providers,
+		force?: boolean,
+	): Promise<ProviderSuccessResponse>;
 	abstract providerConnect(
 		provider: Providers,
 		credentials: Credentials,

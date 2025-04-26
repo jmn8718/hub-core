@@ -8,11 +8,13 @@ ipcMain.handle(
 		_event,
 		{
 			provider,
+			force = false,
 		}: {
 			provider: Providers;
+			force?: boolean;
 		},
 	) => {
-		await manager.sync(provider);
+		await manager.sync(provider, force);
 	},
 );
 
