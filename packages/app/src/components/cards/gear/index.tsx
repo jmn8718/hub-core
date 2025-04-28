@@ -49,7 +49,6 @@ export const GearCard: FC<GearCardProps> = ({ data }) => {
 		setLocalLoading(true);
 		const result = await client.editGear(gearId, { [field]: value });
 		if (!result.success) {
-			// handle error
 			toast.error(result.error, {
 				hideProgressBar: false,
 				closeOnClick: false,
@@ -118,11 +117,13 @@ export const GearCard: FC<GearCardProps> = ({ data }) => {
 						<div
 							className={`h-2.5 rounded-full ${
 								// eslint-disable-next-line no-nested-ternary
-								usagePercentage > 80
-									? "bg-red-500"
-									: usagePercentage > 50
-										? "bg-yellow-500"
-										: "bg-green-500"
+								usagePercentage >= 100
+									? "bg-black"
+									: usagePercentage > 80
+										? "bg-red-500"
+										: usagePercentage > 50
+											? "bg-yellow-500"
+											: "bg-green-500"
 							}`}
 							style={{ width: `${Math.min(usagePercentage, 100)}%` }}
 						/>
@@ -133,7 +134,7 @@ export const GearCard: FC<GearCardProps> = ({ data }) => {
 							isDarkMode ? "text-white" : "text-gray-500",
 						)}
 					>
-						<span>{formatDistance(0 /*gearData.total*/)}</span>
+						<span>{formatDistance(gearData.distance)}</span>
 						{!gearData.dateEnd ? (
 							<EditableNumber
 								value={gearData.maximumDistance}
