@@ -244,7 +244,7 @@ export class Db {
 			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId))
 			.orderBy(order(activities.timestamp));
 
-		const dataQuery = cursor ? select.where(gt(gears.id, cursor)) : select;
+		const dataQuery = cursor ? select.where(gt(activities.id, cursor)) : select;
 
 		const result = await this._client.batch([
 			this._client.select({ count: count() }).from(activities),
