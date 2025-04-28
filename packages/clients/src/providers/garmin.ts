@@ -1,4 +1,4 @@
-import { isBefore } from "@repo/dates";
+import { formatDate, isBefore } from "@repo/dates";
 import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
 import {
 	ActivitySubType,
@@ -136,6 +136,7 @@ export class GarminClient implements Client {
 			await this._client.login(username, password);
 			this._lastTokenRefreshed = new Date();
 			this._signedIn = true;
+			console.log(`${GarminClient.PROVIDER}: client connected`);
 		} catch (error) {
 			this._signedIn = false;
 			console.error(error);
@@ -162,18 +163,28 @@ export class GarminClient implements Client {
 	}
 
 	private fetchRunningActivities(activitiesToFetch = 2, start = 0) {
+		const cacheKey = `garmin_activities_list_${formatDate(new Date(), { format: "YYYY-MM-DD" })}_${start}_${activitiesToFetch}`;
+
+		const cacheValue =
+			this._cache.get<Awaited<ReturnType<typeof this._client.getActivities>>>(
+				cacheKey,
+			);
+		if (cacheValue) return Promise.resolve(cacheValue);
+
 		console.debug(
 			`${GarminClient.PROVIDER}: fetching activities ${activitiesToFetch} ${start}`,
 		);
-		return this._client.getActivities(
-			start,
-			activitiesToFetch,
-			GarminActivityType.Running,
-		);
+
+		return this._client
+			.getActivities(start, activitiesToFetch, GarminActivityType.Running)
+			.then((data) => {
+				this._cache.set(cacheKey, data);
+				return data;
+			});
 	}
 
 	private async getActivities({
-		size = 3,
+		size = 2,
 		lastId,
 	}: {
 		size?: number;
@@ -244,7 +255,7 @@ export class GarminClient implements Client {
 					providerActivity: {
 						id: dbActivity.id,
 						provider: GarminClient.PROVIDER,
-						original: dbActivity.manufacturer.toLowerCase().includes("GARMIN"),
+						original: dbActivity.manufacturer.toLowerCase().includes("garmin"),
 						timestamp: dbActivity.timestamp,
 						// at the moment it does not store all the raw data as it includes a lot of data
 						data: "{}", // JSON.stringify(activity),

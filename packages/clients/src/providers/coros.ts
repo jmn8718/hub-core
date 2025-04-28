@@ -1,4 +1,4 @@
-import { dayjs } from "@repo/dates";
+import { dayjs, formatDate } from "@repo/dates";
 import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
 import {
 	ActivitySubType,
@@ -70,11 +70,48 @@ export class CorosClient implements Client {
 			this._userId = result.userId;
 			this._lastTokenRefreshed = new Date();
 			this._signedIn = true;
+			console.log(`${CorosClient.PROVIDER}: client connected`);
 		} catch (error) {
 			this._signedIn = false;
 			console.error(error);
 			throw error;
 		}
+	}
+
+	private _fetchRunningActivities({
+		page,
+		size,
+		from,
+		to,
+	}: {
+		page: number;
+		size: number;
+		from?: Date;
+		to?: Date;
+	}) {
+		const cacheKey = `coros_activities_list_${formatDate(new Date(), { format: "YYYY-MM-DD" })}_${page}_${size}`;
+
+		const cacheValue =
+			this._cache.get<
+				Awaited<ReturnType<typeof this._client.getActivitiesList>>
+			>(cacheKey);
+		if (cacheValue) return Promise.resolve(cacheValue);
+
+		console.debug(
+			`${CorosClient.PROVIDER}: fetching activities ${page} ${size} ${from} ${to}`,
+		);
+
+		return this._client
+			.getActivitiesList({
+				page,
+				size,
+				from,
+				to,
+			})
+			.then((data) => {
+				this._cache.set(cacheKey, data);
+				return data;
+			});
 	}
 
 	private async fetchRunningActivities({
@@ -94,7 +131,7 @@ export class CorosClient implements Client {
 		>["dataList"] = [];
 
 		do {
-			const activities = await this._client.getActivitiesList({
+			const activities = await this._fetchRunningActivities({
 				page,
 				size: activitiesToFetch,
 				from,
@@ -154,7 +191,7 @@ export class CorosClient implements Client {
 					providerActivity: {
 						id: activityId,
 						provider: CorosClient.PROVIDER,
-						original: data.manufacturer.toLowerCase().includes("COROS"),
+						original: data.manufacturer.toLowerCase().includes("coros"),
 						timestamp: data.timestamp,
 						// at the moment it does not store all the raw data as it includes a lot of data
 						data: "{}", // JSON.stringify(activity),
