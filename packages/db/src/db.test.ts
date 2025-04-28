@@ -27,24 +27,35 @@ describe("db", () => {
 
 		const activities = await db.getActivities({ limit: 1 });
 		expect(activities.data.length).eq(1);
-		activityId = activities.data[0].id;
-		gearId = activities.data[0].gears[0].id;
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		activityId = activities.data[0]!.id;
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		gearId = activities.data[0]!.gears[0]!.id;
 	});
 
 	test("should get accumulated data", async () => {
 		const result = await db.getActivitiesOverview(12);
 		expect(result.length).eq(3);
-		expect(result[0].distance).eq(22388);
-		expect(result[1].distance).eq(8181);
-		expect(result[2].distance).eq(1514);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[0]!.distance).eq(22388);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[1]!.distance).eq(8181);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[2]!.distance).eq(1514);
 
-		expect(result[0].month).eq("2024 11");
-		expect(result[1].month).eq("2024 07");
-		expect(result[2].month).eq("2015 10");
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[0]!.month).eq("2024 11");
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[1]!.month).eq("2024 07");
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[2]!.month).eq("2015 10");
 
-		expect(result[0].count).eq(2);
-		expect(result[1].count).eq(1);
-		expect(result[2].count).eq(1);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[0]!.count).eq(2);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[1]!.count).eq(1);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[2]!.count).eq(1);
 	});
 
 	test("should get activities with limit", async () => {
@@ -75,9 +86,12 @@ describe("db", () => {
 		expect(result.data.length).to.eq(3);
 
 		// validate distance
-		expect(result.data[0].distance).to.eq(13208);
-		expect(result.data[1].distance).to.eq(23902);
-		expect(result.data[2].distance).to.eq(8181);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result.data[0]!.distance).to.eq(13208);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result.data[1]!.distance).to.eq(23902);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result.data[2]!.distance).to.eq(8181);
 	});
 
 	test("should get all gear connections", async () => {

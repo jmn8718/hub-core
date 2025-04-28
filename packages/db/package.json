@@ -26,6 +26,7 @@
     "@libsql/client": "0.15.4",
     "@repo/types": "workspace:*",
     "drizzle-orm": "0.41.0",
+    "p-map": "7.0.3",
     "uuidv7": "1.0.2"
   },
   "devDependencies": {

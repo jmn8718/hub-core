@@ -20,6 +20,7 @@ import {
 	sql,
 	sum,
 } from "drizzle-orm";
+import pMap from "p-map";
 import { uuidv7 } from "uuidv7";
 import type { DbClient } from "./client";
 import {
@@ -431,6 +432,22 @@ export class Db {
 			});
 		}
 
+		if (gears && gears.length > 0) {
+			await pMap(
+				gears,
+				(gear) =>
+					this.insertGear(gear).then((gearId) =>
+						this._client.insert(activityGears).values({
+							activityId,
+							gearId,
+						}),
+					),
+				{
+					concurrency: 1,
+				},
+			);
+		}
+
 		return activityId;
 	}
 
@@ -531,6 +548,7 @@ export class Db {
 						.returning();
 				}
 			}
+			return gearId;
 		});
 	}
 
