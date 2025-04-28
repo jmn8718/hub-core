@@ -1,5 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import { activities, activitiesData } from "../mocks/coros.js";
+import { Cache } from "./cache.js";
+import { CorosClient } from "./coros.js";
 
 vi.mock(import("coros-connect"), () => {
 	return {
@@ -26,10 +28,8 @@ vi.mock(import("coros-connect"), () => {
 	};
 });
 
-import { CorosClient } from "./coros.js";
-
 describe("coros client", () => {
-	const client = new CorosClient();
+	const client = new CorosClient(new Cache());
 
 	test("should connect", async () => {
 		await client.connect({

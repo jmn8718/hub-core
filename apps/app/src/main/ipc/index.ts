@@ -1,5 +1,8 @@
-import { Channels } from "@repo/types";
-import { dialog, ipcMain } from "electron";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { getFileExtension } from "@repo/clients";
+import { Channels, type Providers, StorageKeys } from "@repo/types";
+import { dialog, ipcMain, shell } from "electron";
 import { storage } from "../storage.js";
 
 // import other scoped ipc files
@@ -41,3 +44,30 @@ ipcMain.handle(
 ipcMain.handle(Channels.STORE_GET, async (_event, { key }: { key: string }) => {
 	return storage.getValue(key);
 });
+
+ipcMain.handle(Channels.OPEN_LINK, async (_event, { url }: { url: string }) => {
+	shell.openExternal(url);
+});
+
+ipcMain.handle(
+	Channels.FILE_EXISTS,
+	async (
+		_event,
+		{ provider, activityId }: { provider: Providers; activityId: string },
+	) => {
+		const downloadsFolder = storage.getValue(
+			StorageKeys.DOWNLOAD_FOLDER,
+		) as string;
+		if (!downloadsFolder) {
+			throw new Error("Missing downloads folder");
+		}
+		const filePath = join(
+			downloadsFolder,
+			provider.toUpperCase(),
+			`${activityId}.${getFileExtension(provider)}`,
+		);
+		return {
+			exitsFile: existsSync(filePath),
+		};
+	},
+);

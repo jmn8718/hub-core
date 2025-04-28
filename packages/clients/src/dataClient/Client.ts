@@ -102,4 +102,10 @@ export abstract class Client {
 	abstract signout(): Promise<undefined>;
 
 	abstract getDebugInfo(): ProviderSuccessResponse<{ data: string[] }>;
+
+	abstract openLink(url: string): Promise<void>;
+	abstract existsFile(params: {
+		provider: Providers;
+		activityId: string;
+	}): Promise<ProviderSuccessResponse<{ data: { exists: boolean } }>>;
 }

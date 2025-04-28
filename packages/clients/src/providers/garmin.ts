@@ -3,6 +3,7 @@ import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
 import {
 	ActivitySubType,
 	ActivityType,
+	FileExtensions,
 	GearType,
 	type IDbActivity,
 	Providers,
@@ -111,6 +112,8 @@ export class GarminClient implements Client {
 	private _lastTokenRefreshed: Date | undefined;
 
 	public static PROVIDER = Providers.GARMIN;
+
+	public static EXTENSION = FileExtensions.TCX;
 
 	private _queue = new pQueue({ concurrency: 4 });
 

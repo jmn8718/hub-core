@@ -18,7 +18,7 @@ vi.mock(import("garmin-connect"), async (importOriginal) => {
 	};
 });
 
-describe("coros client", () => {
+describe("provider manager", () => {
 	const client = createDbClient({
 		url: "file:../../test.sqlite",
 		logger: false,

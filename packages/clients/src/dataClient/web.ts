@@ -286,4 +286,15 @@ export class WebClient implements Client {
 			data: [],
 		};
 	}
+
+	async openLink(url: string): Promise<undefined> {
+		throw new Error("Not implemented");
+	}
+
+	existsFile(params: {
+		provider: Providers;
+		activityId: string;
+	}): Promise<ProviderSuccessResponse<{ data: { exists: boolean } }>> {
+		throw new Error("Not implemented");
+	}
 }

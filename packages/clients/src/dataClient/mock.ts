@@ -197,4 +197,12 @@ export class MockClient implements Client {
 			data: [],
 		};
 	}
+
+	async openLink(): Promise<undefined> {}
+	existsFile(params: {
+		provider: Providers;
+		activityId: string;
+	}): Promise<ProviderSuccessResponse<{ data: { exists: boolean } }>> {
+		return Promise.resolve({ success: true, data: { exists: false } });
+	}
 }

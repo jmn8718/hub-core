@@ -1,5 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import { activities, activitiesData, gears } from "../mocks/garmin.js";
+import { Cache } from "./cache.js";
+import { GarminClient } from "./garmin.js";
 
 vi.mock(import("garmin-connect"), async (importOriginal) => {
 	const mod = await importOriginal();
@@ -21,10 +23,8 @@ vi.mock(import("garmin-connect"), async (importOriginal) => {
 	};
 });
 
-import { GarminClient } from "./garmin.js";
-
 describe("coros client", () => {
-	const client = new GarminClient();
+	const client = new GarminClient(new Cache());
 
 	test("should fetch all the activities", async () => {
 		await client.connect({

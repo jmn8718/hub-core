@@ -9,6 +9,8 @@ import {
 	UserPen,
 } from "lucide-react";
 import { type FC, useEffect, useState } from "react";
+import { Bounce, toast } from "react-toastify";
+import { useDataClient } from "../../../contexts/DataClientContext.js";
 import { useLoading } from "../../../contexts/LoadingContext.js";
 import IconButton from "../../IconButton.js";
 
@@ -49,27 +51,35 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	refreshData,
 }) => {
 	const { setLocalLoading } = useLoading();
+	const { client } = useDataClient();
 	const [loading, setLoading] = useState(false);
 	const [hasDownloadFile, setHasDownloadFile] = useState(false);
 
 	const onProviderClick = async () => {
 		if (!connectionId) return;
-		// const url = generateExternalLink(connectionId, provider);
-		// await window.electron.ipcRenderer.invoke(Channels.OPEN_LINK, url);
+		try {
+			const url = generateExternalLink(connectionId, provider);
+			await client.openLink(url);
+		} catch (err) {
+			toast.error((err as Error).message, {
+				transition: Bounce,
+			});
+		}
 	};
 
 	const checkIsExported = async () => {
 		if (!connectionId) return;
-		// const result = (await window.electron.ipcRenderer.invoke(
-		//   Channels.FILE_EXISTS,
-		//   provider,
-		//   connectionId,
-		// )) as { exitsFile: boolean };
-		// if (result.exitsFile) {
-		//   setHasDownloadFile(true);
-		// } else {
-		//   // handle error
-		// }
+		const result = await client.existsFile({
+			provider,
+			activityId: connectionId,
+		});
+		if (result.success) {
+			if (result.data.exists) setHasDownloadFile(true);
+		} else {
+			toast.error(result.error, {
+				transition: Bounce,
+			});
+		}
 	};
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>

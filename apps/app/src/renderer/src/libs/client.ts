@@ -340,4 +340,29 @@ export class AppClient implements Client {
 			};
 		}
 	}
+
+	openLink(url: string): Promise<undefined> {
+		return window.electron.ipcRenderer.invoke(Channels.OPEN_LINK, url);
+	}
+
+	async existsFile(params: {
+		provider: Providers;
+		activityId: string;
+	}): Promise<ProviderSuccessResponse<{ data: { exists: boolean } }>> {
+		try {
+			const exists = await window.electron.ipcRenderer.invoke(
+				Channels.FILE_EXISTS,
+				params,
+			);
+			return {
+				success: true,
+				data: { exists },
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
 }

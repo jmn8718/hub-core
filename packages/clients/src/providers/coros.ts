@@ -3,6 +3,7 @@ import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
 import {
 	ActivitySubType,
 	ActivityType,
+	FileExtensions,
 	type IDbActivity,
 	Providers,
 } from "@repo/types";
@@ -11,8 +12,6 @@ import pMap from "p-map";
 import pQueue from "p-queue";
 import type { Client } from "./Client.js";
 import type { Cache } from "./cache.js";
-
-const EXPORT_FILE_EXTENSION = "fit";
 
 function mapActivityDetails(activity: ActivityData, id: string): IDbActivity {
 	return {
@@ -46,6 +45,8 @@ export class CorosClient implements Client {
 	private _lastTokenRefreshed: Date | undefined;
 
 	public static PROVIDER = Providers.COROS;
+
+	public static EXTENSION = FileExtensions.FIT;
 
 	private _queue = new pQueue({ concurrency: 3 });
 

@@ -104,7 +104,6 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 		setLocalLoading(true);
 		const result = await client.editActivity(activityId, { [field]: value });
 		if (!result.success) {
-			// handle error
 			toast.error(result.error, {
 				hideProgressBar: false,
 				closeOnClick: false,

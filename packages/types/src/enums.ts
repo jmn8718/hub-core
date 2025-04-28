@@ -4,6 +4,11 @@ export enum Providers {
 	STRAVA = "STRAVA",
 }
 
+export enum FileExtensions {
+	TCX = "tcx",
+	FIT = "fit",
+}
+
 export enum AppType {
 	WEB = "web",
 	DESKTOP = "desktop",
@@ -42,6 +47,8 @@ export enum Channels {
 	DB_GEAR = "DB_GEAR",
 	DB_GEAR_EDIT = "DB_GEAR_EDIT",
 	DB_OVERVIEW = "DB_OVERVIEW",
+	FILE_EXISTS = "FILE_EXISTS",
+	OPEN_LINK = "OPEN_LINK",
 	PROVIDERS_SYNC = "PROVIDERS_SYNC",
 	PROVIDERS_SYNC_GEAR = "PROVIDERS_SYNC_GEAR",
 	PROVIDERS_CONNECT = "PROVIDERS_CONNECT",
