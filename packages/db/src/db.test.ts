@@ -1,6 +1,14 @@
 import { Providers } from "@repo/types";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { beforeAll, describe, expect, test } from "vitest";
+import {
+	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+	vi,
+} from "vitest";
 import { createDbClient } from "./client";
 import { Db } from "./db";
 import { clearData, importData } from "./seed/common";
@@ -33,27 +41,62 @@ describe("db", () => {
 		gearId = activities.data[0]!.gears[0]!.id;
 	});
 
-	test("should get accumulated data", async () => {
-		const result = await db.getActivitiesOverview(12);
-		expect(result.length).eq(3);
+	beforeEach(() => {
+		// tell vitest we use mocked time
+		vi.useFakeTimers();
+	});
+
+	afterEach(() => {
+		// restoring date after each test run
+		vi.useRealTimers();
+	});
+
+	test("should get all accumulated data", async () => {
+		const date = new Date(2024, 11, 15, 0);
+		vi.setSystemTime(date);
+
+		const result = await db.getActivitiesOverview();
+		expect(result.length).eq(12);
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
-		expect(result[0]!.distance).eq(22388);
+		expect(result[1]!.distance).eq(22388);
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
-		expect(result[1]!.distance).eq(8181);
+		expect(result[2]!.distance).eq(1514);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[5]!.distance).eq(8181);
+
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[1]!.month).eq("2024 11");
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[2]!.month).eq("2024 10");
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[5]!.month).eq("2024 07");
+
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[1]!.count).eq(2);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[2]!.count).eq(1);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[5]!.count).eq(1);
+	});
+
+	test("should get limited accumulated data", async () => {
+		const date = new Date(2024, 11, 15);
+		vi.setSystemTime(date);
+
+		const result = await db.getActivitiesOverview(4);
+		expect(result.length).eq(4);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[1]!.distance).eq(22388);
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		expect(result[2]!.distance).eq(1514);
 
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
-		expect(result[0]!.month).eq("2024 11");
+		expect(result[1]!.month).eq("2024 11");
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
-		expect(result[1]!.month).eq("2024 07");
-		// biome-ignore lint/style/noNonNullAssertion: <explanation>
-		expect(result[2]!.month).eq("2015 10");
+		expect(result[2]!.month).eq("2024 10");
 
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
-		expect(result[0]!.count).eq(2);
-		// biome-ignore lint/style/noNonNullAssertion: <explanation>
-		expect(result[1]!.count).eq(1);
+		expect(result[1]!.count).eq(2);
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		expect(result[2]!.count).eq(1);
 	});

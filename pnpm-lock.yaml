@@ -422,6 +422,9 @@ importers:
       '@libsql/client':
         specifier: 0.15.4
         version: 0.15.4
+      '@repo/dates':
+        specifier: workspace:*
+        version: link:../dates
       '@repo/types':
         specifier: workspace:*
         version: link:../types
@@ -4541,7 +4544,7 @@ packages:
       '@vitest/spy': 3.0.8
       estree-walker: 3.0.3
       magic-string: 0.30.17
-      vite: 6.2.0(@types/node@22.12.0)(tsx@4.19.2)
+      vite: 6.2.0(@types/node@22.12.0)
     dev: true
 
   /@vitest/pretty-format@3.0.8:

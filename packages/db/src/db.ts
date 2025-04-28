@@ -1,3 +1,4 @@
+import { formatDate, monthsBefore } from "@repo/dates";
 import type {
 	ActivitiesData,
 	DbActivityPopulated,
@@ -16,6 +17,7 @@ import {
 	eq,
 	getTableColumns,
 	gt,
+	gte,
 	min,
 	sql,
 	sum,
@@ -67,6 +69,30 @@ function mapActivityRow({
 	} as DbActivityPopulated;
 }
 
+const fillEmptyMonths = (
+	data: { distance: string | null; count: number; month: unknown }[],
+	size = 12,
+) => {
+	const monthsMap = new Map();
+	for (let i = 0; i < size; i++) {
+		const currentMonth = formatDate(monthsBefore(i), { format: "YYYY MM" });
+		monthsMap.set(currentMonth, {
+			distance: 0,
+			count: 0,
+			month: currentMonth,
+		});
+	}
+	// biome-ignore lint/complexity/noForEach: <explanation>
+	data.forEach((row) => {
+		monthsMap.set(row.month, {
+			distance: Number.parseInt(row.distance || "0"),
+			count: row.count,
+			month: row.month as string,
+		});
+	});
+	return Array.from(monthsMap.values());
+};
+
 export class Db {
 	private _client: DbClient;
 
@@ -75,13 +101,19 @@ export class Db {
 	}
 
 	async getActivitiesOverview(limit = 12): Promise<IOverviewData[]> {
-		const subquery = await this._client
+		const subquery = this._client
 			.select({
 				distance: min(activities.distance).as("distance"),
 				timestamp: activities.timestamp,
 				month: sql`strftime('%Y %m', timestamp)`.as("month"),
 			})
 			.from(activities)
+			.where(
+				gte(
+					activities.timestamp,
+					formatDate(monthsBefore(limit), { format: "YYYY-MM-DD" }),
+				),
+			)
 			.groupBy(activities.timestamp)
 			.orderBy(desc(activities.timestamp))
 			.as("subquery");
@@ -94,13 +126,8 @@ export class Db {
 			})
 			.from(subquery)
 			.groupBy(subquery.month.sql)
-			.orderBy(desc(subquery.timestamp))
-			.limit(limit);
-		return result.map((row) => ({
-			distance: Number.parseInt(row.distance || "0"),
-			count: row.count,
-			month: row.month as string,
-		}));
+			.orderBy(desc(subquery.timestamp));
+		return fillEmptyMonths(result, limit);
 	}
 
 	getActivity(activityId: string): Promise<DbActivityPopulated | undefined> {

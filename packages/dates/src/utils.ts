@@ -41,3 +41,7 @@ export const isAfter = (
 ): boolean => {
 	return dayjs(referenceDate).isAfter(date, "s");
 };
+
+export const monthsBefore = (months: number): Date => {
+	return dayjs().subtract(months, "month").startOf("month").toDate();
+};
