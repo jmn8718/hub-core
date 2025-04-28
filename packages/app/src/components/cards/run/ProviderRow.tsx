@@ -1,5 +1,5 @@
 // import { Bounce, toast } from 'react-toastify';
-import { Providers } from "@repo/types";
+import { Providers, StorageKeys } from "@repo/types";
 import { cn } from "@repo/ui";
 import {
 	Download,
@@ -12,6 +12,7 @@ import { type FC, useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { useDataClient } from "../../../contexts/DataClientContext.js";
 import { useLoading } from "../../../contexts/LoadingContext.js";
+import { useStore } from "../../../contexts/StoreContext.js";
 import IconButton from "../../IconButton.js";
 
 interface ProviderRowProps {
@@ -30,7 +31,7 @@ const GARMIN_ACTIVITY_URL = (activityId: string) =>
 const COROS_ACTIVITY_URL = (activityId: string) =>
 	`https://training.coros.com/activity-detail?labelId=${activityId}&sportType=100`;
 
-const generateExternalLink = (activityId: string, provider: Providers) => {
+const generateExternalLink = (provider: Providers, activityId: string) => {
 	switch (provider) {
 		case Providers.COROS:
 			return COROS_ACTIVITY_URL(activityId);
@@ -52,13 +53,14 @@ const ProviderRow: FC<ProviderRowProps> = ({
 }) => {
 	const { setLocalLoading } = useLoading();
 	const { client } = useDataClient();
+	const { getValue } = useStore();
 	const [loading, setLoading] = useState(false);
 	const [hasDownloadFile, setHasDownloadFile] = useState(false);
 
 	const onProviderClick = async () => {
 		if (!connectionId) return;
 		try {
-			const url = generateExternalLink(connectionId, provider);
+			const url = generateExternalLink(provider, connectionId);
 			await client.openLink(url);
 		} catch (err) {
 			toast.error((err as Error).message, {
@@ -69,6 +71,8 @@ const ProviderRow: FC<ProviderRowProps> = ({
 
 	const checkIsExported = async () => {
 		if (!connectionId) return;
+		const hasDownloadsFolder = await getValue(StorageKeys.DOWNLOAD_FOLDER);
+		if (!hasDownloadsFolder) return;
 		const result = await client.existsFile({
 			provider,
 			activityId: connectionId,

@@ -342,7 +342,7 @@ export class AppClient implements Client {
 	}
 
 	openLink(url: string): Promise<undefined> {
-		return window.electron.ipcRenderer.invoke(Channels.OPEN_LINK, url);
+		return window.electron.ipcRenderer.invoke(Channels.OPEN_LINK, { url });
 	}
 
 	async existsFile(params: {

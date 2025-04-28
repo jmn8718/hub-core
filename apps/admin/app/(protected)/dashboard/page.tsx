@@ -37,7 +37,7 @@ export default async function DashboardPage() {
 									</td>
 									<td className="px-4">{webhook.id}</td>
 									<td className="px-4">
-										{formatDateWithTime(webhook.created_at)}
+										{formatDateWithTime(webhook.created_at, "Asia/Seoul")}
 									</td>
 									<td className="px-4">{webhook.object_type}</td>
 									<td className="px-4">{webhook.aspect_type}</td>

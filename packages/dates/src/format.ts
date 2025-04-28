@@ -12,9 +12,9 @@ export function formatDate(
 		timezone?: string;
 	},
 ): string {
-	const format = options?.format || "DD/MM/YYYY";
+	const format = options?.format || "YYYY/MM/DD";
 	const date = options?.timezone
-		? dayjs(dateParam).tz("Asia/Seoul")
+		? dayjs(dateParam).tz(options.timezone)
 		: dayjs(dateParam);
 	return date.format(format);
 }

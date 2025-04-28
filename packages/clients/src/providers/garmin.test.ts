@@ -9,10 +9,9 @@ vi.mock(import("garmin-connect"), async (importOriginal) => {
 		...mod,
 		GarminConnect: vi.fn().mockReturnValue({
 			login: vi.fn().mockImplementation(() => Promise.resolve()),
-			getActivities: vi.fn().mockImplementation((st, ac, ty) => {
-				console.log("--", st, ac, ty);
-				return Promise.resolve(activities);
-			}),
+			getActivities: vi
+				.fn()
+				.mockImplementation(() => Promise.resolve(activities)),
 			getActivity: vi
 				.fn()
 				.mockImplementation(({ activityId }: { activityId: string }) =>

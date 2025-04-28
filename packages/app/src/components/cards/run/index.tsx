@@ -176,7 +176,7 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 						<div className="flex items-center gap-2 text-sm">
 							<Clock size={16} className="text-gray-500" />
 							<span className="pl-2">
-								{formatDateWithTime(activityData.timestamp)}
+								{formatDateWithTime(activityData.timestamp, "Asia/Seoul")}
 							</span>
 						</div>
 						<div className="flex items-center gap-2 text-sm">
