@@ -3,6 +3,7 @@ import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
 import {
 	ActivitySubType,
 	ActivityType,
+	type DbActivityPopulated,
 	FileExtensions,
 	GearType,
 	type IDbActivity,
@@ -20,52 +21,46 @@ import pQueue from "p-queue";
 import type { Client } from "./Client.js";
 import type { Cache } from "./cache.js";
 
+function mapActivityType(type: ActivityType) {
+	if (type === ActivityType.RUN) return "running";
+	if (type === ActivityType.SWIM) return "lap_swimming";
+	throw new Error(`Activity type: ${type} not supported for manual upload`);
+}
+
 function mapActivity({
-	isActivityDetails,
 	activity,
-}:
-	| { isActivityDetails: true; activity: IActivityDetails }
-	| { isActivityDetails: false; activity: IActivity }): IDbActivity {
-	const manufacturer = isActivityDetails
-		? activity.metadataDTO.manufacturer
-		: activity.manufacturer;
-	const isManual = isActivityDetails
-		? activity.metadataDTO.manualActivity
-		: activity.manualActivity;
-	const deviceId = isActivityDetails
-		? activity.metadataDTO.deviceMetaDataDTO.deviceId
-		: activity.deviceId || "";
+}: { activity: IActivityDetails }): IDbActivity {
+	const manufacturer = activity.metadataDTO.manufacturer;
+	const isManual = activity.metadataDTO.manualActivity;
+	const deviceId = activity.metadataDTO.deviceMetaDataDTO.deviceId || "";
+	const type =
+		activity.activityTypeDTO.typeKey === "running"
+			? ActivityType.RUN
+			: ActivityType.OTHER;
+	const subtype =
+		type === ActivityType.RUN
+			? activity.eventTypeDTO.typeKey === "race"
+				? ActivitySubType.ROAD
+				: ActivitySubType.EASY_RUN
+			: undefined;
 	return {
 		id: activity.activityId.toString(),
-		timestamp: new Date(
-			isActivityDetails
-				? activity.summaryDTO.startTimeLocal
-				: activity.beginTimestamp,
-		).toISOString(),
+		timestamp: new Date(activity.summaryDTO.startTimeGMT).getTime(),
+		timezone: activity.timeZoneUnitDTO.timeZone,
 		name: activity.activityName || "",
-		distance: Math.round(
-			isActivityDetails ? activity.summaryDTO.distance : activity.distance,
-		),
-		duration: Math.round(
-			isActivityDetails ? activity.summaryDTO.duration : activity.duration,
-		),
+		distance: Math.round(activity.summaryDTO.distance),
+		duration: Math.round(activity.summaryDTO.duration),
 		manufacturer:
 			manufacturer ||
 			(isManual || deviceId.toString() !== "0" ? "garmin" : "coros") ||
 			"",
 		locationName: activity.locationName || "",
 		locationCountry: "",
-		startLatitude:
-			(isActivityDetails
-				? activity.summaryDTO.startLatitude
-				: activity.startLatitude) || 0,
-		startLongitude:
-			(isActivityDetails
-				? activity.summaryDTO.startLongitude
-				: activity.startLongitude) || 0,
-		isEvent: 0,
-		type: ActivityType.RUN,
-		subtype: ActivitySubType.EASY_RUN,
+		startLatitude: activity.summaryDTO.startLatitude || 0,
+		startLongitude: activity.summaryDTO.startLongitude || 0,
+		isEvent: activity.eventTypeDTO.typeKey === "race" ? 1 : 0,
+		type,
+		subtype,
 	};
 }
 
@@ -81,6 +76,7 @@ function mapGearType(gearTypeName: Gear["gearTypeName"]): GearType {
 			return GearType.OTHER;
 	}
 }
+
 function mapGear(gear: Gear): IInsertGearPayload {
 	const codeName = gear.displayName || gear.customMakeModel || "n/a";
 	const code = codeName.toLowerCase().replaceAll(" ", "-");
@@ -247,7 +243,7 @@ export class GarminClient implements Client {
 			throw new Error(`Missing activity ${activityId}`);
 		}
 		try {
-			const dbActivity = mapActivity({ isActivityDetails: true, activity });
+			const dbActivity = mapActivity({ activity });
 			const gears = await this.populateActivityGear(activity.activityId);
 			return {
 				activity: {
@@ -276,7 +272,7 @@ export class GarminClient implements Client {
 		lastTimestamp,
 	}: {
 		id?: string;
-		lastTimestamp?: string;
+		lastTimestamp?: number;
 	}): Promise<IInsertActivityPayload[]> {
 		const newActivities = await this.getActivities({
 			size: id ? 3 : 100,
@@ -321,5 +317,69 @@ export class GarminClient implements Client {
 
 	async unlinkActivityGear(activityId: string, gearId: string) {
 		await this._client.unlinkActivityGear(gearId, Number(activityId));
+	}
+
+	createManualActivity(originalActivity: DbActivityPopulated): Promise<string> {
+		const activityType = mapActivityType(originalActivity.type);
+		return this._client
+			.addActivity({
+				activityName: originalActivity.name,
+				description: originalActivity.notes ?? "",
+				accessControlRuleDTO: {
+					typeId: 2,
+					typeKey: "private",
+				},
+				activityTypeDTO: {
+					typeKey: activityType,
+				},
+				eventTypeDTO: {
+					typeKey: "uncategorized",
+				},
+				metadataDTO: {
+					associatedCourseId: null,
+					autoCalcCalories: true,
+					videoUrl: null,
+				},
+				summaryDTO: {
+					averageHR: null,
+					averagePower: null,
+					averageRunCadence: null,
+					averageTemperature: null,
+					bmrCalories: 38,
+					calories: 0,
+					distance: originalActivity.distance,
+					duration: originalActivity.duration,
+					elapsedDuration: null,
+					elevationGain: null,
+					elevationLoss: null,
+					endLatitude: null,
+					endLongitude: null,
+					maxElevation: null,
+					minElevation: null,
+					maxHR: null,
+					maxRunCadence: null,
+					maxTemperature: null,
+					minTemperature: null,
+					movingDuration: null,
+					// @ts-expect-error
+					startTimeLocal: null,
+					startTimeGMT: new Date(originalActivity.timestamp).toISOString(),
+					startLatitude: originalActivity.startLatitude,
+					startLongitude: originalActivity.startLongitude,
+					...(activityType === "lap_swimming"
+						? {
+								numberOfActiveLengths: 80,
+								poolLength: 25,
+								unitOfPoolLength: {
+									unitKey: "meter",
+								},
+							}
+						: {}),
+				},
+				timeZoneUnitDTO: {
+					unitKey: originalActivity.timezone,
+				},
+			})
+			.then((newActivity) => newActivity.activityId.toString());
 	}
 }

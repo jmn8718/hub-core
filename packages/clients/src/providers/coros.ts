@@ -18,7 +18,8 @@ function mapActivityDetails(activity: ActivityData, id: string): IDbActivity {
 		id,
 		timestamp: new Date(
 			Math.floor(activity.summary.startTimestamp / 100) * 1000,
-		).toISOString(),
+		).getTime(),
+		timezone: "Etc/UTC",
 		name: activity.summary.name || "",
 		distance: Math.round(activity.summary.distance / 100),
 		duration: Math.round(activity.summary.workoutTime / 100),
@@ -157,7 +158,7 @@ export class CorosClient implements Client {
 		return data;
 	}
 
-	private getActivities(lastDate?: string) {
+	private getActivities(lastDate?: number) {
 		// add 1 day because coros filter by day precision
 		const from = lastDate ? dayjs(lastDate).add(1, "day").toDate() : undefined;
 		return this.fetchRunningActivities({
@@ -204,7 +205,7 @@ export class CorosClient implements Client {
 	async sync({
 		lastTimestamp,
 	}: {
-		lastTimestamp?: string;
+		lastTimestamp?: number;
 	}): Promise<IInsertActivityPayload[]> {
 		const newActivities = await this.getActivities(lastTimestamp);
 		console.log(
@@ -232,6 +233,10 @@ export class CorosClient implements Client {
 	}
 
 	async unlinkActivityGear(activityId: string, gearId: string) {
+		throw new Error("Not supported");
+	}
+
+	async createManualActivity(): Promise<string> {
 		throw new Error("Not supported");
 	}
 }

@@ -205,4 +205,32 @@ export class MockClient implements Client {
 	}): Promise<ProviderSuccessResponse<{ data: { exists: boolean } }>> {
 		return Promise.resolve({ success: true, data: { exists: false } });
 	}
+
+	async uploadActivityFile(params: {
+		provider: Providers;
+		providerActivityId: string;
+		target: Providers;
+	}): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
+
+	async downloadActivityFile(params: {
+		provider: Providers;
+		providerActivityId: string;
+	}): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
+
+	async exportActivityManual(params: {
+		target: Providers;
+		activityId: string;
+	}): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
 }

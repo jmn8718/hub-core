@@ -1,4 +1,5 @@
 import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
+import type { DbActivityPopulated } from "@repo/types";
 
 export abstract class Client {
 	abstract connect(params: {
@@ -8,7 +9,7 @@ export abstract class Client {
 
 	abstract sync(params: {
 		id?: string;
-		lastTimestamp?: string;
+		lastTimestamp?: number;
 	}): Promise<IInsertActivityPayload[]>;
 
 	abstract syncActivity(activityId: string): Promise<IInsertActivityPayload>;
@@ -21,4 +22,6 @@ export abstract class Client {
 	): Promise<void>;
 
 	abstract getActivity(id: string): Promise<unknown>;
+
+	abstract createManualActivity(data: DbActivityPopulated): Promise<string>;
 }

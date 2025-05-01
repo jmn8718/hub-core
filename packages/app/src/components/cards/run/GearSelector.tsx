@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { useTheme } from "../../../contexts/ThemeContext.js";
 
 interface GearSelectorProps {
-	activityDate: string;
+	activityDate: number;
 	type: GearType;
 	availableGear: IDbGear[];
 	// eslint-disable-next-line react/require-default-props

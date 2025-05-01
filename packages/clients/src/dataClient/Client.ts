@@ -108,4 +108,20 @@ export abstract class Client {
 		provider: Providers;
 		activityId: string;
 	}): Promise<ProviderSuccessResponse<{ data: { exists: boolean } }>>;
+
+	abstract uploadActivityFile(params: {
+		provider: Providers;
+		providerActivityId: string;
+		target: Providers;
+	}): Promise<ProviderSuccessResponse>;
+
+	abstract downloadActivityFile(params: {
+		provider: Providers;
+		providerActivityId: string;
+	}): Promise<ProviderSuccessResponse>;
+
+	abstract exportActivityManual(params: {
+		target: Providers;
+		activityId: string;
+	}): Promise<ProviderSuccessResponse>;
 }

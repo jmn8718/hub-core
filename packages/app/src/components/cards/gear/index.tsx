@@ -19,6 +19,13 @@ interface GearCardProps {
 	data: IDbGearWithDistance;
 }
 
+function getPercentageColor(percentage: number) {
+	if (percentage >= 100) return "bg-black";
+	if (percentage >= 80) return "bg-red-500";
+	if (percentage >= 50) return "bg-yellow-500";
+	return "bg-green-500";
+}
+
 export const GearCard: FC<GearCardProps> = ({ data }) => {
 	const { isDarkMode } = useTheme();
 	const { setLocalLoading } = useLoading();
@@ -115,16 +122,9 @@ export const GearCard: FC<GearCardProps> = ({ data }) => {
 					</div>
 					<div className="w-full rounded-full h-2.5 bg-gray-200">
 						<div
-							className={`h-2.5 rounded-full ${
-								// eslint-disable-next-line no-nested-ternary
-								usagePercentage >= 100
-									? "bg-black"
-									: usagePercentage > 80
-										? "bg-red-500"
-										: usagePercentage > 50
-											? "bg-yellow-500"
-											: "bg-green-500"
-							}`}
+							className={`h-2.5 rounded-full ${getPercentageColor(
+								usagePercentage,
+							)}`}
 							style={{ width: `${Math.min(usagePercentage, 100)}%` }}
 						/>
 					</div>
@@ -153,7 +153,7 @@ export const GearCard: FC<GearCardProps> = ({ data }) => {
 
 			<SectionContainer>
 				<div className="flex items-center gap-2">
-					<span className={cn("text-sm")}>Code:</span>
+					<span className="text-sm">Code:</span>
 					{!gearData.dateEnd ? (
 						<EditableText
 							value={gearData.code}

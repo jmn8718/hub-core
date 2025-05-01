@@ -297,4 +297,26 @@ export class WebClient implements Client {
 	}): Promise<ProviderSuccessResponse<{ data: { exists: boolean } }>> {
 		throw new Error("Not implemented");
 	}
+
+	async uploadActivityFile(params: {
+		provider: Providers;
+		providerActivityId: string;
+		target: Providers;
+	}): Promise<ProviderSuccessResponse> {
+		throw new Error("Not implemented");
+	}
+
+	async downloadActivityFile(params: {
+		provider: Providers;
+		providerActivityId: string;
+	}): Promise<ProviderSuccessResponse> {
+		throw new Error("Not implemented");
+	}
+
+	async exportActivityManual(params: {
+		target: Providers;
+		activityId: string;
+	}): Promise<ProviderSuccessResponse> {
+		throw new Error("Not implemented");
+	}
 }

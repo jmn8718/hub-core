@@ -6,6 +6,7 @@ import { dialog, ipcMain, shell } from "electron";
 import { storage } from "../storage.js";
 
 // import other scoped ipc files
+import "./activity.js";
 import "./db.js";
 import "./providers.js";
 

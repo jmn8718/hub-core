@@ -19,7 +19,7 @@ const prepareObsidianFile = (data: DbActivityPopulated, gears: IDbGear[]) => {
 	const shoe = gears.find(({ id }) => id === shoeGear?.id);
 	return [
 		"---",
-		`date: ${formatDate(data.timestamp, { format: "YYYY-MM-DDTHH:mm:ss" })}`,
+		`date: ${formatDate(new Date(data.timestamp), { format: "YYYY-MM-DDTHH:mm:ss", timezone: data.timezone })}`,
 		`time: ${formatDuration(data.duration)}`,
 		`distance: ${formatDistance(data.distance, false)}`,
 		`shoes: ${shoe?.code ?? ""}`,

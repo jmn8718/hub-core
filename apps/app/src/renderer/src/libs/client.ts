@@ -365,4 +365,64 @@ export class AppClient implements Client {
 			};
 		}
 	}
+
+	async uploadActivityFile(params: {
+		provider: Providers;
+		providerActivityId: string;
+		target: Providers;
+	}): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(
+				Channels.ACTIVITY_UPLOAD_FILE,
+				params,
+			);
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async downloadActivityFile(params: {
+		provider: Providers;
+		providerActivityId: string;
+	}): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(
+				Channels.ACTIVITY_DOWNLOAD_FILE,
+				params,
+			);
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+	async exportActivityManual(params: {
+		target: Providers;
+		activityId: string;
+	}): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(
+				Channels.ACTIVITY_EXPORT_MANUAL,
+				params,
+			);
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
 }

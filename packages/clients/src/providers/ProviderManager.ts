@@ -177,4 +177,45 @@ export class ProviderManager {
 				})
 		);
 	}
+
+	public uploadActivityFile(params: {
+		provider: Providers;
+		providerActivityId: string;
+		target: Providers;
+	}) {
+		const sourceClient = this._getProvider(params.provider);
+		const targetClient = this._getProvider(params.target);
+		// get file path
+
+		// upload
+	}
+
+	public downloadActivityFile(params: {
+		provider: Providers;
+		providerActivityId: string;
+	}) {
+		const client = this._getProvider(params.provider);
+		// download activity
+	}
+
+	public exportActivityManual(params: {
+		target: Providers;
+		activityId: string;
+	}) {
+		const client = this._getProvider(params.target);
+		return this._db
+			.getActivity(params.activityId)
+			.then((activity) => {
+				if (!activity) throw new Error("Missing activity");
+				if (
+					activity.connections.find(
+						({ provider }) => provider === params.target,
+					)
+				)
+					throw new Error("Activity already connected to provider");
+
+				return client.createManualActivity(activity);
+			})
+			.then((newActivityId) => client.syncActivity(newActivityId));
+	}
 }

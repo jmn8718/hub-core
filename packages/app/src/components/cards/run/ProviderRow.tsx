@@ -92,26 +92,25 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	}, []);
 
 	const handleManualUpload = async () => {
-		if (provider !== Providers.GARMIN) return;
+		// if it is coros or we have the activity, we do nothing
+		if (provider === Providers.COROS || connectionId) return;
 		setLocalLoading(true);
 		setLoading(true);
-		// const result = (await window.electron.ipcRenderer.invoke(
-		//   Channels.PROVIDER_ACTIVITY_EXPORT_MANUAL,
-		//   {
-		//     activityId,
-		//     providerTarget: Providers.GARMIN,
-		//   },
-		// )) as ProviderIpcResponse;
-		// if (!result.success) {
-		//   // handle error
-		//   toast.error(result.error, {
-		//     transition: Bounce,
-		//   });
-		// } else {
-		//   toast.success('Exported successfully', {
-		//     transition: Bounce,
-		//   });
-		// }
+
+		const result = await client.exportActivityManual({
+			target: provider,
+			activityId,
+		});
+		if (!result.success) {
+			toast.error(result.error, {
+				transition: Bounce,
+			});
+		} else {
+			toast.success("Manual upload completed", {
+				transition: Bounce,
+			});
+		}
+
 		setLocalLoading(false);
 		setLoading(false);
 		refreshData();
@@ -119,50 +118,48 @@ const ProviderRow: FC<ProviderRowProps> = ({
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const handleUpload = async () => {
+		if (!connectionId) return;
 		setLocalLoading(true);
 		setLoading(true);
-		// const result = (await window.electron.ipcRenderer.invoke(
-		//   Channels.PROVIDER_ACTIVITY_EXPORT,
-		//   {
-		//     provider,
-		//     activityId: connectionId,
-		//     target:
-		//       provider === Providers.COROS ? Providers.GARMIN : Providers.COROS,
-		//   },
-		// )) as ProviderIpcResponse;
-		// if (!result.success) {
-		//   // handle error
-		//   toast.error(result.error, {
-		//     transition: Bounce,
-		//   });
-		// } else {
-		//   toast.success('Upload completed', {
-		//     transition: Bounce,
-		//   });
-		// }
+
+		const result = await client.uploadActivityFile({
+			provider,
+			target: provider === Providers.COROS ? Providers.GARMIN : Providers.COROS,
+			providerActivityId: connectionId,
+		});
+		if (!result.success) {
+			toast.error(result.error, {
+				transition: Bounce,
+			});
+		} else {
+			toast.success("Upload completed", {
+				transition: Bounce,
+			});
+		}
 		setLocalLoading(false);
 		setLoading(false);
 		refreshData();
 	};
 
 	const handleDownload = async () => {
+		if (!connectionId) return;
 		setLocalLoading(true);
 		setLoading(true);
-		// const result = (await window.electron.ipcRenderer.invoke(
-		//   Channels.PROVIDER_ACTIVITY_DOWNLOAD,
-		//   provider,
-		//   connectionId,
-		// )) as ProviderIpcResponse;
-		// if (!result.success) {
-		//   // handle error
-		//   toast.error(result.error, {
-		//     transition: Bounce,
-		//   });
-		// } else {
-		//   toast.success('Download completed', {
-		//     transition: Bounce,
-		//   });
-		// }
+
+		const result = await client.downloadActivityFile({
+			provider,
+			providerActivityId: connectionId,
+		});
+		if (!result.success) {
+			toast.error(result.error, {
+				transition: Bounce,
+			});
+		} else {
+			toast.success("Download completed", {
+				transition: Bounce,
+			});
+		}
+
 		checkIsExported();
 		setLocalLoading(false);
 		setLoading(false);
