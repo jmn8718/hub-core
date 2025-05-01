@@ -15,7 +15,8 @@ export const activities = sqliteTable(
 			.primaryKey()
 			.$defaultFn(() => uuidv7()),
 		name: text("name").notNull(),
-		timestamp: text("timestamp").notNull(),
+		timestamp: real("timestamp").notNull(),
+		timezone: text("timezone").default(""),
 		distance: real("distance").default(0),
 		duration: real("duration").default(0),
 		manufacturer: text("manufacturer").default(""),
@@ -35,7 +36,7 @@ export const activities = sqliteTable(
 export const providerActivities = sqliteTable("provider_activities", {
 	id: text("id").primaryKey(),
 	provider: text("provider").notNull(),
-	timestamp: text("timestamp").notNull(),
+	timestamp: real("timestamp").notNull(),
 	original: integer("original").default(0),
 	data: text("data").default("{}"),
 });

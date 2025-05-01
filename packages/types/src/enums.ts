@@ -28,6 +28,7 @@ export enum ActivityType {
 	CARDIO = "cardio",
 	SWIM = "swim",
 	HIKE = "hike",
+	OTHER = "other",
 }
 
 export enum ActivitySubType {
@@ -39,6 +40,9 @@ export enum ActivitySubType {
 }
 
 export enum Channels {
+	ACTIVITY_DOWNLOAD_FILE = "ACTIVITY_DOWNLOAD_FILE",
+	ACTIVITY_EXPORT_MANUAL = "ACTIVITY_EXPORT_MANUAL",
+	ACTIVITY_UPLOAD_FILE = "ACTIVITY_UPLOAD_FILE",
 	FOLDER_GET = "FOLDER_GET",
 	DB_ACTIVITIES = "DB_ACTIVITIES",
 	DB_ACTIVITY = "DB_ACTIVITY",

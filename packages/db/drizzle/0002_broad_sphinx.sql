@@ -1,1 +1,0 @@
-ALTER TABLE `activities` ADD `device` text DEFAULT '';

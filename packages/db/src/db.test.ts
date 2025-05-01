@@ -1,5 +1,5 @@
+import "dotenv/config";
 import { Providers } from "@repo/types";
-import { migrate } from "drizzle-orm/libsql/migrator";
 import {
 	afterEach,
 	beforeAll,
@@ -11,11 +11,12 @@ import {
 } from "vitest";
 import { createDbClient } from "./client";
 import { Db } from "./db";
+import { migrateDb } from "./migrations";
 import { clearData, importData } from "./seed/common";
 
 describe("db", () => {
 	const client = createDbClient({
-		url: "file:../../test.sqlite",
+		url: process.env.LOCAL_DB || "file:test.sqlite",
 		logger: false,
 	});
 	const db = new Db(client);
@@ -24,9 +25,7 @@ describe("db", () => {
 	let gearId = "";
 
 	beforeAll(async () => {
-		await migrate(client, { migrationsFolder: "./drizzle" }).catch(
-			console.error,
-		);
+		await migrateDb(client).catch(console.error);
 		console.log("migrated db");
 		await clearData(client);
 		console.log("cleared db");

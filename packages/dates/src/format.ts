@@ -1,12 +1,13 @@
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
+import type { DateParam } from "./types.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 export function formatDate(
-	dateParam: string | Date,
+	dateParam: DateParam,
 	options?: {
 		format?: string;
 		timezone?: string;
@@ -24,7 +25,7 @@ export const formatRelativeTime = (date: string | Date): string => {
 };
 
 export const formatDateWithTime = (
-	date: string | Date,
+	date: DateParam,
 	timezone?: string,
 ): string => {
 	return formatDate(date, {

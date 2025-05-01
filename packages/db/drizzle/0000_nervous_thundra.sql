@@ -1,10 +1,12 @@
 CREATE TABLE `activities` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
-	`timestamp` text NOT NULL,
+	`timestamp` real NOT NULL,
+	`timezone` text DEFAULT '',
 	`distance` real DEFAULT 0,
 	`duration` real DEFAULT 0,
 	`manufacturer` text DEFAULT '',
+	`device` text DEFAULT '',
 	`location_name` text DEFAULT '',
 	`location_country` text DEFAULT '',
 	`type` text NOT NULL,
@@ -54,7 +56,7 @@ CREATE TABLE `gears_connection` (
 CREATE TABLE `provider_activities` (
 	`id` text PRIMARY KEY NOT NULL,
 	`provider` text NOT NULL,
-	`timestamp` text NOT NULL,
+	`timestamp` real NOT NULL,
 	`original` integer DEFAULT 0,
 	`data` text DEFAULT '{}'
 );
@@ -64,6 +66,16 @@ CREATE TABLE `provider_gears` (
 	`provider` text NOT NULL,
 	`provider_id` text NOT NULL,
 	`data` text DEFAULT '{}'
+);
+--> statement-breakpoint
+CREATE TABLE `profiles` (
+	`id` text PRIMARY KEY NOT NULL,
+	`external_id` text NOT NULL,
+	`refresh_token` text NOT NULL,
+	`access_token` text NOT NULL,
+	`expires_at` integer NOT NULL,
+	`token_type` text NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `webhooks` (

@@ -46,7 +46,8 @@ function mapActivityRow({
 	connections: unknown;
 	id: string;
 	name: string;
-	timestamp: string;
+	timestamp: number;
+	timezone: string | null;
 	distance: number | null;
 	duration: number | null;
 	manufacturer: string | null;
@@ -105,15 +106,12 @@ export class Db {
 			.select({
 				distance: min(activities.distance).as("distance"),
 				timestamp: activities.timestamp,
-				month: sql`strftime('%Y %m', timestamp)`.as("month"),
+				month: sql`strftime('%Y %m', timestamp / 1000, 'unixepoch')`.as(
+					"month",
+				),
 			})
 			.from(activities)
-			.where(
-				gte(
-					activities.timestamp,
-					formatDate(monthsBefore(limit), { format: "YYYY-MM-DD" }),
-				),
-			)
+			.where(gte(activities.timestamp, monthsBefore(limit).getTime()))
 			.groupBy(activities.timestamp)
 			.orderBy(desc(activities.timestamp))
 			.as("subquery");

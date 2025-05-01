@@ -7,7 +7,7 @@ export interface IInsertActivityPayload {
 			id: string;
 			provider: Providers;
 			original: boolean;
-			timestamp: string;
+			timestamp: number;
 			data: string;
 		};
 	};

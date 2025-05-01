@@ -47,7 +47,7 @@ export async function importData(client: DbClient) {
 				return {
 					id,
 					name: data.name,
-					timestamp: data.timestamp,
+					timestamp: new Date(data.timestamp).getTime(),
 					distance: data.distance || 0,
 					duration: data.duration || 0,
 					manufacturer: data.manufacturer || "",

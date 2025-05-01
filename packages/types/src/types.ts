@@ -18,7 +18,8 @@ export interface IOverviewData {
 export interface IDbActivity {
 	id: string;
 	name: string;
-	timestamp: string;
+	timestamp: number;
+	timezone: string;
 	distance: number;
 	duration: number;
 	manufacturer: string;
