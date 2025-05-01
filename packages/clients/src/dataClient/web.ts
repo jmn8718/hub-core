@@ -302,6 +302,7 @@ export class WebClient implements Client {
 		provider: Providers;
 		providerActivityId: string;
 		target: Providers;
+		downloadPath: string;
 	}): Promise<ProviderSuccessResponse> {
 		throw new Error("Not implemented");
 	}
@@ -309,6 +310,7 @@ export class WebClient implements Client {
 	async downloadActivityFile(params: {
 		provider: Providers;
 		providerActivityId: string;
+		downloadPath: string;
 	}): Promise<ProviderSuccessResponse> {
 		throw new Error("Not implemented");
 	}

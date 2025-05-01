@@ -1,5 +1,20 @@
+import { existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
-import type { DbActivityPopulated } from "@repo/types";
+import type { DbActivityPopulated, FileExtensions } from "@repo/types";
+
+export function generateActivityFilePath(
+	downloadPath: string,
+	folder: string,
+	activityId: string,
+	extension: FileExtensions,
+) {
+	const downloadFolderPath = join(downloadPath, folder);
+	if (!existsSync(downloadFolderPath)) {
+		mkdirSync(downloadFolderPath);
+	}
+	return join(downloadFolderPath, `${activityId}.${extension}`);
+}
 
 export abstract class Client {
 	abstract connect(params: {
@@ -24,4 +39,13 @@ export abstract class Client {
 	abstract getActivity(id: string): Promise<unknown>;
 
 	abstract createManualActivity(data: DbActivityPopulated): Promise<string>;
+	abstract downloadActivity(
+		activityId: string,
+		downloadPath: string,
+	): Promise<void>;
+	abstract uploadActivity(filePath: string): Promise<string>;
+	abstract generateActivityFilePath(
+		downloadPath: string,
+		activityId: string,
+	): string;
 }

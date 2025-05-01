@@ -10,6 +10,7 @@ ipcMain.handle(
 			provider: Providers;
 			providerActivityId: string;
 			target: Providers;
+			downloadPath: string;
 		},
 	) => {
 		return manager.uploadActivityFile(params);
@@ -23,6 +24,7 @@ ipcMain.handle(
 		params: {
 			provider: Providers;
 			providerActivityId: string;
+			downloadPath: string;
 		},
 	) => {
 		return manager.downloadActivityFile(params);

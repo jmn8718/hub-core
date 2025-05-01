@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { formatDate, isBefore } from "@repo/dates";
 import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
 import {
@@ -18,7 +19,7 @@ import {
 } from "garmin-connect";
 import pMap from "p-map";
 import pQueue from "p-queue";
-import type { Client } from "./Client.js";
+import { type Client, generateActivityFilePath } from "./Client.js";
 import type { Cache } from "./cache.js";
 
 function mapActivityType(type: ActivityType) {
@@ -109,7 +110,7 @@ export class GarminClient implements Client {
 
 	public static PROVIDER = Providers.GARMIN;
 
-	public static EXTENSION = FileExtensions.TCX;
+	public static EXTENSION: "tcx" = FileExtensions.TCX;
 
 	private _queue = new pQueue({ concurrency: 4 });
 
@@ -381,5 +382,62 @@ export class GarminClient implements Client {
 				},
 			})
 			.then((newActivity) => newActivity.activityId.toString());
+	}
+
+	downloadActivity(activityId: string, downloadPath: string): Promise<void> {
+		return this._client.downloadOriginalActivityData(
+			{
+				activityId: Number(activityId),
+			},
+			join(downloadPath, GarminClient.PROVIDER),
+			GarminClient.EXTENSION,
+		);
+	}
+
+	uploadActivity(filePath: string): Promise<string> {
+		return this._client.uploadActivity(filePath).then(
+			(uploadResult) =>
+				new Promise((resolve, reject) => {
+					setTimeout(() => {
+						this._client
+							.getUploadActivityDetails(
+								uploadResult.detailedImportResult.creationDate,
+								uploadResult.detailedImportResult.uploadUuid.uuid,
+							)
+							.then(({ detailedImportResult }) => {
+								if (
+									detailedImportResult.successes.length > 0 &&
+									detailedImportResult.successes[0]
+								) {
+									return resolve(
+										detailedImportResult.successes[0].internalId.toString(),
+									);
+								}
+								if (
+									detailedImportResult.failures.length > 0 &&
+									detailedImportResult.failures[0] &&
+									detailedImportResult.failures[0].messages &&
+									detailedImportResult.failures[0].messages[0]
+								) {
+									return resolve(
+										detailedImportResult.failures[0].messages[0].content,
+									);
+								}
+								console.error(detailedImportResult);
+								throw new Error("No upload success");
+							})
+							.catch(reject);
+					}, 1000);
+				}),
+		);
+	}
+
+	generateActivityFilePath(downloadPath: string, activityId: string) {
+		return generateActivityFilePath(
+			downloadPath,
+			GarminClient.PROVIDER,
+			activityId,
+			GarminClient.EXTENSION as FileExtensions,
+		);
 	}
 }

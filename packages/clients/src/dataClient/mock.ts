@@ -210,6 +210,7 @@ export class MockClient implements Client {
 		provider: Providers;
 		providerActivityId: string;
 		target: Providers;
+		downloadPath: string;
 	}): Promise<ProviderSuccessResponse> {
 		return {
 			success: true,
@@ -219,6 +220,7 @@ export class MockClient implements Client {
 	async downloadActivityFile(params: {
 		provider: Providers;
 		providerActivityId: string;
+		downloadPath: string;
 	}): Promise<ProviderSuccessResponse> {
 		return {
 			success: true,

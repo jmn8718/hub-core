@@ -71,8 +71,8 @@ const ProviderRow: FC<ProviderRowProps> = ({
 
 	const checkIsExported = async () => {
 		if (!connectionId) return;
-		const hasDownloadsFolder = await getValue(StorageKeys.DOWNLOAD_FOLDER);
-		if (!hasDownloadsFolder) return;
+		const downloadsFolder = await getValue<string>(StorageKeys.DOWNLOAD_FOLDER);
+		if (!downloadsFolder) return;
 		const result = await client.existsFile({
 			provider,
 			activityId: connectionId,
@@ -119,6 +119,8 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const handleUpload = async () => {
 		if (!connectionId) return;
+		const downloadsFolder = await getValue<string>(StorageKeys.DOWNLOAD_FOLDER);
+		if (!downloadsFolder) return;
 		setLocalLoading(true);
 		setLoading(true);
 
@@ -126,6 +128,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			provider,
 			target: provider === Providers.COROS ? Providers.GARMIN : Providers.COROS,
 			providerActivityId: connectionId,
+			downloadPath: downloadsFolder,
 		});
 		if (!result.success) {
 			toast.error(result.error, {
@@ -143,12 +146,16 @@ const ProviderRow: FC<ProviderRowProps> = ({
 
 	const handleDownload = async () => {
 		if (!connectionId) return;
+		const downloadsFolder = await getValue<string>(StorageKeys.DOWNLOAD_FOLDER);
+		if (!downloadsFolder) return;
+
 		setLocalLoading(true);
 		setLoading(true);
 
 		const result = await client.downloadActivityFile({
 			provider,
 			providerActivityId: connectionId,
+			downloadPath: downloadsFolder,
 		});
 		if (!result.success) {
 			toast.error(result.error, {

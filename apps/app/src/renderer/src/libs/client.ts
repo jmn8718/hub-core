@@ -370,6 +370,7 @@ export class AppClient implements Client {
 		provider: Providers;
 		providerActivityId: string;
 		target: Providers;
+		downloadPath: string;
 	}): Promise<ProviderSuccessResponse> {
 		try {
 			await window.electron.ipcRenderer.invoke(
@@ -390,6 +391,7 @@ export class AppClient implements Client {
 	async downloadActivityFile(params: {
 		provider: Providers;
 		providerActivityId: string;
+		downloadPath: string;
 	}): Promise<ProviderSuccessResponse> {
 		try {
 			await window.electron.ipcRenderer.invoke(

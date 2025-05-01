@@ -7,10 +7,10 @@ import {
 	type IDbActivity,
 	Providers,
 } from "@repo/types";
-import { type ActivityData, CorosApi } from "coros-connect";
+import { type ActivityData, CorosApi, downloadFile } from "coros-connect";
 import pMap from "p-map";
 import pQueue from "p-queue";
-import type { Client } from "./Client.js";
+import { type Client, generateActivityFilePath } from "./Client.js";
 import type { Cache } from "./cache.js";
 
 function mapActivityDetails(activity: ActivityData, id: string): IDbActivity {
@@ -238,5 +238,42 @@ export class CorosClient implements Client {
 
 	async createManualActivity(): Promise<string> {
 		throw new Error("Not supported");
+	}
+
+	downloadActivity(activityId: string, downloadPath: string): Promise<void> {
+		return this._client
+			.getActivityDownloadFile({
+				activityId,
+				fileType: CorosClient.EXTENSION,
+			})
+			.then((fileUrl) => {
+				const filePath = this.generateActivityFilePath(
+					downloadPath,
+					activityId,
+				);
+				return downloadFile({
+					filePath,
+					fileUrl,
+				});
+			});
+	}
+
+	async uploadActivity(filePath: string): Promise<string> {
+		if (!this._userId) {
+			const user = await this._client.getAccount();
+			this._userId = user.userId;
+		}
+		return this._client
+			.uploadActivityFile(filePath, this._userId)
+			.then((response) => response.data.id);
+	}
+
+	generateActivityFilePath(downloadPath: string, activityId: string) {
+		return generateActivityFilePath(
+			downloadPath,
+			CorosClient.PROVIDER,
+			activityId,
+			CorosClient.EXTENSION,
+		);
 	}
 }

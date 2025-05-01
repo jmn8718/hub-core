@@ -113,11 +113,13 @@ export abstract class Client {
 		provider: Providers;
 		providerActivityId: string;
 		target: Providers;
+		downloadPath: string;
 	}): Promise<ProviderSuccessResponse>;
 
 	abstract downloadActivityFile(params: {
 		provider: Providers;
 		providerActivityId: string;
+		downloadPath: string;
 	}): Promise<ProviderSuccessResponse>;
 
 	abstract exportActivityManual(params: {

@@ -182,20 +182,30 @@ export class ProviderManager {
 		provider: Providers;
 		providerActivityId: string;
 		target: Providers;
+		downloadPath: string;
 	}) {
 		const sourceClient = this._getProvider(params.provider);
+		const filePath = sourceClient.generateActivityFilePath(
+			params.downloadPath,
+			params.providerActivityId,
+		);
 		const targetClient = this._getProvider(params.target);
-		// get file path
-
-		// upload
+		return targetClient
+			.uploadActivity(filePath)
+			.then((activityId) => targetClient.syncActivity(activityId));
 	}
 
 	public downloadActivityFile(params: {
 		provider: Providers;
 		providerActivityId: string;
+		downloadPath: string;
 	}) {
 		const client = this._getProvider(params.provider);
 		// download activity
+		return client.downloadActivity(
+			params.providerActivityId,
+			params.downloadPath,
+		);
 	}
 
 	public exportActivityManual(params: {
