@@ -1,0 +1,14 @@
+diff --git a/libsql/migrator.js b/libsql/migrator.js
+index 3fb860242be2c1a70739873bb11b41d8ab7a7843..a892e1a481fad07a94582aa9fe37488e00c098c8 100644
+--- a/libsql/migrator.js
++++ b/libsql/migrator.js
+@@ -17,7 +17,8 @@ async function migrate(db, config) {
+   const lastDbMigration = dbMigrations[0] ?? void 0;
+   const statementToBatch = [];
+   for (const migration of migrations) {
+-    if (!lastDbMigration || Number(lastDbMigration[2]) < migration.folderMillis) {
++    console.log({lastDbMigrationTs: lastDbMigration?.created_at, migrationTs: migration.folderMillis})
++    if (!lastDbMigration || lastDbMigration.created_at > migration.folderMillis) {
+       for (const stmt of migration.sql) {
+         statementToBatch.push(db.run(sql.raw(stmt)));
+       }
