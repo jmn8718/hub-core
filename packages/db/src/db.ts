@@ -416,6 +416,11 @@ export class Db {
 
 		// if there is provider data, insert on related tables
 		if (providerActivity) {
+			if (providerActivity.original && dbActivity) {
+				await this.editActivity(activityId, {
+					manufacturer: activity.data.manufacturer,
+				});
+			}
 			await this._client.transaction(async (txClient) => {
 				const linkedProviderActivity = await txClient
 					.select({ id: providerActivities.id })
