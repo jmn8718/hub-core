@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { formatDate, isBefore } from "@repo/dates";
+import { dateWithTimezoneToUTC, formatDate, isBefore } from "@repo/dates";
 import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
 import {
 	ActivitySubType,
@@ -28,25 +28,42 @@ function mapActivityType(type: ActivityType) {
 	throw new Error(`Activity type: ${type} not supported for manual upload`);
 }
 
+function mapProviderActivityType(type: string): ActivityType {
+	switch (type) {
+		case GarminActivityType.Running:
+		case "indoor_running":
+			return ActivityType.RUN;
+		default:
+			return ActivityType.OTHER;
+	}
+}
+
+function mapProviderActivitySubType(type: string): ActivitySubType | undefined {
+	switch (type) {
+		case "race":
+			return ActivitySubType.ROAD;
+		default:
+			return ActivitySubType.EASY_RUN;
+	}
+}
+
 function mapActivity({
 	activity,
 }: { activity: IActivityDetails }): IDbActivity {
 	const manufacturer = activity.metadataDTO.manufacturer;
 	const isManual = activity.metadataDTO.manualActivity;
 	const deviceId = activity.metadataDTO.deviceMetaDataDTO.deviceId || "";
-	const type =
-		activity.activityTypeDTO.typeKey === "running"
-			? ActivityType.RUN
-			: ActivityType.OTHER;
+	const type = mapProviderActivityType(activity.activityTypeDTO.typeKey);
 	const subtype =
 		type === ActivityType.RUN
-			? activity.eventTypeDTO.typeKey === "race"
-				? ActivitySubType.ROAD
-				: ActivitySubType.EASY_RUN
+			? mapProviderActivitySubType(activity.eventTypeDTO.typeKey)
 			: undefined;
 	return {
 		id: activity.activityId.toString(),
-		timestamp: new Date(activity.summaryDTO.startTimeGMT).getTime(),
+		timestamp: dateWithTimezoneToUTC(
+			activity.summaryDTO.startTimeLocal,
+			activity.timeZoneUnitDTO.timeZone,
+		).getTime(),
 		timezone: activity.timeZoneUnitDTO.timeZone,
 		name: activity.activityName || "",
 		distance: Math.round(activity.summaryDTO.distance),

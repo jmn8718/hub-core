@@ -15,7 +15,7 @@ export function formatDate(
 ): string {
 	const format = options?.format || "YYYY/MM/DD";
 	const date = options?.timezone
-		? dayjs(dateParam).tz(options.timezone)
+		? dayjs.tz(dateParam, options.timezone)
 		: dayjs(dateParam);
 	return date.format(format);
 }
@@ -32,4 +32,11 @@ export const formatDateWithTime = (
 		format: "YYYY-MM-DD HH:mm",
 		timezone,
 	});
+};
+
+export const dateWithTimezoneToUTC = (
+	date: DateParam,
+	timezone: string,
+): Date => {
+	return dayjs.tz(date, timezone).toDate();
 };
