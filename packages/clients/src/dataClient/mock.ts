@@ -235,4 +235,15 @@ export class MockClient implements Client {
 			success: true,
 		};
 	}
+
+	async exportActivityObsidian(params: {
+		folderPath: string;
+		fileName: string;
+		content: string;
+		fileFormat: string;
+	}): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
 }

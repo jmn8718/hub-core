@@ -408,6 +408,27 @@ export class AppClient implements Client {
 			};
 		}
 	}
+
+	async exportActivityObsidian(params: {
+		folderPath: string;
+		fileName: string;
+		content: string;
+		fileFormat: string;
+	}): Promise<ProviderSuccessResponse> {
+		try {
+			const result = await window.electron.ipcRenderer.invoke(
+				Channels.ACTIVITY_EXPORT_OBSIDIAN,
+				params,
+			) as Promise<ProviderSuccessResponse>;
+			return result;
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async exportActivityManual(params: {
 		target: Providers;
 		activityId: string;

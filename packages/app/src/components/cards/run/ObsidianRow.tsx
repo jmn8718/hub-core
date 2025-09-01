@@ -1,11 +1,13 @@
 import { formatDate } from "@repo/dates";
 // import { Bounce, toast } from 'react-toastify';
-import { type DbActivityPopulated, GearType, type IDbGear } from "@repo/types";
+import { type DbActivityPopulated, GearType, type IDbGear, StorageKeys } from "@repo/types";
 import { NotebookPen } from "lucide-react";
 import { useState } from "react";
+import { Bounce, toast } from "react-toastify";
 import { useLoading } from "../../../contexts/LoadingContext.js";
 import { formatDistance, formatDuration } from "../../../utils/formatters.js";
 import IconButton from "../../IconButton.js";
+import { useDataClient, useStore } from "../../../contexts/index.js";
 
 interface ObsidianRowProps {
 	data: DbActivityPopulated;
@@ -42,24 +44,31 @@ const prepareObsidianFile = (data: DbActivityPopulated, gears: IDbGear[]) => {
 const ObsidianRow: React.FC<ObsidianRowProps> = ({ data, gears }) => {
 	const { setLocalLoading } = useLoading();
 	const [loading, setLoading] = useState(false);
+	const { client } = useDataClient();
+		const { getValue } = useStore();
 
 	const handleExport = async () => {
+		const obsidianDisabled = await getValue<string>(StorageKeys.OBSIDIAN_DISABLED);
+		if (obsidianDisabled === 'true') return
+		const obsidianFolder = await getValue<string>(StorageKeys.OBSIDIAN_FOLDER);
+		if (!obsidianFolder) return;
 		setLocalLoading(true);
 		setLoading(true);
-		// const result = (await window.electron.ipcRenderer.invoke(
-		//   Channels.OBSIDIAN_EXPORT_MANUAL,
-		//   {
-		//     fileFolderPath: formatDate(data.timestamp, 'YYYY-MM'),
-		//     fileName: `${formatDate(data.timestamp, 'YYYY-MM-DD')}.md`,
-		//     content: prepareObsidianFile(data, gears),
-		//   },
-		// )) as ProviderIpcResponse;
-		// if (!result.success) {
-		//   // handle error
-		//   toast.error(result.error, {
-		//     transition: Bounce,
-		//   });
-		// }
+		const result = await client.exportActivityObsidian({
+			folderPath: `${obsidianFolder}/${formatDate(data.timestamp,{format:'YYYY-MM'})}`,
+			fileName: formatDate(data.timestamp, {format:'YYYY-MM-DD'}),
+			fileFormat: 'md',
+			content: prepareObsidianFile(data, gears),
+		})
+		if (!result.success) {
+			toast.error(result.error, {
+				transition: Bounce,
+			});
+		} else {
+			toast.success("Activity exported", {
+				transition: Bounce,
+			});
+		}
 		setLoading(false);
 		setLocalLoading(false);
 	};

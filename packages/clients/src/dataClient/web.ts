@@ -321,4 +321,13 @@ export class WebClient implements Client {
 	}): Promise<ProviderSuccessResponse> {
 		throw new Error("Not implemented");
 	}
+
+	public exportActivityObsidian(params: {
+		folderPath: string;
+		fileName: string;
+		content: string;
+		fileFormat: string;
+	}): Promise<ProviderSuccessResponse> {
+		throw new Error("Not implemented");
+	}
 }

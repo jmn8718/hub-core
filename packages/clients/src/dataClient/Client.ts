@@ -126,4 +126,11 @@ export abstract class Client {
 		target: Providers;
 		activityId: string;
 	}): Promise<ProviderSuccessResponse>;
+
+	abstract exportActivityObsidian(params: {
+		folderPath: string;
+		fileName: string;
+		content: string;
+		fileFormat: string;
+	}): Promise<ProviderSuccessResponse>;
 }
