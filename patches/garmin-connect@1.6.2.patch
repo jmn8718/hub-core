@@ -144,10 +144,10 @@ deleted file mode 100644
 index 1943bb64881b6a4f0abaf5dc1984f5b812c45b61..0000000000000000000000000000000000000000
 diff --git a/dist/index.cjs b/dist/index.cjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..56fa7d81ae66739629c7b1bf15b6e0444c02ea08
+index 0000000000000000000000000000000000000000..960fd95358eeade124b190184e2624677b52ca8e
 --- /dev/null
 +++ b/dist/index.cjs
-@@ -0,0 +1,996 @@
+@@ -0,0 +1,1023 @@
 +"use strict";
 +var __create = Object.create;
 +var __defProp = Object.defineProperty;
@@ -183,7 +183,8 @@ index 0000000000000000000000000000000000000000..56fa7d81ae66739629c7b1bf15b6e044
 +__export(index_exports, {
 +  ActivitySubType: () => ActivitySubType,
 +  ActivityType: () => ActivityType,
-+  GarminConnect: () => GarminConnect
++  GarminConnect: () => GarminConnect,
++  GearStatus: () => GearStatus
 +});
 +module.exports = __toCommonJS(index_exports);
 +
@@ -556,6 +557,9 @@ index 0000000000000000000000000000000000000000..56fa7d81ae66739629c7b1bf15b6e044
 +  get ACTIVITY_GEAR() {
 +    return `${this.GC_API}/gear-service/gear/filterGear`;
 +  }
++  GEAR_DATA(gearId) {
++    return `${this.GC_API}/gear-service/gear/${gearId}`;
++  }
 +  ACTIVITY_GEAR_LINK(gearId, activityId) {
 +    return `${this.GC_API}/gear-service/gear/link/${gearId}/activity/${activityId}`;
 +  }
@@ -628,6 +632,11 @@ index 0000000000000000000000000000000000000000..56fa7d81ae66739629c7b1bf15b6e044
 +  UploadFileType2["fit"] = "fit";
 +  return UploadFileType2;
 +})(UploadFileType || {});
++var GearStatus = /* @__PURE__ */ ((GearStatus2) => {
++  GearStatus2["ACTIVE"] = "active";
++  GearStatus2["RETIRED"] = "retired";
++  return GearStatus2;
++})(GearStatus || {});
 +
 +// src/garmin/workouts/templates/RunningTemplate.ts
 +function RunningTemplate_default() {
@@ -882,6 +891,23 @@ index 0000000000000000000000000000000000000000..56fa7d81ae66739629c7b1bf15b6e044
 +  }
 +  unlinkActivityGear(gearUuid, activityId) {
 +    return this.client.put(this.url.ACTIVITY_GEAR_UNLINK(gearUuid, activityId), {});
++  }
++  async changeGearStatus(userProfileId, gearUuid, data) {
++    const gears = await this.getGears(userProfileId);
++    const gear = gears.find((g) => g.uuid === gearUuid);
++    if (!gear) {
++      throw new Error(`changeGearStatus: Gear with uuid ${gearUuid} not found`);
++    }
++    if (gear.gearStatusName === data.status) {
++      throw new Error(`changeGearStatus: Gear already has status ${data.status}`);
++    }
++    return this.client.put(this.url.GEAR_DATA(gearUuid), {
++      ...gear,
++      gearStatusName: data.status,
++      ...data.status === "retired" /* RETIRED */ ? { dateEnd: data.dateEnd.toISOString() } : {
++        dateEnd: null
++      }
++    });
 +  }
 +  async downloadOriginalActivityData(activity, dir, type = "zip") {
 +    if (!activity.activityId) throw new Error("Missing activityId");
@@ -1142,14 +1168,15 @@ index 0000000000000000000000000000000000000000..56fa7d81ae66739629c7b1bf15b6e044
 +0 && (module.exports = {
 +  ActivitySubType,
 +  ActivityType,
-+  GarminConnect
++  GarminConnect,
++  GearStatus
 +});
 diff --git a/dist/index.d.cts b/dist/index.d.cts
 new file mode 100644
-index 0000000000000000000000000000000000000000..071f25fc04dbd8ae64149d5407a372c6bd63c6d1
+index 0000000000000000000000000000000000000000..5c74207d32541c3b008c4df982824a45b8f76974
 --- /dev/null
 +++ b/dist/index.d.cts
-@@ -0,0 +1,1299 @@
+@@ -0,0 +1,1310 @@
 +import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders, AxiosResponse } from 'axios';
 +import OAuth$1 from 'oauth-1.0a';
 +
@@ -1237,6 +1264,10 @@ index 0000000000000000000000000000000000000000..071f25fc04dbd8ae64149d5407a372c6
 +    userPointOffset: number;
 +    userPro: boolean;
 +}
++declare enum GearStatus {
++    ACTIVE = "active",
++    RETIRED = "retired"
++}
 +interface Gear {
 +    gearPk: GCGearId;
 +    uuid: GCGearUuid;
@@ -1244,7 +1275,7 @@ index 0000000000000000000000000000000000000000..071f25fc04dbd8ae64149d5407a372c6
 +    gearMakeName: string;
 +    gearModelName: string;
 +    gearTypeName: 'Shoes' | 'Bike' | 'Other' | string;
-+    gearStatusName: 'retired' | 'active';
++    gearStatusName: GearStatus;
 +    displayName: string | null;
 +    customMakeModel: string;
 +    imageNameLarge: string | null;
@@ -1989,6 +2020,7 @@ index 0000000000000000000000000000000000000000..071f25fc04dbd8ae64149d5407a372c6
 +    get ACTIVITY(): string;
 +    get STAT_ACTIVITIES(): string;
 +    get ACTIVITY_GEAR(): string;
++    GEAR_DATA(gearId: GCGearUuid): string;
 +    ACTIVITY_GEAR_LINK(gearId: GCGearUuid, activityId: GCActivityId): string;
 +    ACTIVITY_GEAR_UNLINK(gearId: GCGearUuid, activityId: GCActivityId): string;
 +    get DOWNLOAD_ZIP(): string;
@@ -2411,6 +2443,12 @@ index 0000000000000000000000000000000000000000..071f25fc04dbd8ae64149d5407a372c6
 +    getActivityGear(activityId: string): Promise<Gear[]>;
 +    linkActivityGear(gearUuid: GCGearUuid, activityId: GCActivityId): Promise<Gear>;
 +    unlinkActivityGear(gearUuid: GCGearUuid, activityId: GCActivityId): Promise<Gear>;
++    changeGearStatus(userProfileId: string | number, gearUuid: GCGearUuid, data: {
++        status: GearStatus.RETIRED;
++        dateEnd: Date;
++    } | {
++        status: GearStatus.ACTIVE;
++    }): Promise<Gear>;
 +    downloadOriginalActivityData(activity: {
 +        activityId: GCActivityId;
 +    }, dir: string, type?: ExportFileTypeValue): Promise<void>;
@@ -2448,12 +2486,12 @@ index 0000000000000000000000000000000000000000..071f25fc04dbd8ae64149d5407a372c6
 +    put<T>(url: string, data: any): Promise<T>;
 +}
 +
-+export { ActivitySubType, ActivityType, GarminConnect, type Gear, type IActivity, type IActivityDetails };
++export { ActivitySubType, ActivityType, GarminConnect, type Gear, GearStatus, type IActivity, type IActivityDetails };
 diff --git a/dist/index.d.ts b/dist/index.d.ts
-index e38e9cc05dd81ea98991caad686af9341a3c87d3..071f25fc04dbd8ae64149d5407a372c6bd63c6d1 100644
+index e38e9cc05dd81ea98991caad686af9341a3c87d3..5c74207d32541c3b008c4df982824a45b8f76974 100644
 --- a/dist/index.d.ts
 +++ b/dist/index.d.ts
-@@ -1 +1,1299 @@
+@@ -1 +1,1310 @@
 -export { default as GarminConnect } from './garmin/GarminConnect';
 +import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders, AxiosResponse } from 'axios';
 +import OAuth$1 from 'oauth-1.0a';
@@ -2542,6 +2580,10 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..071f25fc04dbd8ae64149d5407a372c6
 +    userPointOffset: number;
 +    userPro: boolean;
 +}
++declare enum GearStatus {
++    ACTIVE = "active",
++    RETIRED = "retired"
++}
 +interface Gear {
 +    gearPk: GCGearId;
 +    uuid: GCGearUuid;
@@ -2549,7 +2591,7 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..071f25fc04dbd8ae64149d5407a372c6
 +    gearMakeName: string;
 +    gearModelName: string;
 +    gearTypeName: 'Shoes' | 'Bike' | 'Other' | string;
-+    gearStatusName: 'retired' | 'active';
++    gearStatusName: GearStatus;
 +    displayName: string | null;
 +    customMakeModel: string;
 +    imageNameLarge: string | null;
@@ -3294,6 +3336,7 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..071f25fc04dbd8ae64149d5407a372c6
 +    get ACTIVITY(): string;
 +    get STAT_ACTIVITIES(): string;
 +    get ACTIVITY_GEAR(): string;
++    GEAR_DATA(gearId: GCGearUuid): string;
 +    ACTIVITY_GEAR_LINK(gearId: GCGearUuid, activityId: GCActivityId): string;
 +    ACTIVITY_GEAR_UNLINK(gearId: GCGearUuid, activityId: GCActivityId): string;
 +    get DOWNLOAD_ZIP(): string;
@@ -3716,6 +3759,12 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..071f25fc04dbd8ae64149d5407a372c6
 +    getActivityGear(activityId: string): Promise<Gear[]>;
 +    linkActivityGear(gearUuid: GCGearUuid, activityId: GCActivityId): Promise<Gear>;
 +    unlinkActivityGear(gearUuid: GCGearUuid, activityId: GCActivityId): Promise<Gear>;
++    changeGearStatus(userProfileId: string | number, gearUuid: GCGearUuid, data: {
++        status: GearStatus.RETIRED;
++        dateEnd: Date;
++    } | {
++        status: GearStatus.ACTIVE;
++    }): Promise<Gear>;
 +    downloadOriginalActivityData(activity: {
 +        activityId: GCActivityId;
 +    }, dir: string, type?: ExportFileTypeValue): Promise<void>;
@@ -3753,7 +3802,7 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..071f25fc04dbd8ae64149d5407a372c6
 +    put<T>(url: string, data: any): Promise<T>;
 +}
 +
-+export { ActivitySubType, ActivityType, GarminConnect, type Gear, type IActivity, type IActivityDetails };
++export { ActivitySubType, ActivityType, GarminConnect, type Gear, GearStatus, type IActivity, type IActivityDetails };
 diff --git a/dist/index.js b/dist/index.js
 deleted file mode 100644
 index cb15496cdef986deb117e5157aaafc230e30cd99..0000000000000000000000000000000000000000
@@ -3762,10 +3811,10 @@ deleted file mode 100644
 index 527f7858a51fc6d7310c68185d5ef885e10ae2b8..0000000000000000000000000000000000000000
 diff --git a/dist/index.mjs b/dist/index.mjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..b6f284573626500681107c19b21238cdbdca5119
+index 0000000000000000000000000000000000000000..3ebdc18d30bae6cfe792f044baa606ddac7baddf
 --- /dev/null
 +++ b/dist/index.mjs
-@@ -0,0 +1,959 @@
+@@ -0,0 +1,985 @@
 +var __defProp = Object.defineProperty;
 +var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 +
@@ -4138,6 +4187,9 @@ index 0000000000000000000000000000000000000000..b6f284573626500681107c19b21238cd
 +  get ACTIVITY_GEAR() {
 +    return `${this.GC_API}/gear-service/gear/filterGear`;
 +  }
++  GEAR_DATA(gearId) {
++    return `${this.GC_API}/gear-service/gear/${gearId}`;
++  }
 +  ACTIVITY_GEAR_LINK(gearId, activityId) {
 +    return `${this.GC_API}/gear-service/gear/link/${gearId}/activity/${activityId}`;
 +  }
@@ -4210,6 +4262,11 @@ index 0000000000000000000000000000000000000000..b6f284573626500681107c19b21238cd
 +  UploadFileType2["fit"] = "fit";
 +  return UploadFileType2;
 +})(UploadFileType || {});
++var GearStatus = /* @__PURE__ */ ((GearStatus2) => {
++  GearStatus2["ACTIVE"] = "active";
++  GearStatus2["RETIRED"] = "retired";
++  return GearStatus2;
++})(GearStatus || {});
 +
 +// src/garmin/workouts/templates/RunningTemplate.ts
 +function RunningTemplate_default() {
@@ -4464,6 +4521,23 @@ index 0000000000000000000000000000000000000000..b6f284573626500681107c19b21238cd
 +  }
 +  unlinkActivityGear(gearUuid, activityId) {
 +    return this.client.put(this.url.ACTIVITY_GEAR_UNLINK(gearUuid, activityId), {});
++  }
++  async changeGearStatus(userProfileId, gearUuid, data) {
++    const gears = await this.getGears(userProfileId);
++    const gear = gears.find((g) => g.uuid === gearUuid);
++    if (!gear) {
++      throw new Error(`changeGearStatus: Gear with uuid ${gearUuid} not found`);
++    }
++    if (gear.gearStatusName === data.status) {
++      throw new Error(`changeGearStatus: Gear already has status ${data.status}`);
++    }
++    return this.client.put(this.url.GEAR_DATA(gearUuid), {
++      ...gear,
++      gearStatusName: data.status,
++      ...data.status === "retired" /* RETIRED */ ? { dateEnd: data.dateEnd.toISOString() } : {
++        dateEnd: null
++      }
++    });
 +  }
 +  async downloadOriginalActivityData(activity, dir, type = "zip") {
 +    if (!activity.activityId) throw new Error("Missing activityId");
@@ -4723,7 +4797,8 @@ index 0000000000000000000000000000000000000000..b6f284573626500681107c19b21238cd
 +export {
 +  ActivitySubType,
 +  ActivityType,
-+  GarminConnect
++  GarminConnect,
++  GearStatus
 +};
 diff --git a/dist/utils.d.ts b/dist/utils.d.ts
 deleted file mode 100644
@@ -4738,36 +4813,17 @@ diff --git a/examples/example.js b/examples/example.js
 deleted file mode 100644
 index 4547d332f1c56a5e0ab3f06d8e2f50270f2fd674..0000000000000000000000000000000000000000
 diff --git a/package.json b/package.json
-index 06eabeef1ec6debb29601449aa975aed25943e15..6fb8143edd7e1e1c6b95e9059f756b789969be80 100644
+index 06eabeef1ec6debb29601449aa975aed25943e15..a2a3864d3ddf6b05adc4fb97fa5fee347339eeec 100644
 --- a/package.json
 +++ b/package.json
-@@ -2,16 +2,31 @@
-     "name": "garmin-connect",
-     "version": "1.6.2",
-     "description": "Makes it simple to interface with Garmin Connect to get or set any data point",
+@@ -1,66 +1,75 @@
+ {
+-    "name": "garmin-connect",
+-    "version": "1.6.2",
+-    "description": "Makes it simple to interface with Garmin Connect to get or set any data point",
 -    "main": "./dist/index.js",
 -    "types": "./dist/index.d.ts",
-+    "type": "module",
-+    "types": "dist/index.d.ts",
-+    "exports": {
-+        ".": {
-+            "import": {
-+                "types": "./dist/index.d.ts",
-+                "default": "./dist/index.mjs"
-+            },
-+            "require": {
-+                "types": "./dist/index.d.cts",
-+                "default": "./dist/index.cjs"
-+            },
-+            "default": "./dist/index.mjs"
-+        },
-+        "./dist/*": {
-+            "types": "./dist/*.d.ts",
-+            "import": "./dist/*.mjs",
-+            "require": "./dist/*.cjs"
-+        }
-+    },
-     "scripts": {
+-    "scripts": {
 -        "build": "tsc --build --clean && find ./dist -type d -empty -delete; tsc",
 -        "build:windows": "tsc --build --clean && tsc",
 -        "build:watch": "npm run build -- --watch",
@@ -4775,22 +4831,46 @@ index 06eabeef1ec6debb29601449aa975aed25943e15..6fb8143edd7e1e1c6b95e9059f756b78
 -        "prettier:all": "prettier --write .",
 -        "pretty": "pretty-quick --staged",
 -        "prepack": "npm run build"
-+        "build": "tsup",
-+        "format:check": "biome format src",
-+        "format:fix": "biome format --write src",
-+        "prepare": "npm run build"
++  "name": "garmin-connect",
++  "version": "1.6.2",
++  "description": "Makes it simple to interface with Garmin Connect to get or set any data point",
++  "type": "module",
++  "types": "dist/index.d.ts",
++  "exports": {
++    ".": {
++      "import": {
++        "types": "./dist/index.d.ts",
++        "default": "./dist/index.mjs"
++      },
++      "require": {
++        "types": "./dist/index.d.cts",
++        "default": "./dist/index.cjs"
++      },
++      "default": "./dist/index.mjs"
      },
-     "repository": {
-         "type": "git",
-@@ -32,35 +47,31 @@
-     "author": "Oskar Bernberg (Pythe1337N)",
-     "license": "MIT",
-     "files": [
+-    "repository": {
+-        "type": "git",
+-        "url": "git+https://github.com/Pythe1337N/garmin-connect.git"
+-    },
+-    "keywords": [
+-        "garmin",
+-        "connect",
+-        "scraper",
+-        "weight",
+-        "running",
+-        "workout",
+-        "activity",
+-        "activities",
+-        "download",
+-        "downloader"
+-    ],
+-    "author": "Oskar Bernberg (Pythe1337N)",
+-    "license": "MIT",
+-    "files": [
 -        "dist/*",
 -        "examples/*"
-+        "dist/*"
-     ],
-     "devDependencies": {
+-    ],
+-    "devDependencies": {
 -        "@types/app-root-path": "^1.2.4",
 -        "@types/lodash": "^4.14.199",
 -        "@types/luxon": "^3.3.2",
@@ -4801,22 +4881,13 @@ index 06eabeef1ec6debb29601449aa975aed25943e15..6fb8143edd7e1e1c6b95e9059f756b78
 -        "prettier": "^2.8.1",
 -        "pretty-quick": "^3.1.3",
 -        "typescript": "^4.9.4"
-+        "@biomejs/biome": "1.9.4",
-+        "@types/app-root-path": "1.2.4",
-+        "@types/lodash": "4.14.199",
-+        "@types/luxon": "3.3.2",
-+        "@types/node": "18.11.15",
-+        "@types/qs": "6.9.7",
-+        "@types/request-promise": "4.1.48",
-+        "tsup": "8.4.0",
-+        "typescript": "5.7.2"
-     },
-     "homepage": "https://github.com/Pythe1337N/garmin-connect#readme",
-     "bugs": {
-         "url": "https://github.com/Pythe1337N/garmin-connect/issues"
-     },
+-    },
+-    "homepage": "https://github.com/Pythe1337N/garmin-connect#readme",
+-    "bugs": {
+-        "url": "https://github.com/Pythe1337N/garmin-connect/issues"
+-    },
 -    "runkitExampleFilename": "./examples/example.js",
-     "dependencies": {
+-    "dependencies": {
 -        "app-root-path": "^3.1.0",
 -        "axios": "^1.5.1",
 -        "crypto": "^1.0.1",
@@ -4827,13 +4898,60 @@ index 06eabeef1ec6debb29601449aa975aed25943e15..6fb8143edd7e1e1c6b95e9059f756b78
 -        "qs": "^6.11.2"
 -    },
 -    "pre-commit": "pretty"
-+        "app-root-path": "3.1.0",
-+        "axios": "1.5.1",
-+        "crypto": "1.0.1",
-+        "form-data": "4.0.0",
-+        "lodash": "4.17.21",
-+        "luxon": "3.4.3",
-+        "oauth-1.0a": "2.2.6",
-+        "qs": "6.11.2"
++    "./dist/*": {
++      "types": "./dist/*.d.ts",
++      "import": "./dist/*.mjs",
++      "require": "./dist/*.cjs"
 +    }
++  },
++  "scripts": {
++    "build": "tsup",
++    "format:check": "biome format src",
++    "format:fix": "biome format --write src",
++    "prepare": "npm run build"
++  },
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/jmn8718/garmin-connect.git"
++  },
++  "keywords": [
++    "garmin",
++    "connect",
++    "scraper",
++    "weight",
++    "running",
++    "workout",
++    "activity",
++    "activities",
++    "download",
++    "downloader"
++  ],
++  "author": "Oskar Bernberg (Pythe1337N)",
++  "license": "MIT",
++  "files": ["dist/*"],
++  "devDependencies": {
++    "@biomejs/biome": "1.9.4",
++    "@types/app-root-path": "1.2.4",
++    "@types/lodash": "4.14.199",
++    "@types/luxon": "3.3.2",
++    "@types/node": "18.11.15",
++    "@types/qs": "6.9.7",
++    "@types/request-promise": "4.1.48",
++    "tsup": "8.4.0",
++    "typescript": "5.7.2"
++  },
++  "homepage": "https://github.com/Pythe1337N/garmin-connect#readme",
++  "bugs": {
++    "url": "https://github.com/Pythe1337N/garmin-connect/issues"
++  },
++  "dependencies": {
++    "app-root-path": "3.1.0",
++    "axios": "1.5.1",
++    "crypto": "1.0.1",
++    "form-data": "4.0.0",
++    "lodash": "4.17.21",
++    "luxon": "3.4.3",
++    "oauth-1.0a": "2.2.6",
++    "qs": "6.11.2"
++  }
  }

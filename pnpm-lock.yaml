@@ -9,7 +9,7 @@ patchedDependencies:
     hash: pz2f4xpgi6tssvqgoqff7q6b3m
     path: patches/drizzle-orm@0.44.2.patch
   garmin-connect@1.6.2:
-    hash: a6q7cnw2xpq563ymwvaulteb3a
+    hash: rykuvr773mphvp7gtk5fyo6j7i
     path: patches/garmin-connect@1.6.2.patch
 
 importers:
@@ -377,7 +377,7 @@ importers:
         version: 0.1.4
       garmin-connect:
         specifier: 1.6.2
-        version: 1.6.2(patch_hash=a6q7cnw2xpq563ymwvaulteb3a)
+        version: 1.6.2(patch_hash=rykuvr773mphvp7gtk5fyo6j7i)
       p-map:
         specifier: 7.0.3
         version: 7.0.3
@@ -6591,7 +6591,7 @@ packages:
   /function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
-  /garmin-connect@1.6.2(patch_hash=a6q7cnw2xpq563ymwvaulteb3a):
+  /garmin-connect@1.6.2(patch_hash=rykuvr773mphvp7gtk5fyo6j7i):
     resolution: {integrity: sha512-8QGeB3ZQTfaG1UZe1hd3CEOsaAozC1quG+CjX8yV0P6x+AyyWz4jqgIJ3MEK2NhDsxlXsF4jBOdpjUQubzmdFQ==}
     dependencies:
       app-root-path: 3.1.0
