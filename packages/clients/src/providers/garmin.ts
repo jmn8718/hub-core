@@ -13,6 +13,7 @@ import {
 import {
 	ActivityType as GarminActivityType,
 	GarminConnect,
+	GearStatus,
 	type Gear,
 	type IActivity,
 	type IActivityDetails,
@@ -455,6 +456,26 @@ export class GarminClient implements Client {
 			GarminClient.PROVIDER,
 			activityId,
 			GarminClient.EXTENSION as FileExtensions,
+		);
+	}
+
+	async gearStatusUpdate(params: {
+		providerUuid: string;
+		status: 'active' | 'retired';
+		dateEnd?: Date;
+	}) {
+		// need get user id and gear uuid to list the gears
+		const user = await this._client.getUserProfile();
+		await this._client.changeGearStatus(
+			user.profileId,
+			params.providerUuid,
+			params.status === 'retired' && params.dateEnd ?
+			{
+				status: GearStatus.RETIRED,
+				dateEnd: params.dateEnd
+			} : {
+				status: GearStatus.ACTIVE
+			}
 		);
 	}
 }

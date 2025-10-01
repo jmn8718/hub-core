@@ -276,4 +276,13 @@ export class CorosClient implements Client {
 			CorosClient.EXTENSION,
 		);
 	}
+
+	async gearStatusUpdate(_params: {
+			profileId: string;
+			providerUuid: string;
+			status: 'active' | 'retired';
+			dateEnd?: Date;
+		}) {
+			throw new Error("Not supported");
+		}
 }

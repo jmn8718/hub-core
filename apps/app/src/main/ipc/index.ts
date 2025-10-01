@@ -8,6 +8,7 @@ import { storage } from "../storage.js";
 // import other scoped ipc files
 import "./activity.js";
 import "./db.js";
+import "./gear.js";
 import "./providers.js";
 
 // implement common ipc messages

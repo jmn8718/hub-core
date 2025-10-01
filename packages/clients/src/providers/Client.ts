@@ -48,4 +48,10 @@ export abstract class Client {
 		downloadPath: string,
 		activityId: string,
 	): string;
+
+	abstract gearStatusUpdate(params: {
+		providerUuid: string;
+		status: 'active' | 'retired';
+		dateEnd?: Date;
+	}): Promise<void>;
 }
