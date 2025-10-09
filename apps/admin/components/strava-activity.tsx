@@ -1,5 +1,5 @@
 import { formatTime, formatePace } from "@/lib/formatters";
-import { formatDate } from "@repo/dates";
+import { formatDateWithTime } from "@repo/dates";
 import type { DetailedActivityResponse } from "strava-v3";
 
 export function StravaActivity({
@@ -34,7 +34,7 @@ export function StravaActivity({
 					</div>
 					<div>
 						<span className="font-semibold">Date:</span>{" "}
-						{formatDate(new Date(activity.start_date))}
+						{formatDateWithTime(new Date(activity.start_date))}
 					</div>
 					<div>
 						<span className="font-semibold">Timezone:</span> {activity.timezone}

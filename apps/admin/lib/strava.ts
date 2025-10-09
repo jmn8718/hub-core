@@ -3,7 +3,7 @@ import strava from "strava-v3";
 
 class StravaClient {
 	private readonly _client: typeof strava;
-
+	private _token: string | null = null;
 	constructor() {
 		this._client = strava;
 		this._client.config({
@@ -18,7 +18,12 @@ class StravaClient {
 		return this._client;
 	}
 
+	get token() {
+		return this._token;
+	}
+
 	setToken(token: string) {
+		this._token = token;
 		this._client.client(token);
 		this._client.config({
 			access_token: token,
