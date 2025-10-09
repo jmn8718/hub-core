@@ -230,11 +230,11 @@ export class ProviderManager {
 	}
 
 	public gearStatusUpdate(params: {
-			provider: Providers;
-			providerUuid: string;
-			status: 'active' | 'retired';
-			dateEnd?: Date;
-		}) {
+		provider: Providers;
+		providerUuid: string;
+		status: "active" | "retired";
+		dateEnd?: Date;
+	}) {
 		const client = this._getProvider(params.provider);
 		return client.gearStatusUpdate(params);
 	}

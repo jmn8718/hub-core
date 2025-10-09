@@ -416,10 +416,10 @@ export class AppClient implements Client {
 		fileFormat: string;
 	}): Promise<ProviderSuccessResponse> {
 		try {
-			const result = await window.electron.ipcRenderer.invoke(
+			const result = (await window.electron.ipcRenderer.invoke(
 				Channels.ACTIVITY_EXPORT_OBSIDIAN,
 				params,
-			) as Promise<ProviderSuccessResponse>;
+			)) as Promise<ProviderSuccessResponse>;
 			return result;
 		} catch (err) {
 			return {

@@ -51,7 +51,7 @@ export abstract class Client {
 
 	abstract gearStatusUpdate(params: {
 		providerUuid: string;
-		status: 'active' | 'retired';
+		status: "active" | "retired";
 		dateEnd?: Date;
 	}): Promise<void>;
 }

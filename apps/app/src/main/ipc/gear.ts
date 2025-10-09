@@ -9,7 +9,7 @@ ipcMain.handle(
 		params: {
 			provider: Providers;
 			providerUuid: string;
-			status: 'active' | 'retired';
+			status: "active" | "retired";
 			dateEnd?: string;
 		},
 	) => {

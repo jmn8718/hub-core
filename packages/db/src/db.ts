@@ -243,7 +243,9 @@ export class Db {
 			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId))
 			.orderBy(order(activities.timestamp));
 
-		const dataQuery = cursor ? select.where(lt(activities.timestamp, Number.parseInt(cursor, 10))) : select;
+		const dataQuery = cursor
+			? select.where(lt(activities.timestamp, Number.parseInt(cursor, 10)))
+			: select;
 
 		const result = await this._client.batch([
 			this._client.select({ count: count() }).from(activities),
@@ -255,7 +257,10 @@ export class Db {
 		return {
 			count: dataCount,
 			data,
-			cursor: dataCount !== data.length ? data[data.length - 1]?.timestamp.toString() || "" : "",
+			cursor:
+				dataCount !== data.length
+					? data[data.length - 1]?.timestamp.toString() || ""
+					: "",
 		};
 	}
 
