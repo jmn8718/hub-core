@@ -1,34 +1,40 @@
-"use client";
+import { formatePace } from "@/lib/formatters";
+import strava from "@/lib/strava";
+import type { StravaActivity } from "@/types/strava";
+import { formatDate } from "@repo/dates";
 
-import { Providers } from "@repo/types";
-
-export default function Activities() {
-	const syncProvider = (provider: Providers) => {
-		fetch(`/api/activities/${provider}/sync`)
-			.then((response) => {
-				if (response.status === 200) {
-					return response.json();
-				}
-				console.log(response);
-				throw new Error("error");
-			})
-			.then((data) => {
-				console.log(data);
-			})
-			.catch(console.error);
-	};
+export default async function Activities() {
+	const activities = await (strava.client.athlete.listActivities({
+		// page: 1,
+		// per_page: 10,
+	}) as Promise<StravaActivity[]>);
 
 	return (
 		<div className="flex flex-col">
-			<button type="button" onClick={() => syncProvider(Providers.COROS)}>
-				{Providers.COROS}
-			</button>
-			<button type="button" onClick={() => syncProvider(Providers.GARMIN)}>
-				{Providers.GARMIN}
-			</button>
-			<button type="button" onClick={() => syncProvider(Providers.STRAVA)}>
-				{Providers.STRAVA}
-			</button>
+			{activities.map((activity) => (
+				<div key={activity.id} className="border-b py-2">
+					<h3 className="text-lg font-semibold">
+						<a
+							href={`/activities/${activity.id}`}
+							className="text-blue-600 hover:underline"
+						>
+							ID: {activity.id}
+						</a>{" "}
+						- {activity.name}
+					</h3>
+					<p className="text-sm text-gray-500">
+						{formatDate(new Date(activity.start_date))}
+					</p>
+					<p>Distance: {(activity.distance / 1000).toFixed(2)} km</p>
+					<p>
+						Moving Time: {Math.floor(activity.moving_time / 60)} min{" "}
+						{activity.moving_time % 60} sec
+					</p>
+					{activity.type === "Run" && (
+						<p>Average Pace: {formatePace(activity.average_speed)}</p>
+					)}
+				</div>
+			))}
 		</div>
 	);
 }

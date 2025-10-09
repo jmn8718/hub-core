@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 	let message = "";
 	try {
 		if (code) {
-			const token = await strava.oauth.getToken(code);
+			const token = await strava.client.oauth.getToken(code);
 			const users = await db
 				.select({ id: profiles.id })
 				.from(profiles)

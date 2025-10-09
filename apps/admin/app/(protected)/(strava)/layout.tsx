@@ -30,10 +30,11 @@ export default async function StravaLayout({
 	if (!profile[0]) {
 		return redirect("/authorize");
 	}
-
 	if (isAfter(new Date(profile[0].expiresAt * 1000), new Date())) {
-		const refresh = await strava.oauth.refreshToken(profile[0].refreshToken);
-		strava.client(refresh.access_token);
+		const refresh = await strava.client.oauth.refreshToken(
+			profile[0].refreshToken,
+		);
+		strava.setToken(refresh.access_token);
 		await db
 			.update(profiles)
 			.set({
@@ -44,8 +45,7 @@ export default async function StravaLayout({
 			})
 			.where(eq(profiles.id, userId));
 	} else {
-		strava.client(profile[0].accessToken);
+		strava.setToken(profile[0].accessToken);
 	}
-
 	return children;
 }

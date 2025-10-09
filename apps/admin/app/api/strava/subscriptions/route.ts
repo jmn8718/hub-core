@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 	const { callbackUrl } = await req.json();
 
 	try {
-		const result = await strava.pushSubscriptions.create({
+		const result = await strava.client.pushSubscriptions.create({
 			callback_url: callbackUrl,
 			verify_token: process.env.STRAVA_VERIFY_TOKEN,
 			client_id: process.env.STRAVA_CLIENT_ID,
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
 	}
 
 	try {
-		const result = await strava.pushSubscriptions.list();
+		const result = await strava.client.pushSubscriptions.list();
 		return NextResponse.json(result);
 	} catch (error) {
 		console.error("Error fetching subscriptions:", error);
@@ -68,7 +68,7 @@ export async function DELETE(req: NextRequest) {
 	const { id } = await req.json();
 
 	try {
-		await strava.pushSubscriptions.delete({
+		await strava.client.pushSubscriptions.delete({
 			id,
 			client_id: process.env.STRAVA_CLIENT_ID,
 			client_secret: process.env.STRAVA_CLIENT_SECRET,

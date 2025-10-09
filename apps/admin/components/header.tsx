@@ -15,6 +15,7 @@ export function Header() {
 			</Link>
 			<nav className="hidden font-medium sm:flex flex-row items-center gap-5 text-sm lg:gap-6">
 				<HeaderLink href="/account" name="Account" />
+				<HeaderLink href="/activities" name="Activities" />
 				<HeaderLink href="/subscriptions" name="Subscriptions" />
 			</nav>
 			<div className="flex items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">

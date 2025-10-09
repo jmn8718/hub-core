@@ -10,13 +10,12 @@ export async function POST(req: NextRequest) {
 	const {
 		data: { session },
 	} = await supabase.auth.getSession();
-
 	if (!session) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
 	const { code } = await req.json();
-	const token = await strava.oauth.getToken(code);
+	const token = await strava.client.oauth.getToken(code);
 	const users = await db
 		.select({ id: profiles.id })
 		.from(profiles)
@@ -56,7 +55,7 @@ export async function GET(req: NextRequest) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const url = await strava.oauth.getRequestAccessURL({
+	const url = await strava.client.oauth.getRequestAccessURL({
 		scope: "activity:read_all,profile:read_all",
 	});
 

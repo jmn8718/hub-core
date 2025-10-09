@@ -31,7 +31,7 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 	const { id } = await params;
-	const activity = await strava.activities.get({
+	const activity = await strava.client.activities.get({
 		id,
 		access_token: auth[0]?.token,
 	});
