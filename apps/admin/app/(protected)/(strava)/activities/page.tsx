@@ -3,9 +3,15 @@ import strava from "@/lib/strava";
 import type { StravaActivity } from "@/types/strava";
 import { formatDateWithTime } from "@repo/dates";
 
-export default async function Activities() {
+export default async function Activities({
+	searchParams,
+}: {
+	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+	const query = await searchParams;
+	const page = query.page ? Number(query.page) : 1;
 	const activities = await (strava.client.athlete.listActivities({
-		page: 1,
+		page,
 		per_page: 25,
 		access_token: strava.token,
 	}) as Promise<StravaActivity[]>);
@@ -36,6 +42,24 @@ export default async function Activities() {
 					)}
 				</div>
 			))}
+			<div className="flex justify-center items-center gap-4 mt-6">
+				{page > 1 && (
+					<a
+						href={`?page=${page - 1}`}
+						className="px-4 py-2 border rounded bg-gray-100 hover:bg-gray-200"
+					>
+						Previous
+					</a>
+				)}
+				{activities.length > 0 && (
+					<a
+						href={`?page=${page + 1}`}
+						className="px-4 py-2 border rounded bg-gray-100 hover:bg-gray-200"
+					>
+						Next
+					</a>
+				)}
+			</div>
 		</div>
 	);
 }
