@@ -6,10 +6,7 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET(
-	_req: NextRequest,
-	{ params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(_req: NextRequest) {
 	const supabase = createRouteHandlerClient({ cookies });
 	const {
 		data: { session },
@@ -30,8 +27,12 @@ export async function GET(
 	if (!auth[0]?.token) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
-	const { id } = await params;
+	const queryPage = _req.nextUrl.searchParams.get("page");
+	const queryPerPage = _req.nextUrl.searchParams.get("per_page");
+	const page = queryPage ? Number(queryPage) : 1;
+	const per_page = queryPerPage ? Number(queryPerPage) : 25;
+
 	strava.setToken(auth[0].token);
-	const activity = await strava.getActivityById(id);
-	return NextResponse.json(activity);
+	const activities = await strava.getActivities({ per_page, page });
+	return NextResponse.json(activities);
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Loader from "@/components/loader";
 import { StravaActivity } from "@/components/strava-activity";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -19,5 +20,5 @@ export default function ActivityDetails() {
 			})
 			.catch(console.error);
 	}, []);
-	return activity ? <StravaActivity activity={activity} /> : <>loading</>;
+	return activity ? <StravaActivity activity={activity} /> : <Loader />;
 }

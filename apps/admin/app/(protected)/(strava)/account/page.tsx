@@ -1,10 +1,7 @@
 import strava from "@/lib/strava";
-import type { StravaAthlete } from "@/types/strava";
 
 export default async function AccountPage() {
-	const profile = await (strava.client.athlete.get({
-		access_token: strava.token,
-	}) as Promise<StravaAthlete>);
+	const profile = await strava.getAthlete();
 	const { id, username, firstname, lastname, profile: image } = profile;
 	return (
 		<div>

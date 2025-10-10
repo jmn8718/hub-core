@@ -8,5 +8,6 @@ namespace NodeJS {
 		NEXT_PUBLIC_DOMAIN: string;
 		TURSO_DATABASE_URL: string;
 		TURSO_AUTH_TOKEN: string;
+		STRAVA_TO_DISK: string;
 	}
 }

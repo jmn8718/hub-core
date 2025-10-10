@@ -1,22 +1,29 @@
+"use client";
+
+import Loader from "@/components/loader";
 import { formatePace } from "@/lib/formatters";
-import strava from "@/lib/strava";
 import type { StravaActivity } from "@/types/strava";
 import { formatDateWithTime } from "@repo/dates";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default async function Activities({
-	searchParams,
-}: {
-	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-	const query = await searchParams;
-	const page = query.page ? Number(query.page) : 1;
-	const activities = await (strava.client.athlete.listActivities({
-		page,
-		per_page: 25,
-		access_token: strava.token,
-	}) as Promise<StravaActivity[]>);
-
-	return (
+export default function ActivitiesPage() {
+	const params = useSearchParams();
+	const page = params.get("page") ? Number(params.get("page")) : 1;
+	const perPage = params.get("per_page") ? Number(params.get("per_page")) : 10;
+	const [activities, setActivities] = useState<StravaActivity[] | null>(null);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(() => {
+		fetch(
+			`/api/strava/activities${page ? `?page=${page}` : ""}${perPage ? `&per_page=${perPage}` : ""}`,
+		)
+			.then((response) => response.json())
+			.then((data) => {
+				setActivities(data);
+			})
+			.catch(console.error);
+	}, []);
+	return activities ? (
 		<div className="flex flex-col">
 			{activities.map((activity) => (
 				<div key={activity.id} className="border-b py-2">
@@ -26,9 +33,9 @@ export default async function Activities({
 							className="text-blue-600 hover:underline"
 						>
 							ID: {activity.id}
-						</a>{" "}
-						- {activity.name}
+						</a>
 					</h3>
+					<p className="text-md font-semibold">{activity.name}</p>
 					<p className="text-sm text-gray-500">
 						{formatDateWithTime(new Date(activity.start_date))}
 					</p>
@@ -61,5 +68,7 @@ export default async function Activities({
 				)}
 			</div>
 		</div>
+	) : (
+		<Loader />
 	);
 }
