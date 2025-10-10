@@ -68,8 +68,6 @@ ipcMain.handle(
 			provider.toUpperCase(),
 			`${activityId}.${getFileExtension(provider)}`,
 		);
-		return {
-			exitsFile: existsSync(filePath),
-		};
+		return existsSync(filePath);
 	},
 );
