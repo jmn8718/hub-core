@@ -17,14 +17,7 @@ export async function GET(_req: NextRequest) {
 	const userId = session.user.id;
 	const stravaClient = new StravaClient(db);
 
-	const queryPage = _req.nextUrl.searchParams.get("page");
-	const queryPerPage = _req.nextUrl.searchParams.get("per_page");
-	const page = queryPage ? Number(queryPage) : 1;
-	const per_page = queryPerPage ? Number(queryPerPage) : 25;
+	const athlete = await stravaClient.getAthlete(userId);
 
-	const activities = await stravaClient.getActivities(userId, {
-		per_page,
-		page,
-	});
-	return NextResponse.json(activities);
+	return NextResponse.json(athlete);
 }

@@ -1,7 +1,24 @@
-import strava from "@/lib/strava";
+"use client";
 
-export default async function AccountPage() {
-	const profile = await strava.getAthlete();
+import Loader from "@/components/loader";
+import type { StravaAthlete } from "@/types/strava";
+import { redirect } from "next/navigation";
+import { useEffect, useState } from "react";
+
+export default function AccountPage() {
+	const [profile, setProfile] = useState<StravaAthlete | null>(null);
+	useEffect(() => {
+		fetch("/api/strava/athlete")
+			.then((response) => response.json())
+			.then((data) => {
+				if (!data) {
+					return redirect("/authorize");
+				}
+				setProfile(data);
+			})
+			.catch(console.error);
+	}, []);
+	if (!profile) return <Loader />;
 	const { id, username, firstname, lastname, profile: image } = profile;
 	return (
 		<div>

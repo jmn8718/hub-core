@@ -1,7 +1,5 @@
 import db from "@/lib/db";
-import strava from "@/lib/strava";
-import { eq } from "@repo/db";
-import { profiles } from "@repo/db";
+import StravaClient from "@/lib/strava";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
@@ -19,19 +17,10 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const auth = await db
-		.select({
-			token: profiles.accessToken,
-		})
-		.from(profiles)
-		.where(eq(profiles.id, session.user.id))
-		.limit(1);
+	const userId = session.user.id;
+	const stravaClient = new StravaClient(db);
 
-	if (!auth[0]?.token) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
 	const { id } = await params;
-	strava.setToken(auth[0].token);
-	const activity = await strava.getActivityById(id);
+	const activity = await stravaClient.getActivityById(userId, id);
 	return NextResponse.json(activity);
 }
