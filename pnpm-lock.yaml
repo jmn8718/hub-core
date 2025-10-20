@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   drizzle-orm@0.44.2:
-    hash: pz2f4xpgi6tssvqgoqff7q6b3m
+    hash: sjxco23qazw5e2jgwunaqbutoa
     path: patches/drizzle-orm@0.44.2.patch
   garmin-connect@1.6.2:
     hash: rykuvr773mphvp7gtk5fyo6j7i
@@ -436,7 +436,7 @@ importers:
         version: link:../types
       drizzle-orm:
         specifier: 0.44.2
-        version: 0.44.2(patch_hash=pz2f4xpgi6tssvqgoqff7q6b3m)(@libsql/client@0.15.8)
+        version: 0.44.2(patch_hash=sjxco23qazw5e2jgwunaqbutoa)(@libsql/client@0.15.8)
       p-map:
         specifier: 7.0.3
         version: 7.0.3
@@ -5722,7 +5722,7 @@ packages:
       - supports-color
     dev: true
 
-  /drizzle-orm@0.44.2(patch_hash=pz2f4xpgi6tssvqgoqff7q6b3m)(@libsql/client@0.15.8):
+  /drizzle-orm@0.44.2(patch_hash=sjxco23qazw5e2jgwunaqbutoa)(@libsql/client@0.15.8):
     resolution: {integrity: sha512-zGAqBzWWkVSFjZpwPOrmCrgO++1kZ5H/rZ4qTGeGOe18iXGVJWf3WPfHOVwFIbmi8kHjfJstC6rJomzGx8g/dQ==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
