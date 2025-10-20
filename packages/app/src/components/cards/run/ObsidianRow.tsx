@@ -1,5 +1,4 @@
 import { formatDate } from "@repo/dates";
-// import { Bounce, toast } from 'react-toastify';
 import {
 	type DbActivityPopulated,
 	GearType,
@@ -12,6 +11,7 @@ import { Bounce, toast } from "react-toastify";
 import { useLoading } from "../../../contexts/LoadingContext.js";
 import { useDataClient, useStore } from "../../../contexts/index.js";
 import { formatDistance, formatDuration } from "../../../utils/formatters.js";
+import { generateExternalLink } from "../../../utils/providers.js";
 import IconButton from "../../IconButton.js";
 
 interface ObsidianRowProps {
@@ -33,12 +33,20 @@ const prepareObsidianFile = (data: DbActivityPopulated, gears: IDbGear[]) => {
 		`insole: ${insole?.code ?? ""}`,
 		`type: ${data.subtype}`,
 		"tags:",
-		` - ${data.type}`,
-		data.locationName && `  - ${data.locationName.toLowerCase()}`,
-		data.locationCountry && `  - ${data.locationCountry.toLowerCase()}`,
+		`  - ${data.type}`,
+		`  - ${data.locationName.toLowerCase() || "cheongra"}`,
+		`  - ${data.locationCountry.toLowerCase() || "korea"}`,
 		"---",
-		"",
-		"## REVIEW",
+		data.connections.length > 0
+			? [
+					"\n## CONNECTIONS",
+					...data.connections.map(
+						(connection) =>
+							`- [${connection.provider}](${generateExternalLink(connection.provider, connection.id)})`,
+					),
+				].join("\n")
+			: "",
+		"\n## REVIEW",
 		data.notes || "-",
 	]
 		.filter((row) => row.length)
