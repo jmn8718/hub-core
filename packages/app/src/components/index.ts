@@ -17,3 +17,5 @@ export * from "./providers/CardSync.js";
 export * from "./SectionContainer.js";
 export * from "./Sidebar.js";
 export * from "./LineChart.js";
+export * from "./InbodySummary.js";
+export * from "./InbodyHistoryTable.js";

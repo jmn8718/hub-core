@@ -20,11 +20,11 @@ import { Box } from "./Box.js";
 
 export interface LineChartProps {
 	property: "weight" | "bmi";
-	unit: string;
+	unit?: string;
 	data: { index: number; date: string; weight: number; bmi: number }[];
 }
 
-export function LineChart({ data, unit, property }: LineChartProps) {
+export function LineChart({ data, unit = "", property }: LineChartProps) {
 	const { isDarkMode } = useTheme();
 
 	const strokeColor = isDarkMode ? "#d2d1e0ff" : "#000";
