@@ -36,6 +36,10 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 									<Route path={AppRoutes.DEBUG} element={<Pages.DebugPage />} />
 									<Route path={AppRoutes.GEAR} element={<Pages.GearsPage />} />
 									<Route
+										path={AppRoutes.INBODY}
+										element={<Pages.InbodyPage />}
+									/>
+									<Route
 										path={AppRoutes.PROVIDERS}
 										element={<Pages.ProvidersPage />}
 									/>

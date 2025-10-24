@@ -6,7 +6,9 @@ import {
 	type DbActivityPopulated,
 	type GearsData,
 	type IDbGearWithDistance,
+	type IInbodyData,
 	type IOverviewData,
+	type InbodyType,
 	type ProviderSuccessResponse,
 	type Providers,
 	type StorageKeys,
@@ -440,6 +442,26 @@ export class AppClient implements Client {
 			);
 			return {
 				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async getInbodyData(params: {
+		type: InbodyType;
+	}): Promise<ProviderSuccessResponse<{ data: IInbodyData[] }>> {
+		try {
+			const data = await window.electron.ipcRenderer.invoke(
+				Channels.DB_INBODY_DATA,
+				params,
+			);
+			return {
+				success: true,
+				data,
 			};
 		} catch (err) {
 			return {

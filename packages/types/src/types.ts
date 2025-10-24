@@ -83,3 +83,13 @@ export interface Credentials {
 	username: string;
 	password: string;
 }
+
+export interface IInbodyData {
+	id: string;
+	timestamp: string;
+	weight: number;
+	bodyFat: number;
+	muscleMass: number;
+	bmi: number;
+	percentageBodyFat: number;
+}

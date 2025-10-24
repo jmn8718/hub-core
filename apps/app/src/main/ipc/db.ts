@@ -1,4 +1,4 @@
-import { Channels } from "@repo/types";
+import { Channels, type InbodyType } from "@repo/types";
 import { ipcMain } from "electron";
 import { db } from "../db.js";
 
@@ -78,5 +78,17 @@ ipcMain.handle(
 		},
 	) => {
 		return db.editGear(params.gearId, params.data);
+	},
+);
+
+ipcMain.handle(
+	Channels.DB_INBODY_DATA,
+	async (
+		_event,
+		params: {
+			type: InbodyType;
+		},
+	) => {
+		return db.getInbodyData(params);
 	},
 );

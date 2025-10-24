@@ -4,7 +4,9 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IDbGearWithDistance,
+	IInbodyData,
 	IOverviewData,
+	InbodyType,
 	ProviderSuccessResponse,
 	Providers,
 	StorageKeys,
@@ -17,6 +19,10 @@ export abstract class Client {
 			data: IOverviewData[];
 		}>
 	>;
+
+	abstract getInbodyData(params: {
+		type: InbodyType;
+	}): Promise<ProviderSuccessResponse<{ data: IInbodyData[] }>>;
 
 	abstract getActivities(params: {
 		cursor?: string;

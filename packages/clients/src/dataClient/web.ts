@@ -5,7 +5,9 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IDbGearWithDistance,
+	IInbodyData,
 	IOverviewData,
+	InbodyType,
 	ProviderSuccessResponse,
 	Providers,
 	StorageKeys,
@@ -329,5 +331,14 @@ export class WebClient implements Client {
 		fileFormat: string;
 	}): Promise<ProviderSuccessResponse> {
 		throw new Error("Not implemented");
+	}
+
+	public async getInbodyData(params: {
+		type: InbodyType;
+	}): Promise<ProviderSuccessResponse<{ data: IInbodyData[] }>> {
+		return {
+			success: true,
+			data: [],
+		};
 	}
 }

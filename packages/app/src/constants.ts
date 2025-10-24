@@ -5,6 +5,7 @@ export const Routes = {
 	TABLE: "/table",
 	PROVIDERS: "/providers",
 	GEAR: "/gear",
+	INBODY: "/inbody",
 	ADD: "/add",
 	SETTINGS: "/settings",
 	DEBUG: "/debug",

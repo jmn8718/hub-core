@@ -7,6 +7,7 @@ import type {
 	IDbGearWithDistance,
 	IGear,
 	IOverviewData,
+	InbodyType,
 	Providers,
 } from "@repo/types";
 import {
@@ -26,6 +27,7 @@ import {
 import pMap from "p-map";
 import { uuidv7 } from "uuidv7";
 import type { DbClient } from "./client";
+import { inbody } from "./schemas";
 import {
 	activities,
 	activitiesConnection,
@@ -636,5 +638,25 @@ export class Db {
 					eq(providerActivities.provider, provider),
 				),
 			);
+	}
+
+	getInbodyData({
+		type,
+	}: {
+		type: InbodyType;
+	}) {
+		return this._client
+			.select({
+				id: inbody.id,
+				timestamp: inbody.date,
+				weight: inbody.weight,
+				bodyFat: inbody.bodyFatMass,
+				muscleMass: inbody.muscleMass,
+				bmi: inbody.bmi,
+				percentageBodyFat: inbody.percentageBodyFat,
+			})
+			.from(inbody)
+			.where(eq(inbody.type, type))
+			.orderBy(desc(inbody.date));
 	}
 }

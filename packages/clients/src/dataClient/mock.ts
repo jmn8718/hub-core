@@ -4,7 +4,9 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IDbGearWithDistance,
+	IInbodyData,
 	IOverviewData,
+	InbodyType,
 	ProviderSuccessResponse,
 	Providers,
 	StorageKeys,
@@ -244,6 +246,15 @@ export class MockClient implements Client {
 	}): Promise<ProviderSuccessResponse> {
 		return {
 			success: true,
+		};
+	}
+
+	public async getInbodyData(params: {
+		type: InbodyType;
+	}): Promise<ProviderSuccessResponse<{ data: IInbodyData[] }>> {
+		return {
+			success: true,
+			data: [],
 		};
 	}
 }
