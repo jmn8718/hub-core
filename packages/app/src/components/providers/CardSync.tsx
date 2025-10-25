@@ -17,7 +17,7 @@ import { H2 } from "../H2.js";
 
 interface ProviderCardSync {
 	provider: Providers;
-	onSyncDone: () => void;
+	onSyncDone?: () => void;
 }
 
 export const ProviderCardSync: React.FC<ProviderCardSync> = ({
@@ -107,7 +107,9 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 			}));
 		}
 		setTimeout(() => {
-			onSyncDone();
+			if (onSyncDone) {
+				onSyncDone();
+			}
 		}, 500);
 	};
 	return (

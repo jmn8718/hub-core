@@ -1,4 +1,5 @@
 export const Routes = {
+	ANALYTICS: "/analytics",
 	HOME: "/",
 	DATA: "/data",
 	DETAILS: "/details",

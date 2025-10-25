@@ -47,6 +47,10 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										path={AppRoutes.PROVIDERS}
 										element={<Pages.ProvidersPage />}
 									/>
+									<Route
+										path={AppRoutes.ANALYTICS}
+										element={<Pages.AnalyticsPage />}
+									/>
 									{/* 
                   <Route
                     path={`${AppRoutes.DETAILS}/:activityId`}

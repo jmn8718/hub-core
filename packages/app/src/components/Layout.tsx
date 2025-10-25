@@ -2,6 +2,7 @@ import { cn } from "@repo/ui";
 import {
 	Atom,
 	BookHeart,
+	ChartSpline,
 	Database,
 	Dumbbell,
 	Home,
@@ -32,6 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 					{ icon: Home, href: AppRoutes.HOME, label: "Home" },
 					{ icon: Database, href: AppRoutes.DATA, label: "Data" },
 					{ icon: BookHeart, href: AppRoutes.INBODY, label: "Inbody" },
+					{ icon: ChartSpline, href: AppRoutes.ANALYTICS, label: "Analytics" },
 					{ icon: Atom, href: AppRoutes.PROVIDERS, label: "Providers" },
 					{ icon: Dumbbell, href: AppRoutes.GEAR, label: "Gear" },
 					{ icon: Settings, href: AppRoutes.SETTINGS, label: "Settings" },
