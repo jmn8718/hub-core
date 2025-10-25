@@ -2,6 +2,7 @@ import type {
 	ActivitySubType,
 	ActivityType,
 	GearType,
+	InbodyType,
 	Providers,
 } from "./enums.js";
 
@@ -92,4 +93,43 @@ export interface IInbodyData {
 	muscleMass: number;
 	bmi: number;
 	percentageBodyFat: number;
+	leanCore?: number | null;
+	leanLeftArm?: number | null;
+	leanRightArm?: number | null;
+	leanLeftLeg?: number | null;
+	leanRightLeg?: number | null;
+	fatCore?: number | null;
+	fatLeftArm?: number | null;
+	fatRightArm?: number | null;
+	fatLeftLeg?: number | null;
+	fatRightLeg?: number | null;
+	compositionBodyWater?: number | null;
+	compositionProtein?: number | null;
+	compositionMinerals?: number | null;
+	compositionBodyFat?: number | null;
+	type: InbodyType;
+}
+
+export interface IInbodyCreateInput {
+	type: InbodyType;
+	timestamp: string;
+	weight: number;
+	bodyFat: number;
+	muscleMass: number;
+	bmi: number;
+	percentageBodyFat: number;
+	leanCore?: number | null;
+	leanLeftArm?: number | null;
+	leanRightArm?: number | null;
+	leanLeftLeg?: number | null;
+	leanRightLeg?: number | null;
+	fatCore?: number | null;
+	fatLeftArm?: number | null;
+	fatRightArm?: number | null;
+	fatLeftLeg?: number | null;
+	fatRightLeg?: number | null;
+	compositionBodyWater?: number | null;
+	compositionProtein?: number | null;
+	compositionMinerals?: number | null;
+	compositionBodyFat?: number | null;
 }

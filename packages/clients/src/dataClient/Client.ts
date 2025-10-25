@@ -4,6 +4,7 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IDbGearWithDistance,
+	IInbodyCreateInput,
 	IInbodyData,
 	IOverviewData,
 	InbodyType,
@@ -23,6 +24,10 @@ export abstract class Client {
 	abstract getInbodyData(params: {
 		type: InbodyType;
 	}): Promise<ProviderSuccessResponse<{ data: IInbodyData[] }>>;
+
+	abstract createInbodyData(
+		data: IInbodyCreateInput,
+	): Promise<ProviderSuccessResponse>;
 
 	abstract getActivities(params: {
 		cursor?: string;

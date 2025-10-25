@@ -19,3 +19,4 @@ export * from "./Sidebar.js";
 export * from "./LineChart.js";
 export * from "./InbodySummary.js";
 export * from "./InbodyHistoryTable.js";
+export * from "./Button.js";

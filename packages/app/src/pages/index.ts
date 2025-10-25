@@ -4,4 +4,5 @@ export { DataList as DataListPage } from "./DataList.js";
 export { Debug as DebugPage } from "./Debug.js";
 export { Gears as GearsPage } from "./Gears.js";
 export { Inbody as InbodyPage } from "./Inbody.js";
+export { InbodyAdd as InbodyAddPage } from "./InbodyAdd.js";
 export { ProvidersPage } from "./Providers.js";

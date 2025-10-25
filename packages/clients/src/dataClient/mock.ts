@@ -4,6 +4,7 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IDbGearWithDistance,
+	IInbodyCreateInput,
 	IInbodyData,
 	IOverviewData,
 	InbodyType,
@@ -255,6 +256,14 @@ export class MockClient implements Client {
 		return {
 			success: true,
 			data: [],
+		};
+	}
+
+	public async createInbodyData(
+		data: IInbodyCreateInput,
+	): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
 		};
 	}
 }

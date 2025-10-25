@@ -6,6 +6,7 @@ import {
 	type DbActivityPopulated,
 	type GearsData,
 	type IDbGearWithDistance,
+	type IInbodyCreateInput,
 	type IInbodyData,
 	type IOverviewData,
 	type InbodyType,
@@ -462,6 +463,22 @@ export class AppClient implements Client {
 			return {
 				success: true,
 				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async createInbodyData(
+		data: IInbodyCreateInput,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.DB_INBODY_CREATE, data);
+			return {
+				success: true,
 			};
 		} catch (err) {
 			return {

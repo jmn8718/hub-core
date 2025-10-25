@@ -40,6 +40,10 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										element={<Pages.InbodyPage />}
 									/>
 									<Route
+										path={AppRoutes.INBODY_ADD}
+										element={<Pages.InbodyAddPage />}
+									/>
+									<Route
 										path={AppRoutes.PROVIDERS}
 										element={<Pages.ProvidersPage />}
 									/>

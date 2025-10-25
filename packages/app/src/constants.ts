@@ -6,6 +6,7 @@ export const Routes = {
 	PROVIDERS: "/providers",
 	GEAR: "/gear",
 	INBODY: "/inbody",
+	INBODY_ADD: "/inbody/add",
 	ADD: "/add",
 	SETTINGS: "/settings",
 	DEBUG: "/debug",

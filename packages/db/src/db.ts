@@ -6,6 +6,8 @@ import type {
 	IConnection,
 	IDbGearWithDistance,
 	IGear,
+	IInbodyCreateInput,
+	IInbodyData,
 	IOverviewData,
 	InbodyType,
 	Providers,
@@ -654,9 +656,92 @@ export class Db {
 				muscleMass: inbody.muscleMass,
 				bmi: inbody.bmi,
 				percentageBodyFat: inbody.percentageBodyFat,
+				leanCore: inbody.leanCore,
+				leanLeftArm: inbody.leanLeftArm,
+				leanRightArm: inbody.leanRightArm,
+				leanLeftLeg: inbody.leanLeftLeg,
+				leanRightLeg: inbody.leanRightLeg,
+				fatCore: inbody.fatCore,
+				fatLeftArm: inbody.fatLeftArm,
+				fatRightArm: inbody.fatRightArm,
+				fatLeftLeg: inbody.fatLeftLeg,
+				fatRightLeg: inbody.fatRightLeg,
+				compositionBodyWater: inbody.compositionBodyWater,
+				compositionProtein: inbody.compositionProtein,
+				compositionMinerals: inbody.compositionMinerals,
+				compositionBodyFat: inbody.compositionBodyFat,
+				type: inbody.type,
 			})
 			.from(inbody)
 			.where(eq(inbody.type, type))
 			.orderBy(desc(inbody.date));
+	}
+
+	async createInbodyData(data: IInbodyCreateInput): Promise<IInbodyData> {
+		const id = uuidv7();
+
+		const toRequired = (value: number) => Math.round(value * 100);
+		const toOptional = (value?: number | null) =>
+			value === undefined || value === null ? null : Math.round(value * 100);
+
+		await this._client.insert(inbody).values({
+			id,
+			type: data.type,
+			date: data.timestamp,
+			weight: toRequired(data.weight),
+			muscleMass: toRequired(data.muscleMass),
+			bodyFatMass: toRequired(data.bodyFat),
+			bmi: toRequired(data.bmi),
+			percentageBodyFat: toRequired(data.percentageBodyFat),
+			leanCore: toOptional(data.leanCore),
+			leanLeftArm: toOptional(data.leanLeftArm),
+			leanRightArm: toOptional(data.leanRightArm),
+			leanLeftLeg: toOptional(data.leanLeftLeg),
+			leanRightLeg: toOptional(data.leanRightLeg),
+			fatCore: toOptional(data.fatCore),
+			fatLeftArm: toOptional(data.fatLeftArm),
+			fatRightArm: toOptional(data.fatRightArm),
+			fatLeftLeg: toOptional(data.fatLeftLeg),
+			fatRightLeg: toOptional(data.fatRightLeg),
+			compositionBodyWater: toOptional(data.compositionBodyWater),
+			compositionProtein: toOptional(data.compositionProtein),
+			compositionMinerals: toOptional(data.compositionMinerals),
+			compositionBodyFat: toOptional(data.compositionBodyFat),
+		});
+
+		const [created] = await this._client
+			.select({
+				id: inbody.id,
+				timestamp: inbody.date,
+				weight: inbody.weight,
+				bodyFat: inbody.bodyFatMass,
+				muscleMass: inbody.muscleMass,
+				bmi: inbody.bmi,
+				percentageBodyFat: inbody.percentageBodyFat,
+				leanCore: inbody.leanCore,
+				leanLeftArm: inbody.leanLeftArm,
+				leanRightArm: inbody.leanRightArm,
+				leanLeftLeg: inbody.leanLeftLeg,
+				leanRightLeg: inbody.leanRightLeg,
+				fatCore: inbody.fatCore,
+				fatLeftArm: inbody.fatLeftArm,
+				fatRightArm: inbody.fatRightArm,
+				fatLeftLeg: inbody.fatLeftLeg,
+				fatRightLeg: inbody.fatRightLeg,
+				compositionBodyWater: inbody.compositionBodyWater,
+				compositionProtein: inbody.compositionProtein,
+				compositionMinerals: inbody.compositionMinerals,
+				compositionBodyFat: inbody.compositionBodyFat,
+				type: inbody.type,
+			})
+			.from(inbody)
+			.where(eq(inbody.id, id))
+			.limit(1);
+
+		if (!created) {
+			throw new Error("Failed to create Inbody entry");
+		}
+
+		return created as IInbodyData;
 	}
 }

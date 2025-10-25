@@ -118,7 +118,7 @@ export function InbodySummary({ current, previous }: InbodySummaryProps) {
 								<div
 									className={cn(
 										"flex items-baseline justify-between text-xs uppercase tracking-wide",
-										isDarkMode ? "text-gray-500" : "text-gray-300",
+										isDarkMode ? "text-white" : "text-gray-500",
 									)}
 								>
 									<span>

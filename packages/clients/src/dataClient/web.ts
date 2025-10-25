@@ -5,6 +5,7 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IDbGearWithDistance,
+	IInbodyCreateInput,
 	IInbodyData,
 	IOverviewData,
 	InbodyType,
@@ -339,6 +340,15 @@ export class WebClient implements Client {
 		return {
 			success: true,
 			data: [],
+		};
+	}
+
+	public async createInbodyData(
+		_data: IInbodyCreateInput,
+	): Promise<ProviderSuccessResponse> {
+		return {
+			success: false,
+			error: "Not implemented",
 		};
 	}
 }
