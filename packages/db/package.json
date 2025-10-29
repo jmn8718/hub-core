@@ -16,9 +16,11 @@
     "clean": "rimraf .turbo node_modules dist",
     "db:schema": "drizzle-kit generate",
     "db:migrate": "tsx src/migrate.ts",
+    "db:export:webhooks": "tsx src/export/webhooks.ts",
     "db:seed:webhooks": "tsx src/seed/webhooks.ts",
     "db:seed:activities": "tsx src/seed/activities.ts",
     "db:seed:import": "tsx src/seed/import.ts",
+    "db:seed:health": "tsx src/seed/health.ts",
     "db:seed:clear": "tsx src/seed/clear.ts",
     "test": "vitest"
   },

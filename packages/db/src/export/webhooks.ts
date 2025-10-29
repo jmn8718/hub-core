@@ -1,27 +1,24 @@
 import "dotenv/config";
 import { createDbClient } from "../client.js";
-import { clearData, importData } from "./common.js";
+import { webhooks } from "../schemas/webhooks.js";
 
 async function run() {
-	const client = createDbClient(
+	const db = createDbClient(
 		process.env.LOCAL_DB
 			? {
 					url: process.env.LOCAL_DB,
-					logger: false,
 				}
 			: {
 					url: process.env.TURSO_DATABASE_URL,
 					authToken: process.env.TURSO_AUTH_TOKEN,
-					logger: false,
 				},
 	);
 
-	await clearData(client);
-	console.log("--- db cleared");
-	await importData(client);
-	console.log("--- db data imported");
+	const data = await db.select().from(webhooks);
+
+	console.log(data);
 }
 
 run().then(() => {
-	console.log("Seeding complete.");
+	console.log("export webhooks data complete.");
 });

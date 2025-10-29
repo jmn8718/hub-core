@@ -1,5 +1,3 @@
-export { webhooks } from "./webhooks.js";
-
 import activitiesDbData from "./data/activities.json" with { type: "json" };
 import activitiesConnectionDbData from "./data/activities_connection.json" with {
 	type: "json",

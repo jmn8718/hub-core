@@ -41,12 +41,7 @@ import {
 } from "./schemas/app";
 import type { IInsertActivityPayload, IInsertGearPayload } from "./types/index";
 
-function mapActivityRow({
-	connections,
-	gears,
-	isEvent,
-	...row
-}: {
+interface IDbActivityRow {
 	gears: unknown;
 	connections: unknown;
 	id: string;
@@ -64,7 +59,14 @@ function mapActivityRow({
 	isEvent: number | null;
 	startLatitude: number | null;
 	startLongitude: number | null;
-}): DbActivityPopulated {
+}
+
+function mapActivityRow({
+	connections,
+	gears,
+	isEvent,
+	...row
+}: IDbActivityRow): DbActivityPopulated {
 	return {
 		...row,
 		isEvent: isEvent === 1 ? 1 : 0,
@@ -183,7 +185,7 @@ export class Db {
 			.leftJoin(connections, eq(activities.id, connections.activityId))
 			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId))
 			.limit(1)
-			.then((data) => {
+			.then((data: IDbActivityRow[]) => {
 				if (!data[0]) return;
 				return mapActivityRow(data[0]);
 			});

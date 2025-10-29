@@ -15,6 +15,13 @@
       "when": 1760931856366,
       "tag": "0001_bitter_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1761703538480,
+      "tag": "0002_burly_jean_grey",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { createDbClient } from "../client.js";
-import { webhooks as webhooksData } from "../mocks/index.js";
+import { cloudWebhooksData } from "../mocks/webhooks.js";
 import { webhooks } from "../schemas/webhooks.js";
 
 async function run() {
@@ -15,15 +15,20 @@ async function run() {
 				},
 	);
 
+	await db.delete(webhooks);
+	console.log("--------- Cleared webhooks table ---------");
+
 	await db.insert(webhooks).values(
-		webhooksData.map((record) => ({
+		cloudWebhooksData.map((record) => ({
 			...record,
+			id: record.id,
 			owner_id: record.owner_id.toString(),
 			object_id: record.object_id.toString(),
 			subscription_id: record.subscription_id.toString(),
 			event_time: record.created_at,
 		})),
 	);
+	console.log("--------- Seeded webhooks table ---------");
 }
 
 run().then(() => {
