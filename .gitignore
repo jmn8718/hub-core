@@ -38,3 +38,6 @@ dist/
 
 # db
 *.sqlite
+
+# local client cache
+apps/admin/**/*.json
