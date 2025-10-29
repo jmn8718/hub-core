@@ -20,8 +20,7 @@
   },
   "pnpm": {
     "patchedDependencies": {
-      "garmin-connect@1.6.2": "patches/garmin-connect@1.6.2.patch",
-      "drizzle-orm@0.44.2": "patches/drizzle-orm@0.44.2.patch"
+      "garmin-connect@1.6.2": "patches/garmin-connect@1.6.2.patch"
     }
   }
 }
