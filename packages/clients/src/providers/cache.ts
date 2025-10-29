@@ -1,8 +1,31 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+const isNodeEnvironment =
+	typeof process !== "undefined" && !!process.versions?.node;
 
-const __filename = fileURLToPath(import.meta.url);
+let existsSync: typeof import("node:fs")["existsSync"] = () => false;
+let mkdirSync: typeof import("node:fs")["mkdirSync"] = () => undefined;
+let readFileSync: typeof import("node:fs")["readFileSync"] = () => {
+	throw new Error("readFileSync not available in browser environment");
+};
+let writeFileSync: typeof import("node:fs")["writeFileSync"] = () => undefined;
+let dirname: typeof import("node:path")["dirname"] = () => "";
+let join: typeof import("node:path")["join"] = (...parts: string[]) =>
+	parts.filter(Boolean).join("/");
+let fileURLToPath: typeof import("node:url")["fileURLToPath"] = () => "";
+
+if (isNodeEnvironment) {
+	const fs = await import("node:fs");
+	const path = await import("node:path");
+	const url = await import("node:url");
+	existsSync = fs.existsSync;
+	mkdirSync = fs.mkdirSync;
+	readFileSync = fs.readFileSync;
+	writeFileSync = fs.writeFileSync;
+	dirname = path.dirname;
+	join = path.join;
+	fileURLToPath = url.fileURLToPath;
+}
+
+const __filename = isNodeEnvironment ? fileURLToPath(import.meta.url) : "";
 
 export class Cache {
 	private _dirname = "";
@@ -10,7 +33,7 @@ export class Cache {
 	private _cache: Record<string, string> = {};
 
 	constructor(targetDirname?: string) {
-		if (targetDirname) {
+		if (targetDirname && isNodeEnvironment) {
 			try {
 				this._dirname = join(
 					targetDirname || dirname(__filename),

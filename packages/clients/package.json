@@ -5,6 +5,10 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "browser": {
+        "default": "./dist/index.browser.js",
+        "types": "./dist/index.browser.d.ts"
+      },
       "default": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
