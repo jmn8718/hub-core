@@ -1,7 +1,7 @@
 import { type IInbodyCreateInput, InbodyType } from "@repo/types";
 import { cn } from "@repo/ui";
 import { type ChangeEvent, type FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Box } from "../components/index.js";
 import { Routes } from "../constants.js";
 import { useDataClient, useTheme } from "../contexts/index.js";
@@ -42,12 +42,27 @@ const toDateTimeLocal = (value: string) => {
 	return date.toISOString().slice(0, 16);
 };
 
+const resolveInbodyType = (value: unknown): InbodyType | null =>
+	Object.values(InbodyType).includes(value as InbodyType)
+		? (value as InbodyType)
+		: null;
+
 export function InbodyAdd() {
 	const { client } = useDataClient();
 	const { isDarkMode } = useTheme();
 	const navigate = useNavigate();
+	const location = useLocation();
+	const locationState = location.state as {
+		returnTo?: string;
+		selectedType?: InbodyType;
+	} | null;
 
-	const [entryType, setEntryType] = useState<InbodyType>(InbodyType.ADVANCED);
+	const originSelectedType = resolveInbodyType(locationState?.selectedType);
+	const returnTo = locationState?.returnTo ?? Routes.INBODY;
+
+	const [entryType, setEntryType] = useState<InbodyType>(
+		originSelectedType ?? InbodyType.BASIC,
+	);
 	const [timestamp, setTimestamp] = useState<string>(
 		toDateTimeLocal(new Date().toISOString()),
 	);
@@ -56,6 +71,19 @@ export function InbodyAdd() {
 	);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	const navigateToList = (typeToShow: InbodyType) => {
+		navigate(returnTo, {
+			replace: true,
+			state: {
+				selectedType: typeToShow,
+			},
+		});
+	};
+
+	const goBackToList = () => {
+		navigateToList(originSelectedType ?? entryType);
+	};
 
 	const handleChange =
 		(name: string) => (event: ChangeEvent<HTMLInputElement>) => {
@@ -128,7 +156,7 @@ export function InbodyAdd() {
 			if (!result.success) {
 				throw new Error(result.error ?? "Unable to create Inbody entry");
 			}
-			navigate(Routes.INBODY);
+			navigateToList(payload.type);
 		} catch (err) {
 			setError((err as Error).message);
 		} finally {
@@ -137,19 +165,46 @@ export function InbodyAdd() {
 	};
 
 	return (
-		<div className="space-y-4">
-			<button
-				type="button"
-				onClick={() => navigate(Routes.INBODY)}
-				className={cn(
-					"text-sm font-medium",
-					isDarkMode ? "text-white" : "text-gray-500",
-				)}
-			>
-				← Back to Inbody history
-			</button>
+		<form onSubmit={handleSubmit} className="space-y-4">
+			<div className="flex items-center justify-between">
+				<button
+					type="button"
+					onClick={goBackToList}
+					className={cn(
+						"text-sm font-medium",
+						isDarkMode ? "text-white" : "text-gray-500",
+					)}
+					disabled={isSubmitting}
+				>
+					← Back to Inbody history
+				</button>
+
+				<div className="flex flex-wrap items-center justify-end gap-3">
+					<button
+						type="button"
+						onClick={goBackToList}
+						className="rounded-full border border-gray-500 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:border-gray-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+						disabled={isSubmitting}
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						className="rounded-full border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+						disabled={isSubmitting}
+					>
+						{isSubmitting ? "Saving..." : "Save Entry"}
+					</button>
+				</div>
+			</div>
+
 			<Box>
-				<form onSubmit={handleSubmit} className="space-y-6">
+				<div className="space-y-6">
+					{error ? (
+						<div className="rounded border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
+							{error}
+						</div>
+					) : null}
 					<div className="grid gap-4 md:grid-cols-2">
 						<label className="flex flex-col gap-1 text-sm font-medium">
 							<span>Entry Type</span>
@@ -204,32 +259,8 @@ export function InbodyAdd() {
 							</label>
 						))}
 					</div>
-
-					{error ? (
-						<div className="rounded border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
-							{error}
-						</div>
-					) : null}
-
-					<div className="flex flex-wrap items-center justify-end gap-3">
-						<button
-							type="button"
-							onClick={() => navigate(Routes.INBODY)}
-							className="rounded-full border border-gray-500 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:border-gray-400 hover:text-white"
-							disabled={isSubmitting}
-						>
-							Cancel
-						</button>
-						<button
-							type="submit"
-							className="rounded-full border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "Saving..." : "Save Entry"}
-						</button>
-					</div>
-				</form>
+				</div>
 			</Box>
-		</div>
+		</form>
 	);
 }

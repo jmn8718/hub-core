@@ -1,6 +1,11 @@
 import type { Client } from "@repo/clients";
 import type { AppType } from "@repo/types";
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import {
+	Navigate,
+	Route,
+	BrowserRouter as Router,
+	Routes,
+} from "react-router-dom";
 
 import { BottomStatus, Layout } from "./components/index.js";
 import { Routes as AppRoutes } from "./constants.js";
@@ -50,6 +55,10 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 									<Route
 										path={AppRoutes.ANALYTICS}
 										element={<Pages.AnalyticsPage />}
+									/>
+									<Route
+										path="*"
+										element={<Navigate to={AppRoutes.HOME} replace />}
 									/>
 									{/* 
                   <Route

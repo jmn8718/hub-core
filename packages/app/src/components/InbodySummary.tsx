@@ -2,6 +2,7 @@ import { formatDate } from "@repo/dates";
 import type { IInbodyData } from "@repo/types";
 import { cn } from "@repo/ui";
 import { useTheme } from "../contexts/index.js";
+import { getDifferenceClassName } from "../utils/style.js";
 import { Box } from "./Box.js";
 
 interface SummaryRow {
@@ -10,6 +11,7 @@ interface SummaryRow {
 	previous?: number | null;
 	unit?: string;
 	fractionDigits?: number;
+	goodWhenNegative: boolean;
 }
 
 interface InbodySummaryProps {
@@ -53,6 +55,7 @@ export function InbodySummary({ current, previous }: InbodySummaryProps) {
 			value: current.weight,
 			previous: previous?.weight ?? null,
 			unit: "kg",
+			goodWhenNegative: true,
 		},
 		{
 			label: "BMI",
@@ -60,24 +63,28 @@ export function InbodySummary({ current, previous }: InbodySummaryProps) {
 			previous: previous?.bmi ?? null,
 			unit: "kg/m²",
 			fractionDigits: 1,
+			goodWhenNegative: true,
 		},
 		{
 			label: "Body Fat Mass",
 			value: current.bodyFat,
 			previous: previous?.bodyFat ?? null,
 			unit: "kg",
+			goodWhenNegative: true,
 		},
 		{
 			label: "Muscle Mass",
 			value: current.muscleMass,
 			previous: previous?.muscleMass ?? null,
 			unit: "kg",
+			goodWhenNegative: false,
 		},
 		{
 			label: "Body Fat %",
 			value: current.percentageBodyFat,
 			previous: previous?.percentageBodyFat ?? null,
 			unit: "%",
+			goodWhenNegative: true,
 		},
 	];
 
@@ -93,25 +100,33 @@ export function InbodySummary({ current, previous }: InbodySummaryProps) {
 			</div>
 			<div className="grid gap-2 sm:grid-cols-2">
 				{summaryRows.map(
-					({ label, value, previous: previousValue, unit, fractionDigits }) => {
+					({
+						label,
+						value,
+						previous: previousValue,
+						unit,
+						fractionDigits,
+						goodWhenNegative,
+					}) => {
 						const displayValue = formatMeasurement(value, fractionDigits);
-						const variation = previous
+						const hasDiff =
+							value !== null &&
+							value !== undefined &&
+							previousValue !== null &&
+							previousValue !== undefined;
+						const variation = hasDiff
 							? getVariation(value, previousValue, fractionDigits)
 							: null;
 
 						const variationContent = variation ?? "--";
 
-						const isNegative = !!variation?.startsWith("-");
-						const isPositive = !!variation?.startsWith("+");
-
-						const variationClassName =
-							isNegative && label === "Muscle Mass"
-								? "text-rose-500"
-								: isNegative
-									? "text-emerald-500"
-									: isPositive
-										? "text-rose-500"
-										: "text-gray-400";
+						const diffRaw = hasDiff
+							? (value as number) - (previousValue as number)
+							: null;
+						const variationClassName = getDifferenceClassName(
+							diffRaw,
+							goodWhenNegative,
+						);
 
 						return (
 							<div key={label} className="flex flex-col gap-1 p-2">

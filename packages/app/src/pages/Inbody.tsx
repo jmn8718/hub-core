@@ -1,6 +1,6 @@
 import { type IInbodyData, InbodyType } from "@repo/types";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
 	Box,
 	Button,
@@ -14,8 +14,20 @@ import { useDataClient } from "../contexts/index.js";
 export function Inbody() {
 	const { client } = useDataClient();
 	const navigate = useNavigate();
+	const location = useLocation();
+	const locationState = location.state as {
+		selectedType?: InbodyType;
+	} | null;
+
+	const candidate = locationState?.selectedType;
+	const locationSelectedType = Object.values(InbodyType).includes(
+		candidate as InbodyType,
+	)
+		? (candidate as InbodyType)
+		: null;
+
 	const [selectedType, setSelectedType] = useState<InbodyType>(
-		InbodyType.ADVANCED,
+		locationSelectedType ?? InbodyType.BASIC,
 	);
 	const [data, setData] = useState<IInbodyData[]>([]);
 
@@ -73,7 +85,18 @@ export function Inbody() {
 						);
 					})}
 				</div>
-				<Button onClick={() => navigate(Routes.INBODY_ADD)}>+</Button>
+				<Button
+					onClick={() =>
+						navigate(Routes.INBODY_ADD, {
+							state: {
+								returnTo: Routes.INBODY,
+								selectedType,
+							},
+						})
+					}
+				>
+					+
+				</Button>
 			</div>
 
 			{currentData ? (
