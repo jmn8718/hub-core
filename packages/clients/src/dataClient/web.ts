@@ -4,10 +4,12 @@ import type {
 	Credentials,
 	DbActivityPopulated,
 	GearsData,
+	IDailyOverviewData,
 	IDbGearWithDistance,
 	IInbodyCreateInput,
 	IInbodyData,
 	IOverviewData,
+	IWeeklyOverviewData,
 	InbodyType,
 	ProviderSuccessResponse,
 	Providers,
@@ -36,6 +38,59 @@ export class WebClient implements Client {
 	> {
 		try {
 			const data = await this._db.getActivitiesOverview(limit);
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async getDailyOverview({
+		startDate,
+		endDate,
+		periodType,
+		periodCount,
+	}: {
+		startDate?: string;
+		endDate?: string;
+		periodType?: "days" | "weeks" | "months";
+		periodCount?: number;
+	}): Promise<
+		ProviderSuccessResponse<{
+			data: IDailyOverviewData[];
+		}>
+	> {
+		try {
+			const data = await this._db.getDailyActivitiesOverview({
+				startDate,
+				endDate,
+				periodType,
+				periodCount,
+			});
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async getWeeklyOverview({ limit }: { limit?: number }): Promise<
+		ProviderSuccessResponse<{
+			data: IWeeklyOverviewData[];
+		}>
+	> {
+		try {
+			const data = await this._db.getWeeklyActivitiesOverview(limit);
 			return {
 				success: true,
 				data,

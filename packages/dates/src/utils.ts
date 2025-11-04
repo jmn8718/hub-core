@@ -46,3 +46,21 @@ export const isAfter = (
 export const monthsBefore = (months: number): Date => {
 	return dayjs().subtract(months, "month").startOf("month").toDate();
 };
+
+export const weeksBefore = (weeks: number): Date => {
+	const baseDate = dayjs().subtract(weeks, "week").toDate();
+	const result = new Date(baseDate.getTime());
+	const day = result.getDay(); // 0 (Sun) -> 6 (Sat)
+	const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+	result.setDate(result.getDate() + diff);
+	result.setHours(0, 0, 0, 0);
+	return result;
+};
+
+export const daysBefore = (days: number): Date => {
+	return dayjs().subtract(days, "day").startOf("day").toDate();
+};
+
+export const startOfDay = (date: DateParam): Date => {
+	return dayjs(date).startOf("day").toDate();
+};

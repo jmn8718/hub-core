@@ -20,3 +20,8 @@ export * from "./LineChart.js";
 export * from "./InbodySummary.js";
 export * from "./InbodyHistoryTable.js";
 export * from "./Button.js";
+export * from "./WeeklyOverviewList.js";
+export * from "./DailyActivityStats.js";
+export * from "./DailyActivitySummary.js";
+export * from "./ValueTrend.js";
+export * from "./charts/DailyDistanceChart.js";

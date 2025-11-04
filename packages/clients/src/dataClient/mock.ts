@@ -3,10 +3,12 @@ import type {
 	Credentials,
 	DbActivityPopulated,
 	GearsData,
+	IDailyOverviewData,
 	IDbGearWithDistance,
 	IInbodyCreateInput,
 	IInbodyData,
 	IOverviewData,
+	IWeeklyOverviewData,
 	InbodyType,
 	ProviderSuccessResponse,
 	Providers,
@@ -29,6 +31,47 @@ export class MockClient implements Client {
 				{ distance: 1000, count: 3, month: "2024-11" },
 				{ distance: 1500, count: 5, month: "2024-12" },
 				{ distance: 1200, count: 3, month: "2025-01" },
+			],
+		};
+	}
+
+	async getWeeklyOverview({ limit: _limit }: { limit?: number }): Promise<
+		ProviderSuccessResponse<{
+			data: IWeeklyOverviewData[];
+		}>
+	> {
+		return {
+			success: true,
+			data: [
+				{ distance: 5000, duration: 3600, weekStart: "2024-12-02" },
+				{ distance: 6200, duration: 4200, weekStart: "2024-11-25" },
+				{ distance: 4500, duration: 3300, weekStart: "2024-11-18" },
+				{ distance: 7000, duration: 5100, weekStart: "2024-11-11" },
+			],
+		};
+	}
+
+	async getDailyOverview({
+		startDate: _startDate,
+		endDate: _endDate,
+		periodType: _periodType,
+		periodCount: _periodCount,
+	}: {
+		startDate?: string;
+		endDate?: string;
+		periodType?: "days" | "weeks" | "months";
+		periodCount?: number;
+	}): Promise<
+		ProviderSuccessResponse<{
+			data: IDailyOverviewData[];
+		}>
+	> {
+		return {
+			success: true,
+			data: [
+				{ date: "2024-12-09", distance: 8000, duration: 3600, count: 1 },
+				{ date: "2024-12-10", distance: 12000, duration: 5400, count: 2 },
+				{ date: "2024-12-12", distance: 0, duration: 0, count: 0 },
 			],
 		};
 	}

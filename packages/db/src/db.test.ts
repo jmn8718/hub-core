@@ -16,7 +16,7 @@ import { clearData, importData } from "./seed/common";
 
 describe("db", () => {
 	const client = createDbClient({
-		url: process.env.LOCAL_DB || "file:test.sqlite",
+		url: process.env.LOCAL_TEST_DB || "file:test.sqlite",
 		logger: false,
 	});
 	const db = new Db(client);
@@ -98,6 +98,41 @@ describe("db", () => {
 		expect(result[1]!.count).eq(2);
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		expect(result[2]!.count).eq(1);
+	});
+
+	test("should get weekly overview data", async () => {
+		const date = new Date(2024, 11, 15);
+		vi.setSystemTime(date);
+
+		const result = await db.getWeeklyActivitiesOverview();
+		expect(result.length).eq(4);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[0]!.weekStart).eq("2024-12-09");
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(result[1]!.weekStart).eq("2024-12-02");
+		// ensure numeric values
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(typeof result[0]!.distance).eq("number");
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(typeof result[0]!.duration).eq("number");
+	});
+
+	test("should get daily overview data for range", async () => {
+		const result = await db.getDailyActivitiesOverview({
+			startDate: "2024-11-01",
+			endDate: "2024-11-07",
+		});
+
+		expect(result.length).eq(7);
+		const dayOne = result[0];
+		const daySix = result[5];
+		expect(dayOne?.date).eq("2024-11-01");
+		expect(dayOne?.distance).eq(11694);
+		expect(dayOne?.duration).eq(3062);
+		expect(dayOne?.count).eq(1);
+		expect(daySix?.date).eq("2024-11-06");
+		expect(daySix?.distance).eq(10694);
+		expect(daySix?.duration).eq(3061);
 	});
 
 	test("should get activities with limit", async () => {

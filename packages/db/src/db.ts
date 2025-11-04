@@ -1,14 +1,16 @@
-import { formatDate, monthsBefore } from "@repo/dates";
+import { dayjs, formatDate, monthsBefore, weeksBefore } from "@repo/dates";
 import type {
 	ActivitiesData,
 	DbActivityPopulated,
 	GearsData,
 	IConnection,
+	IDailyOverviewData,
 	IDbGearWithDistance,
 	IGear,
 	IInbodyCreateInput,
 	IInbodyData,
 	IOverviewData,
+	IWeeklyOverviewData,
 	InbodyType,
 	Providers,
 } from "@repo/types";
@@ -22,6 +24,7 @@ import {
 	gt,
 	gte,
 	lt,
+	lte,
 	min,
 	sql,
 	sum,
@@ -101,6 +104,96 @@ const fillEmptyMonths = (
 	return Array.from(monthsMap.values());
 };
 
+const startOfWeek = (dateValue: Date | number): Date => {
+	const date = new Date(
+		dateValue instanceof Date ? dateValue.getTime() : Number(dateValue),
+	);
+	const day = date.getDay(); // 0 (Sun) -> 6 (Sat)
+	const diff = day === 0 ? -6 : 1 - day;
+	date.setDate(date.getDate() + diff);
+	date.setHours(0, 0, 0, 0);
+	return date;
+};
+
+const fillEmptyWeeks = (
+	data: {
+		distance: string | number | null;
+		duration: string | number | null;
+		minTimestamp: number | null;
+	}[],
+	size = 4,
+): IWeeklyOverviewData[] => {
+	const weeksMap = new Map<string, IWeeklyOverviewData>();
+	for (let i = 0; i < size; i++) {
+		const currentWeek = weeksBefore(i);
+		const key = formatDate(currentWeek, { format: "YYYY-MM-DD" });
+		weeksMap.set(key, {
+			distance: 0,
+			duration: 0,
+			weekStart: key,
+		});
+	}
+	// biome-ignore lint/complexity/noForEach: <explanation>
+	data.forEach((row) => {
+		if (row.minTimestamp === null || row.minTimestamp === undefined) {
+			return;
+		}
+		const weekStart = formatDate(startOfWeek(row.minTimestamp), {
+			format: "YYYY-MM-DD",
+		});
+		weeksMap.set(weekStart, {
+			distance: Number(row.distance ?? 0),
+			duration: Number(row.duration ?? 0),
+			weekStart,
+		});
+	});
+	return Array.from(weeksMap.values());
+};
+
+const fillEmptyDays = (
+	data: {
+		date: unknown;
+		distance: string | number | null;
+		duration: string | number | null;
+		count: number;
+	}[],
+	start: Date,
+	end: Date,
+): IDailyOverviewData[] => {
+	const map = new Map<string, IDailyOverviewData>();
+	// biome-ignore lint/complexity/noForEach: <explanation>
+	data.forEach((row) => {
+		const key = String(row.date);
+		map.set(key, {
+			date: key,
+			distance: Number(row.distance ?? 0),
+			duration: Number(row.duration ?? 0),
+			count: row.count,
+		});
+	});
+
+	const startDate = dayjs(start).startOf("day");
+	const endDate = dayjs(end).startOf("day");
+	const results: IDailyOverviewData[] = [];
+	for (
+		let cursor = startDate.clone();
+		cursor.isSame(endDate, "day") || cursor.isBefore(endDate, "day");
+		cursor = cursor.add(1, "day")
+	) {
+		const key = cursor.format("YYYY-MM-DD");
+		const existing = map.get(key);
+		results.push(
+			existing ?? {
+				date: key,
+				distance: 0,
+				duration: 0,
+				count: 0,
+			},
+		);
+	}
+	return results;
+};
+
 export class Db {
 	private _client: DbClient;
 
@@ -133,6 +226,118 @@ export class Db {
 			.groupBy(subquery.month.sql)
 			.orderBy(desc(subquery.timestamp));
 		return fillEmptyMonths(result, limit);
+	}
+
+	async getWeeklyActivitiesOverview(limit = 4): Promise<IWeeklyOverviewData[]> {
+		const weekIdentifier =
+			sql`strftime('%Y-%W', timestamp / 1000, 'unixepoch')`.as("week");
+
+		const subquery = this._client
+			.select({
+				distance: min(activities.distance).as("distance"),
+				duration: min(activities.duration).as("duration"),
+				timestamp: activities.timestamp,
+				week: weekIdentifier,
+			})
+			.from(activities)
+			.where(gte(activities.timestamp, weeksBefore(limit).getTime()))
+			.groupBy(activities.timestamp)
+			.orderBy(desc(activities.timestamp))
+			.as("subquery");
+
+		const result = await this._client
+			.select({
+				distance: sum(subquery.distance),
+				duration: sum(subquery.duration),
+				minTimestamp: min(subquery.timestamp),
+				week: subquery.week,
+			})
+			.from(subquery)
+			.groupBy(subquery.week.sql)
+			.orderBy(desc(subquery.timestamp));
+
+		return fillEmptyWeeks(result, limit);
+	}
+
+	async getDailyActivitiesOverview({
+		startDate,
+		endDate,
+		periodType = "days",
+		periodCount = 30,
+	}: {
+		startDate?: string;
+		endDate?: string;
+		periodType?: "days" | "weeks" | "months";
+		periodCount?: number;
+	} = {}): Promise<IDailyOverviewData[]> {
+		const safeCount = periodCount && periodCount > 0 ? periodCount : 30;
+		let endBoundary = endDate
+			? dayjs(endDate).endOf("day")
+			: dayjs().endOf("day");
+		let startBoundary: ReturnType<typeof dayjs>;
+
+		if (startDate) {
+			startBoundary = dayjs(startDate).startOf("day");
+		} else if (periodType === "weeks") {
+			startBoundary = dayjs()
+				.subtract(safeCount - 1, "week")
+				.startOf("week");
+		} else if (periodType === "months") {
+			startBoundary = dayjs()
+				.subtract(safeCount - 1, "month")
+				.startOf("month");
+		} else {
+			startBoundary = dayjs()
+				.subtract(safeCount - 1, "day")
+				.startOf("day");
+		}
+
+		if (!endDate && periodType === "weeks") {
+			endBoundary = dayjs().endOf("week");
+		} else if (!endDate && periodType === "months") {
+			endBoundary = dayjs().endOf("month");
+		}
+
+		if (endBoundary.isBefore(startBoundary)) {
+			startBoundary = endBoundary.clone().startOf("day");
+		}
+
+		const startDateValue = startBoundary.startOf("day").toDate();
+		const endDateValue = endBoundary.endOf("day").toDate();
+
+		const dayIdentifier =
+			sql`strftime('%Y-%m-%d', timestamp / 1000, 'unixepoch')`.as("day");
+
+		const subquery = this._client
+			.select({
+				distance: min(activities.distance).as("distance"),
+				duration: min(activities.duration).as("duration"),
+				timestamp: activities.timestamp,
+				day: dayIdentifier,
+			})
+			.from(activities)
+			.where(
+				and(
+					gte(activities.timestamp, startDateValue.getTime()),
+					lte(activities.timestamp, endDateValue.getTime()),
+				),
+			)
+			.groupBy(activities.timestamp)
+			.orderBy(desc(activities.timestamp))
+			.as("daily_subquery");
+
+		const result = await this._client
+			.select({
+				date: subquery.day,
+				distance: sum(subquery.distance),
+				duration: sum(subquery.duration),
+				count: count(),
+			})
+			.from(subquery)
+			.groupBy(subquery.day.sql)
+			.orderBy(asc(subquery.day));
+
+		return fillEmptyDays(result, startDateValue, endDateValue);
 	}
 
 	getActivity(activityId: string): Promise<DbActivityPopulated | undefined> {

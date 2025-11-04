@@ -5,10 +5,12 @@ import {
 	type Credentials,
 	type DbActivityPopulated,
 	type GearsData,
+	type IDailyOverviewData,
 	type IDbGearWithDistance,
 	type IInbodyCreateInput,
 	type IInbodyData,
 	type IOverviewData,
+	type IWeeklyOverviewData,
 	type InbodyType,
 	type ProviderSuccessResponse,
 	type Providers,
@@ -25,6 +27,67 @@ export class AppClient implements Client {
 		try {
 			const data = await window.electron.ipcRenderer.invoke(
 				Channels.DB_OVERVIEW,
+				{
+					limit,
+				},
+			);
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async getDailyOverview({
+		startDate,
+		endDate,
+		periodType,
+		periodCount,
+	}: {
+		startDate?: string;
+		endDate?: string;
+		periodType?: "days" | "weeks" | "months";
+		periodCount?: number;
+	}): Promise<
+		ProviderSuccessResponse<{
+			data: IDailyOverviewData[];
+		}>
+	> {
+		try {
+			const data = await window.electron.ipcRenderer.invoke(
+				Channels.DB_DAILY_OVERVIEW,
+				{
+					startDate,
+					endDate,
+					periodType,
+					periodCount,
+				},
+			);
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async getWeeklyOverview({ limit }: { limit?: number }): Promise<
+		ProviderSuccessResponse<{
+			data: IWeeklyOverviewData[];
+		}>
+	> {
+		try {
+			const data = await window.electron.ipcRenderer.invoke(
+				Channels.DB_WEEKLY_OVERVIEW,
 				{
 					limit,
 				},

@@ -21,6 +21,45 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
+	Channels.DB_WEEKLY_OVERVIEW,
+	async (
+		_event,
+		{
+			limit,
+		}: {
+			limit?: number;
+		},
+	) => {
+		return db.getWeeklyActivitiesOverview(limit);
+	},
+);
+
+ipcMain.handle(
+	Channels.DB_DAILY_OVERVIEW,
+	async (
+		_event,
+		{
+			startDate,
+			endDate,
+			periodType,
+			periodCount,
+		}: {
+			startDate?: string;
+			endDate?: string;
+			periodType?: "days" | "weeks" | "months";
+			periodCount?: number;
+		},
+	) => {
+		return db.getDailyActivitiesOverview({
+			startDate,
+			endDate,
+			periodType,
+			periodCount,
+		});
+	},
+);
+
+ipcMain.handle(
 	Channels.DB_ACTIVITIES,
 	async (_event, params: { limit?: number; cursor?: string }) => {
 		return db.getActivities(params);

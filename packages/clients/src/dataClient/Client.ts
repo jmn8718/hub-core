@@ -3,10 +3,12 @@ import type {
 	Credentials,
 	DbActivityPopulated,
 	GearsData,
+	IDailyOverviewData,
 	IDbGearWithDistance,
 	IInbodyCreateInput,
 	IInbodyData,
 	IOverviewData,
+	IWeeklyOverviewData,
 	InbodyType,
 	ProviderSuccessResponse,
 	Providers,
@@ -18,6 +20,21 @@ export abstract class Client {
 	abstract getDataOverview(params: { limit?: number }): Promise<
 		ProviderSuccessResponse<{
 			data: IOverviewData[];
+		}>
+	>;
+	abstract getDailyOverview(params: {
+		startDate?: string;
+		endDate?: string;
+		periodType?: "days" | "weeks" | "months";
+		periodCount?: number;
+	}): Promise<
+		ProviderSuccessResponse<{
+			data: IDailyOverviewData[];
+		}>
+	>;
+	abstract getWeeklyOverview(params: { limit?: number }): Promise<
+		ProviderSuccessResponse<{
+			data: IWeeklyOverviewData[];
 		}>
 	>;
 

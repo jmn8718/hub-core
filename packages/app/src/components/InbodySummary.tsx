@@ -2,8 +2,8 @@ import { formatDate } from "@repo/dates";
 import type { IInbodyData } from "@repo/types";
 import { cn } from "@repo/ui";
 import { useTheme } from "../contexts/index.js";
-import { getDifferenceClassName } from "../utils/style.js";
 import { Box } from "./Box.js";
+import { ValueTrend } from "./ValueTrend.js";
 
 interface SummaryRow {
 	label: string;
@@ -27,24 +27,6 @@ const formatMeasurement = (
 		return "-";
 	}
 	return (value / 100).toFixed(fractionDigits);
-};
-
-const getVariation = (
-	current: number | null | undefined,
-	previous: number | null | undefined,
-	fractionDigits = 1,
-) => {
-	if (
-		current === null ||
-		current === undefined ||
-		previous === null ||
-		previous === undefined
-	) {
-		return null;
-	}
-	const diff = (current - previous) / 100;
-	const sign = diff > 0 ? "+" : diff < 0 ? "-" : "";
-	return `${sign}${Math.abs(diff).toFixed(fractionDigits)}`;
 };
 
 export function InbodySummary({ current, previous }: InbodySummaryProps) {
@@ -89,16 +71,16 @@ export function InbodySummary({ current, previous }: InbodySummaryProps) {
 	];
 
 	return (
-		<Box classes="space-y-3">
+		<Box classes="space-y-2">
 			<div
 				className={cn(
-					"pl-2 text-lg font-medium",
+					"text-lg font-medium italic",
 					isDarkMode ? "text-gray-50" : "text-gray-900",
 				)}
 			>
 				{formatDate(current.timestamp)}
 			</div>
-			<div className="grid gap-2 sm:grid-cols-2">
+			<div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
 				{summaryRows.map(
 					({
 						label,
@@ -108,28 +90,20 @@ export function InbodySummary({ current, previous }: InbodySummaryProps) {
 						fractionDigits,
 						goodWhenNegative,
 					}) => {
-						const displayValue = formatMeasurement(value, fractionDigits);
+						const digits = fractionDigits ?? 1;
+						const displayValue = formatMeasurement(value, digits);
 						const hasDiff =
 							value !== null &&
 							value !== undefined &&
 							previousValue !== null &&
 							previousValue !== undefined;
-						const variation = hasDiff
-							? getVariation(value, previousValue, fractionDigits)
-							: null;
-
-						const variationContent = variation ?? "--";
-
-						const diffRaw = hasDiff
-							? (value as number) - (previousValue as number)
-							: null;
-						const variationClassName = getDifferenceClassName(
-							diffRaw,
-							goodWhenNegative,
-						);
+						const diffRaw =
+							hasDiff && value !== null && previousValue !== null
+								? (value as number) - (previousValue as number)
+								: null;
 
 						return (
-							<div key={label} className="flex flex-col gap-1 p-2">
+							<div key={label} className="flex flex-col gap-1">
 								<div
 									className={cn(
 										"flex items-baseline justify-between text-xs uppercase tracking-wide",
@@ -142,17 +116,22 @@ export function InbodySummary({ current, previous }: InbodySummaryProps) {
 									</span>
 								</div>
 								<div className="flex items-center justify-between text-sm">
-									<span
-										className={cn(
+									<ValueTrend
+										value={displayValue}
+										difference={diffRaw}
+										goodWhenNegative={goodWhenNegative}
+										formatter={(difference) =>
+											(difference / 100).toFixed(digits)
+										}
+										valueClassName={cn(
 											"text-lg font-semibold",
 											isDarkMode ? "text-gray-50" : "text-gray-900",
 										)}
-									>
-										{displayValue}
-										<span className={`ml-2 text-sm ${variationClassName}`}>
-											{variationContent}
-										</span>
-									</span>
+										showArrows
+										neutralClassName={
+											isDarkMode ? "text-gray-400" : "text-gray-500"
+										}
+									/>
 								</div>
 							</div>
 						);

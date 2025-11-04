@@ -1,7 +1,7 @@
 import { formatDate } from "@repo/dates";
 import type { IInbodyData } from "@repo/types";
-import { getDifferenceClassName } from "../utils/style.js";
 import { Box } from "./Box.js";
+import { ValueTrend } from "./ValueTrend.js";
 
 interface InbodyHistoryTableProps {
 	data: IInbodyData[];
@@ -29,27 +29,6 @@ export function InbodyHistoryTable({
 			goodWhenNegative: true,
 		},
 	];
-
-	const formatDifference = (
-		current: number | null | undefined,
-		next: number | null | undefined,
-	) => {
-		if (
-			current === null ||
-			current === undefined ||
-			next === null ||
-			next === undefined
-		) {
-			return null;
-		}
-
-		const diff = current - next;
-		if (diff === 0) return "0.0";
-
-		const sign = diff > 0 ? "+" : "-";
-		const formatted = formatMeasurement(Math.abs(diff));
-		return `${sign}${formatted}`;
-	};
 
 	return (
 		<Box classes="overflow-x-auto">
@@ -88,34 +67,19 @@ export function InbodyHistoryTable({
 											? currentValue - nextValue
 											: null;
 
-									const difference = formatDifference(currentValue, nextValue);
-									let diffLabel = difference ? `Δ ${difference}` : "";
-									const diffClassName = getDifferenceClassName(
-										diffRaw,
-										goodWhenNegative,
-									);
-
-									if (difference === "0.0") {
-										diffLabel = "";
-									} else if (difference) {
-										const isNegativeDiff = difference.startsWith("-");
-										const arrow = isNegativeDiff ? "▼" : "▲";
-										const magnitude = difference.replace(/^[-+]/, "");
-										diffLabel = `${arrow} ${magnitude}`;
-									}
-
 									return (
 										<td key={key as string} className="px-3 py-2">
-											<div className="flex items-end gap-2">
-												<span className="text-sm font-semibold">
-													{formatMeasurement(currentValue)}
-												</span>
-												<span
-													className={`text-xs font-medium ${diffClassName}`}
-												>
-													{diffLabel}
-												</span>
-											</div>
+											<ValueTrend
+												value={formatMeasurement(currentValue)}
+												difference={diffRaw}
+												goodWhenNegative={goodWhenNegative}
+												formatter={(value) => formatMeasurement(value)}
+												className="flex items-end gap-2"
+												valueClassName="text-sm font-semibold"
+												trendClassName="text-xs font-medium"
+												neutralClassName="text-xs text-gray-400"
+												showArrows
+											/>
 										</td>
 									);
 								})}

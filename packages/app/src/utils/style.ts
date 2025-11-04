@@ -8,8 +8,8 @@ export const getDifferenceClassName = (
 
 	const isNegative = diffRaw < 0;
 	if (goodWhenNegative) {
-		return isNegative ? "text-emerald-500" : "text-rose-500";
+		return isNegative ? "text-green-500" : "text-red-500";
 	}
 
-	return isNegative ? "text-rose-500" : "text-emerald-500";
+	return isNegative ? "text-red-500" : "text-green-500";
 };

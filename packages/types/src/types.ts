@@ -16,6 +16,19 @@ export interface IOverviewData {
 	month: string;
 }
 
+export interface IWeeklyOverviewData {
+	distance: number;
+	duration: number;
+	weekStart: string;
+}
+
+export interface IDailyOverviewData {
+	date: string;
+	distance: number;
+	duration: number;
+	count: number;
+}
+
 export interface IDbActivity {
 	id: string;
 	name: string;

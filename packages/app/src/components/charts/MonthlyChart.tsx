@@ -1,4 +1,6 @@
 import type React from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Bounce, toast } from "react-toastify";
 import {
 	Bar,
 	BarChart,
@@ -7,25 +9,55 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { useDataClient } from "../../contexts/DataClientContext.js";
+import { useLoading } from "../../contexts/LoadingContext.js";
 import { useTheme } from "../../contexts/ThemeContext.js";
 import { formatDistance } from "../../utils/formatters.js";
 import { Box } from "../Box.js";
 import { H2 } from "../H2.js";
 
-interface MonthlyData {
+type MonthlyData = {
 	month: string;
 	count: number;
 	distance: number;
-}
+};
 
-interface MonthlyActivityChartProps {
-	data: MonthlyData[];
-}
-
-export const MonthlyActivityChart: React.FC<MonthlyActivityChartProps> = ({
-	data,
-}: MonthlyActivityChartProps) => {
+export const MonthlyActivityChart: React.FC = () => {
 	const { isDarkMode } = useTheme();
+	const { client } = useDataClient();
+	const { setLocalLoading } = useLoading();
+	const [data, setData] = useState<MonthlyData[]>([]);
+
+	const fetchData = useCallback(async () => {
+		setLocalLoading(true);
+		try {
+			const result = await client.getDataOverview({ limit: 12 });
+			if (result.success) {
+				setData(result.data.reverse());
+			} else {
+				toast.error(result.error, {
+					hideProgressBar: false,
+					closeOnClick: false,
+					transition: Bounce,
+				});
+			}
+		} catch (err) {
+			toast.error((err as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		} finally {
+			setTimeout(() => {
+				setLocalLoading(false);
+			}, 500);
+		}
+	}, [client, setLocalLoading]);
+
+	useEffect(() => {
+		fetchData();
+	}, [fetchData]);
+
 	// @ts-expect-error not proper typing
 	const CustomTooltip = ({ active, payload, label }: unknown) => {
 		if (active && payload && payload.length) {
