@@ -89,6 +89,12 @@ const config: Omit<Config, "content"> = {
 			},
 		},
 	},
+	safelist: [
+		{
+			pattern:
+				/text-(red|blue|green|yellow|indigo|purple|pink|gray|emerald|teal|cyan|sky|lime|orange|fuchsia|rose|violet|amber|stone|neutral|zinc|slate)-(50|100|200|300|400|500|600|700|800|900|950)/,
+		},
+	],
 	plugins: [],
 };
 export default config;

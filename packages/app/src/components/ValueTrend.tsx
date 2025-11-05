@@ -1,6 +1,7 @@
 import { cn } from "@repo/ui";
 import type React from "react";
-import { getDifferenceClassName } from "../utils/style.js";
+import { useTheme } from "../contexts/index.js";
+import { getVarianceClass } from "../utils/style.js";
 
 interface ValueTrendProps {
 	value: string;
@@ -27,6 +28,7 @@ export const ValueTrend: React.FC<ValueTrendProps> = ({
 	trendClassName,
 	showArrows = false,
 }) => {
+	const { isDarkMode } = useTheme();
 	const diff =
 		typeof difference === "number" && !Number.isNaN(difference)
 			? difference
@@ -45,18 +47,17 @@ export const ValueTrend: React.FC<ValueTrendProps> = ({
 			trendText = showArrows
 				? `${diff > 0 ? "▲" : "▼"} ${magnitude}`
 				: `${sign}${magnitude}`;
-			trendClass = getDifferenceClassName(diff, goodWhenNegative);
+			trendClass = getVarianceClass(diff, goodWhenNegative, isDarkMode);
 		}
 	}
-
 	return (
-		<span className={cn("flex items-baseline gap-2", className)}>
+		<div className={cn("flex items-baseline gap-2", className)}>
 			<span className={valueClassName}>{value}</span>
 			{trendText ? (
 				<span className={cn("text-sm font-medium", trendClass, trendClassName)}>
 					{trendText}
 				</span>
 			) : null}
-		</span>
+		</div>
 	);
 };
