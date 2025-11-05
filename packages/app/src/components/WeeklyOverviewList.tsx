@@ -7,6 +7,7 @@ import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
 import { formatDistance, formatDuration } from "../utils/formatters.js";
 import { Box } from "./Box.js";
+import { Text } from "./Text.js";
 import { ValueTrend } from "./ValueTrend.js";
 
 const formatWeekLabel = (start: string): string => {
@@ -26,7 +27,7 @@ const formatWeekLabel = (start: string): string => {
 	return `${startDate.format(startFormat)} - ${endDate.format(endFormat)}`;
 };
 
-export const WeeklyOverviewList: React.FC = () => {
+export const WeeklyOverviewList: React.FC<{ limit?: number }> = ({ limit }) => {
 	const { client } = useDataClient();
 	const { isDarkMode } = useTheme();
 	const [weeks, setWeeks] = useState<IWeeklyOverviewData[]>([]);
@@ -35,7 +36,7 @@ export const WeeklyOverviewList: React.FC = () => {
 	const fetchWeeklyData = useCallback(async () => {
 		setIsLoading(true);
 		try {
-			const result = await client.getWeeklyOverview({ limit: 4 });
+			const result = await client.getWeeklyOverview({ limit: limit ?? 4 });
 			if (result.success) {
 				setWeeks(result.data);
 			} else {
@@ -54,7 +55,7 @@ export const WeeklyOverviewList: React.FC = () => {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [client]);
+	}, [client, limit]);
 
 	useEffect(() => {
 		fetchWeeklyData();
@@ -80,23 +81,9 @@ export const WeeklyOverviewList: React.FC = () => {
 	return (
 		<Box classes="space-y-4">
 			{isLoading ? (
-				<p
-					className={cn(
-						"text-sm",
-						isDarkMode ? "text-gray-400" : "text-gray-500",
-					)}
-				>
-					Loading weekly overview…
-				</p>
+				<Text text="Loading weekly overview…" />
 			) : displayRows.length === 0 ? (
-				<p
-					className={cn(
-						"text-sm",
-						isDarkMode ? "text-gray-400" : "text-gray-500",
-					)}
-				>
-					No weekly data available yet.
-				</p>
+				<Text text="No weekly data available yet." />
 			) : (
 				<div className="overflow-x-auto">
 					<table className="min-w-full table-auto text-sm">

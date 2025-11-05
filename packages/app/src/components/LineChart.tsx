@@ -24,15 +24,27 @@ export interface LineChartProps {
 	data: { index: number; date: string; weight: number; bmi: number }[];
 }
 
+const themeColors = {
+	light: {
+		stroke: "#000000cc",
+		gridStroke: "#00000055",
+	},
+	dark: {
+		stroke: "#d2d1e0ff",
+		gridStroke: "#ffffff44",
+	},
+};
+
+const formatUnit = (
+	value: string | number | undefined,
+	unit: string | undefined,
+) => {
+	if (!value) return "";
+	return unit ? `${value} ${unit}` : value.toString();
+};
 export function LineChart({ data, unit = "", property }: LineChartProps) {
 	const { isDarkMode } = useTheme();
-
-	const strokeColor = isDarkMode ? "#d2d1e0ff" : "#000";
-	const gridStrokeColor = isDarkMode ? "#ffffff44" : "#00000022";
-	const formatUnit = (value: string | number | undefined) => {
-		if (!value) return "";
-		return unit ? `${value} ${unit}` : value.toString();
-	};
+	const colors = themeColors[isDarkMode ? "dark" : "light"];
 	const values = data.map((entry) => entry[property]);
 	const xTicks = data.map((entry) => entry.date);
 	const baseChartHeight = 200;
@@ -45,11 +57,11 @@ export function LineChart({ data, unit = "", property }: LineChartProps) {
 				x={x}
 				y={y}
 				dy={-8}
-				fill={strokeColor}
+				fill={colors.stroke}
 				fontSize={14}
 				textAnchor="middle"
 			>
-				{formatUnit(value)}
+				{formatUnit(value, unit)}
 			</text>
 		);
 	};
@@ -92,9 +104,9 @@ export function LineChart({ data, unit = "", property }: LineChartProps) {
 				)}
 			>
 				<p className="label">{`Date: ${formatDate(label)}`}</p>
-				<p className="capitalize">{`${property}: ${formatUnit(currentValue / 100)}`}</p>
+				<p className="capitalize">{`${property}: ${formatUnit(currentValue / 100, unit)}`}</p>
 				{itemIndex > 0 && (
-					<p className="capitalize">{`Variation: ${formatUnit(variation / 100)}`}</p>
+					<p className="capitalize">{`Variation: ${formatUnit(variation / 100, unit)}`}</p>
 				)}
 			</div>
 		);
@@ -112,7 +124,7 @@ export function LineChart({ data, unit = "", property }: LineChartProps) {
 					y={0}
 					dy={0}
 					textAnchor="end"
-					fill={gridStrokeColor}
+					fill={colors.gridStroke}
 					transform="rotate(-15)"
 				>
 					{formatDate(payload.value, { format: "YY/MM/DD" })}
@@ -127,7 +139,7 @@ export function LineChart({ data, unit = "", property }: LineChartProps) {
 					data={data.map((d) => ({ ...d, [property]: d[property] / 100 }))}
 					margin={{ top: 8, right: 8, bottom: xAxisTickHeight, left: 0 }}
 				>
-					<CartesianGrid strokeDasharray="3 3" stroke={gridStrokeColor} />
+					<CartesianGrid strokeDasharray="3 3" stroke={colors.gridStroke} />
 					<XAxis
 						dataKey="date"
 						ticks={xTicks}
@@ -135,22 +147,22 @@ export function LineChart({ data, unit = "", property }: LineChartProps) {
 						tick={CustomizedAxisTick}
 						padding={{ left: 30, right: 30 }}
 						height={xAxisTickHeight}
-						stroke={gridStrokeColor}
+						stroke={colors.gridStroke}
 						tickMargin={12}
 					/>
 					<YAxis
 						domain={[minDomain, maxDomain]}
 						ticks={yTicks}
 						unit={unit}
-						stroke={gridStrokeColor}
+						stroke={colors.gridStroke}
 						padding={{ top: 30, bottom: 10 }}
-						tick={{ fill: gridStrokeColor }}
+						tick={{ fill: colors.gridStroke }}
 					/>
 					<Tooltip content={CustomTooltip} />
 					<Line
 						type="linear"
 						dataKey={property}
-						stroke={strokeColor}
+						stroke={colors.stroke}
 						strokeWidth={2}
 						dot={{ r: 4 }}
 						label={CustomizedLabel}

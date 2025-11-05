@@ -2,7 +2,9 @@ import { formatDate } from "@repo/dates";
 import type { IInbodyData } from "@repo/types";
 import { cn } from "@repo/ui";
 import { useTheme } from "../contexts/index.js";
+import { formatMeasurement } from "../utils/formatters.js";
 import { Box } from "./Box.js";
+import { Text } from "./Text.js";
 import { ValueTrend } from "./ValueTrend.js";
 
 interface SummaryRow {
@@ -18,16 +20,6 @@ interface InbodySummaryProps {
 	current: IInbodyData;
 	previous?: IInbodyData;
 }
-
-const formatMeasurement = (
-	value: number | null | undefined,
-	fractionDigits = 1,
-) => {
-	if (value === null || value === undefined) {
-		return "-";
-	}
-	return (value / 100).toFixed(fractionDigits);
-};
 
 export function InbodySummary({ current, previous }: InbodySummaryProps) {
 	const { isDarkMode } = useTheme();
@@ -72,14 +64,10 @@ export function InbodySummary({ current, previous }: InbodySummaryProps) {
 
 	return (
 		<Box classes="space-y-2">
-			<div
-				className={cn(
-					"text-lg font-medium italic",
-					isDarkMode ? "text-gray-50" : "text-gray-900",
-				)}
-			>
-				{formatDate(current.timestamp)}
-			</div>
+			<Text
+				text={formatDate(current.timestamp)}
+				className="text-xl font-medium italic"
+			/>
 			<div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
 				{summaryRows.map(
 					({

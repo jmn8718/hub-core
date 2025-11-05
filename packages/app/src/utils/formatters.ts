@@ -10,3 +10,13 @@ export const formatDuration = (duration: number): string => {
 
 	return `${hours > 0 ? `${hours}h ` : ""}${minutes}'${seconds > 0 ? ` ${seconds}"` : ""}`;
 };
+
+export const formatMeasurement = (
+	value: number | null | undefined,
+	fractionDigits = 1,
+) => {
+	if (value === null || value === undefined) {
+		return "-";
+	}
+	return (value / 100).toFixed(fractionDigits);
+};

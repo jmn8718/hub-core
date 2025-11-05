@@ -1,18 +1,25 @@
 import { type IInbodyData, InbodyType } from "@repo/types";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
 	Box,
 	Button,
 	InbodyHistoryTable,
 	InbodySummary,
 	LineChart,
+	Text,
 } from "../components/index.js";
 import { Routes } from "../constants.js";
-import { useDataClient } from "../contexts/index.js";
+import { useDataClient, useLoading } from "../contexts/index.js";
+import { formatMeasurement } from "../utils/formatters.js";
+
+const inbodyTypes = Object.values(InbodyType);
 
 export function Inbody() {
 	const { client } = useDataClient();
+	const { setGlobalLoading, setLocalLoading } = useLoading();
+	const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 	const navigate = useNavigate();
 	const location = useLocation();
 	const locationState = location.state as {
@@ -31,18 +38,40 @@ export function Inbody() {
 	);
 	const [data, setData] = useState<IInbodyData[]>([]);
 
-	useEffect(() => {
-		const fetchInbodyData = async () => {
+	const fetchInbodyData = async (isMainLoading: boolean) => {
+		console.log("Fetching inbody data...", isMainLoading);
+		if (isMainLoading) {
+			setGlobalLoading(true);
+		} else {
+			setLocalLoading(true);
+		}
+		try {
 			const result = await client.getInbodyData({
 				type: selectedType,
 			});
 			if (result.success) {
 				setData(result.data);
 			}
-		};
-		void fetchInbodyData();
-	}, [client, selectedType]);
+		} catch (err) {
+			// Handle error if needed
+			toast.error((err as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+			});
+		} finally {
+			if (isMainLoading) {
+				setGlobalLoading(false);
+			} else {
+				setLocalLoading(false);
+			}
+			setHasLoadedOnce(true);
+		}
+	};
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(() => {
+		fetchInbodyData(!hasLoadedOnce);
+	}, [selectedType]);
 	// create new array copy and reverse it
 	const chartData = [...data].reverse().map((item, index) => ({
 		index,
@@ -53,20 +82,6 @@ export function Inbody() {
 
 	const currentData = data[0];
 	const previousData = data[1];
-	const inbodyTypes = Object.values(InbodyType);
-
-	const toTitleCase = (value: string) =>
-		value.charAt(0).toUpperCase() + value.slice(1);
-
-	const formatMeasurement = (
-		value: number | null | undefined,
-		fractionDigits = 1,
-	) => {
-		if (value === null || value === undefined) {
-			return "-";
-		}
-		return (value / 100).toFixed(fractionDigits);
-	};
 
 	const handleEditEntry = (entry: IInbodyData) => {
 		navigate(Routes.INBODY_EDIT.replace(":id", entry.id), {
@@ -88,9 +103,10 @@ export function Inbody() {
 							<Button
 								key={typeOption}
 								isActive={isActive}
+								className="capitalize"
 								onClick={() => setSelectedType(typeOption)}
 							>
-								{toTitleCase(typeOption)}
+								{typeOption}
 							</Button>
 						);
 					})}
@@ -122,7 +138,7 @@ export function Inbody() {
 				</div>
 			) : (
 				<Box>
-					<div className="text-lg font-medium">No data available</div>
+					<Text text="No data available" className="text-lg font-medium" />
 				</Box>
 			)}
 		</div>
