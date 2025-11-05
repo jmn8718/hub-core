@@ -3,6 +3,7 @@
 interface ImportMetaEnv {
 	readonly VITE_APP_TITLE: string;
 	readonly MAIN_VITE_LOCAL_DB_FILE: string;
+	readonly MAIN_VITE_CACHE_DB: string;
 	// more env variables...
 }
 

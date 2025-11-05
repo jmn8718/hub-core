@@ -1,13 +1,12 @@
-import type { Db } from "@repo/db";
+import type { CacheDb, Db } from "@repo/db";
 import { type Credentials, Providers } from "@repo/types";
 import pMap from "p-map";
 import pQueue from "p-queue";
 import type { Client } from "./Client.js";
-import { Cache } from "./cache.js";
 import { CorosClient } from "./coros.js";
 import { GarminClient } from "./garmin.js";
 
-const initializeProviderClient = (provider: Providers, cache: Cache) => {
+const initializeProviderClient = (provider: Providers, cache: CacheDb) => {
 	if (provider === Providers.COROS) {
 		return new CorosClient(cache);
 	}
@@ -23,11 +22,11 @@ export class ProviderManager {
 	// @ts-expect-error no need to initialize with undefined
 	private _clients: Record<Providers, Client | undefined> = {};
 
-	private _cache: Cache;
+	private _cache: CacheDb;
 
-	constructor(db: Db, dirname?: string) {
+	constructor(db: Db, cache: CacheDb) {
 		this._db = db;
-		this._cache = new Cache(dirname);
+		this._cache = cache;
 	}
 
 	private _getProvider(provider: Providers) {

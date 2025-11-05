@@ -1,5 +1,9 @@
 import { dayjs, formatDate } from "@repo/dates";
-import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
+import type {
+	CacheDb,
+	IInsertActivityPayload,
+	IInsertGearPayload,
+} from "@repo/db";
 import {
 	ActivitySubType,
 	ActivityType,
@@ -11,7 +15,6 @@ import { type ActivityData, CorosApi, downloadFile } from "coros-connect";
 import pMap from "p-map";
 import pQueue from "p-queue";
 import { type Client, generateActivityFilePath } from "./Client.js";
-import type { Cache } from "./cache.js";
 
 function mapActivityDetails(activity: ActivityData, id: string): IDbActivity {
 	return {
@@ -37,6 +40,8 @@ function mapActivityDetails(activity: ActivityData, id: string): IDbActivity {
 }
 
 export class CorosClient implements Client {
+	private readonly _provider = Providers.COROS;
+
 	private _client: CorosApi;
 
 	private _signedIn = false;
@@ -51,9 +56,9 @@ export class CorosClient implements Client {
 
 	private _queue = new pQueue({ concurrency: 3 });
 
-	private _cache: Cache;
+	private _cache: CacheDb;
 
-	constructor(cache: Cache) {
+	constructor(cache: CacheDb) {
 		this._client = new CorosApi({
 			email: "",
 			password: "",
@@ -90,29 +95,16 @@ export class CorosClient implements Client {
 		from?: Date;
 		to?: Date;
 	}) {
-		const cacheKey = `coros_activities_list_${formatDate(new Date(), { format: "YYYY-MM-DD" })}_${page}_${size}`;
-
-		const cacheValue =
-			this._cache.get<
-				Awaited<ReturnType<typeof this._client.getActivitiesList>>
-			>(cacheKey);
-		if (cacheValue) return Promise.resolve(cacheValue);
-
 		console.debug(
 			`${CorosClient.PROVIDER}: fetching activities ${page} ${size} ${from} ${to}`,
 		);
 
-		return this._client
-			.getActivitiesList({
-				page,
-				size,
-				from,
-				to,
-			})
-			.then((data) => {
-				this._cache.set(cacheKey, data);
-				return data;
-			});
+		return this._client.getActivitiesList({
+			page,
+			size,
+			from,
+			to,
+		});
 	}
 
 	private async fetchRunningActivities({
@@ -170,15 +162,13 @@ export class CorosClient implements Client {
 	}
 
 	async getActivity(id: string) {
-		const cacheKey = `coros_activity_${id}`;
-		const cacheValue =
-			this._cache.get<
-				Awaited<ReturnType<typeof this._client.getActivityDetails>>
-			>(cacheKey);
+		const cacheValue = await this._cache.get<
+			Awaited<ReturnType<typeof this._client.getActivityDetails>>
+		>(this._provider, "activity", id);
 		if (cacheValue) return cacheValue;
 		const data = await this._client.getActivityDetails(id);
 		if (data) {
-			this._cache.set(cacheKey, data);
+			this._cache.set<ActivityData>(this._provider, "activity", id, data);
 		}
 		return data;
 	}

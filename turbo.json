@@ -6,7 +6,7 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "passThroughEnv": ["LOCAL_DB", "TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN", "STRAVA_CLIENT_ID", "STRAVA_CLIENT_SECRET", "STRAVA_VERIFY_TOKEN"]
+      "passThroughEnv": ["LOCAL_DB", "CACHE_DB", "TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN", "TURSO_CACHE_URL", "TURSO_CACHE_AUTH_TOKEN", "STRAVA_CLIENT_ID", "STRAVA_CLIENT_SECRET", "STRAVA_VERIFY_TOKEN"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]

@@ -1,4 +1,4 @@
-import { Db, createDbClient } from "@repo/db";
+import { CacheDb, Db, createDbClient } from "@repo/db";
 import { clearData, migrateDb } from "@repo/db/migrations";
 import { Providers } from "@repo/types";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -34,7 +34,8 @@ describe("provider manager", () => {
 		logger: false,
 	});
 	const db = new Db(client);
-	const provider = new ProviderManager(db);
+	const cacheDB = new CacheDb(client);
+	const provider = new ProviderManager(db, cacheDB);
 
 	provider.initializeClient(Providers.GARMIN);
 

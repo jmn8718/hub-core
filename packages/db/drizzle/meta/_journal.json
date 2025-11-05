@@ -22,6 +22,13 @@
       "when": 1761703538480,
       "tag": "0002_burly_jean_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1762333526723,
+      "tag": "0003_big_iron_fist",
+      "breakpoints": true
     }
   ]
 }

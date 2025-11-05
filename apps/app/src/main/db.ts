@@ -1,4 +1,4 @@
-import { Db, createDbClient } from "@repo/db";
+import { CacheDb, Db, createDbClient } from "@repo/db";
 import { migrateDb } from "@repo/db/migrations";
 
 // @ts-expect-error
@@ -17,3 +17,4 @@ migrateDb(dbClient)
 	.catch(console.error);
 
 export const db = new Db(dbClient);
+export const cacheDb = new CacheDb(dbClient);

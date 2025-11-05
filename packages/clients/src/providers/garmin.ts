@@ -1,6 +1,10 @@
 import { join } from "node:path";
 import { dateWithTimezoneToUTC, formatDate, isBefore } from "@repo/dates";
-import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
+import type {
+	CacheDb,
+	IInsertActivityPayload,
+	IInsertGearPayload,
+} from "@repo/db";
 import {
 	ActivitySubType,
 	ActivityType,
@@ -21,7 +25,6 @@ import {
 import pMap from "p-map";
 import pQueue from "p-queue";
 import { type Client, generateActivityFilePath } from "./Client.js";
-import type { Cache } from "./cache.js";
 
 function mapActivityType(type: ActivityType) {
 	if (type === ActivityType.RUN) return "running";
@@ -118,6 +121,8 @@ function mapGear(gear: Gear): IInsertGearPayload {
 }
 
 export class GarminClient implements Client {
+	private readonly _provider = Providers.GARMIN;
+
 	private _client: GarminConnect;
 
 	private _signedIn = false;
@@ -132,9 +137,9 @@ export class GarminClient implements Client {
 
 	private _queue = new pQueue({ concurrency: 4 });
 
-	private _cache: Cache;
+	private _cache: CacheDb;
 
-	constructor(cache: Cache) {
+	constructor(cache: CacheDb) {
 		this._client = new GarminConnect({
 			username: "",
 			password: "",
@@ -159,43 +164,37 @@ export class GarminClient implements Client {
 		}
 	}
 
-	private populateActivityGear(activityId: number) {
-		const cacheKey = `garmin_gears_${activityId}`;
-
-		const cacheValue =
-			this._cache.get<Awaited<ReturnType<typeof this._client.getActivityGear>>>(
-				cacheKey,
-			);
-		if (cacheValue) return Promise.resolve(cacheValue);
-
+	private async populateActivityGear(activityId: number, useCache = true) {
+		if (useCache) {
+			const cacheValue = await this._cache.get<
+				Awaited<ReturnType<typeof this._client.getActivityGear>>
+			>(this._provider, "gear", activityId.toString());
+			if (cacheValue) return Promise.resolve(cacheValue);
+		}
 		console.debug(
 			`${GarminClient.PROVIDER}: fetching activity gear ${activityId}`,
 		);
 		return this._client.getActivityGear(activityId.toString()).then((gears) => {
-			this._cache.set(cacheKey, gears);
+			this._cache.set<Gear[]>(
+				this._provider,
+				"gear",
+				activityId.toString(),
+				gears,
+			);
 			return gears;
 		});
 	}
 
 	private fetchRunningActivities(activitiesToFetch = 2, start = 0) {
-		const cacheKey = `garmin_activities_list_${formatDate(new Date(), { format: "YYYY-MM-DD" })}_${start}_${activitiesToFetch}`;
-
-		const cacheValue =
-			this._cache.get<Awaited<ReturnType<typeof this._client.getActivities>>>(
-				cacheKey,
-			);
-		if (cacheValue) return Promise.resolve(cacheValue);
-
 		console.debug(
 			`${GarminClient.PROVIDER}: fetching activities ${activitiesToFetch} ${start}`,
 		);
 
-		return this._client
-			.getActivities(start, activitiesToFetch, GarminActivityType.Running)
-			.then((data) => {
-				this._cache.set(cacheKey, data);
-				return data;
-			});
+		return this._client.getActivities(
+			start,
+			activitiesToFetch,
+			GarminActivityType.Running,
+		);
 	}
 
 	private async getActivities({
@@ -239,17 +238,15 @@ export class GarminClient implements Client {
 	}
 
 	async getActivity(id: string) {
-		const cacheKey = `garmin_activity_${id}`;
-		const cacheValue =
-			this._cache.get<Awaited<ReturnType<typeof this._client.getActivity>>>(
-				cacheKey,
-			);
+		const cacheValue = await this._cache.get<
+			Awaited<ReturnType<typeof this._client.getActivity>>
+		>(this._provider, "activity", id);
 		if (cacheValue) return cacheValue;
 		const data = await this._client.getActivity({
 			activityId: Number(id),
 		});
 		if (data) {
-			this._cache.set(cacheKey, data);
+			this._cache.set<IActivityDetails>(this._provider, "activity", id, data);
 		}
 		return data;
 	}
@@ -332,10 +329,14 @@ export class GarminClient implements Client {
 
 	async linkActivityGear(activityId: string, gearId: string) {
 		await this._client.linkActivityGear(gearId, Number(activityId));
+		// refresh the cache
+		await this.populateActivityGear(Number(activityId), false);
 	}
 
 	async unlinkActivityGear(activityId: string, gearId: string) {
 		await this._client.unlinkActivityGear(gearId, Number(activityId));
+		// refresh the cache
+		await this.populateActivityGear(Number(activityId), false);
 	}
 
 	createManualActivity(originalActivity: DbActivityPopulated): Promise<string> {
