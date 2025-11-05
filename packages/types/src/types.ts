@@ -146,3 +146,7 @@ export interface IInbodyCreateInput {
 	compositionMinerals?: number | null;
 	compositionBodyFat?: number | null;
 }
+
+export interface IInbodyUpdateInput extends IInbodyCreateInput {
+	id: string;
+}

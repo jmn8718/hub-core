@@ -1,16 +1,19 @@
 import { formatDate } from "@repo/dates";
 import type { IInbodyData } from "@repo/types";
+import { Pencil } from "lucide-react";
 import { Box } from "./Box.js";
 import { ValueTrend } from "./ValueTrend.js";
 
 interface InbodyHistoryTableProps {
 	data: IInbodyData[];
 	formatMeasurement: (value: number | null | undefined) => string;
+	onEdit: (entry: IInbodyData) => void;
 }
 
 export function InbodyHistoryTable({
 	data,
 	formatMeasurement,
+	onEdit,
 }: InbodyHistoryTableProps) {
 	if (!data.length) return null;
 
@@ -41,6 +44,9 @@ export function InbodyHistoryTable({
 								{column.header}
 							</th>
 						))}
+						<th className="px-3 py-2 text-right">
+							<span className="sr-only">Edit</span>
+						</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -74,7 +80,7 @@ export function InbodyHistoryTable({
 												difference={diffRaw}
 												goodWhenNegative={goodWhenNegative}
 												formatter={(value) => formatMeasurement(value)}
-												className="flex items-end gap-2"
+												className="items-center"
 												valueClassName="text-sm font-semibold"
 												trendClassName="text-xs font-medium"
 												neutralClassName="text-xs text-gray-400"
@@ -83,6 +89,15 @@ export function InbodyHistoryTable({
 										</td>
 									);
 								})}
+								<td className="px-3 py-2 text-right">
+									<button
+										type="button"
+										onClick={() => onEdit(item)}
+										className="inline-flex h-8 w-8 items-center justify-center"
+									>
+										<Pencil className="h-4 w-4" strokeWidth={1.5} />
+									</button>
+								</td>
 							</tr>
 						);
 					})}

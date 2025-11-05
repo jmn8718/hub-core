@@ -6,4 +6,5 @@ export { Debug as DebugPage } from "./Debug.js";
 export { Gears as GearsPage } from "./Gears.js";
 export { Inbody as InbodyPage } from "./Inbody.js";
 export { InbodyAdd as InbodyAddPage } from "./InbodyAdd.js";
+export { InbodyEdit as InbodyEditPage } from "./InbodyEdit.js";
 export { ProvidersPage } from "./Providers.js";

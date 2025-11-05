@@ -8,6 +8,7 @@ export const Routes = {
 	GEAR: "/gear",
 	INBODY: "/inbody",
 	INBODY_ADD: "/inbody/add",
+	INBODY_EDIT: "/inbody/:id/edit",
 	ADD: "/add",
 	SETTINGS: "/settings",
 	DEBUG: "/debug",

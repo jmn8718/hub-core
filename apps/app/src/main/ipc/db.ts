@@ -1,6 +1,7 @@
 import {
 	Channels,
 	type IInbodyCreateInput,
+	type IInbodyUpdateInput,
 	type InbodyType,
 } from "@repo/types";
 import { ipcMain } from "electron";
@@ -140,5 +141,12 @@ ipcMain.handle(
 	Channels.DB_INBODY_CREATE,
 	async (_event, params: IInbodyCreateInput) => {
 		return db.createInbodyData(params);
+	},
+);
+
+ipcMain.handle(
+	Channels.DB_INBODY_UPDATE,
+	async (_event, params: IInbodyUpdateInput) => {
+		return db.updateInbodyData(params);
 	},
 );

@@ -9,6 +9,7 @@ import {
 	type IDbGearWithDistance,
 	type IInbodyCreateInput,
 	type IInbodyData,
+	type IInbodyUpdateInput,
 	type IOverviewData,
 	type IWeeklyOverviewData,
 	type InbodyType,
@@ -540,6 +541,22 @@ export class AppClient implements Client {
 	): Promise<ProviderSuccessResponse> {
 		try {
 			await window.electron.ipcRenderer.invoke(Channels.DB_INBODY_CREATE, data);
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async updateInbodyData(
+		data: IInbodyUpdateInput,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.DB_INBODY_UPDATE, data);
 			return {
 				success: true,
 			};

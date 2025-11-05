@@ -7,6 +7,7 @@ import type {
 	IDbGearWithDistance,
 	IInbodyCreateInput,
 	IInbodyData,
+	IInbodyUpdateInput,
 	IOverviewData,
 	IWeeklyOverviewData,
 	InbodyType,
@@ -304,6 +305,14 @@ export class MockClient implements Client {
 
 	public async createInbodyData(
 		data: IInbodyCreateInput,
+	): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
+
+	public async updateInbodyData(
+		data: IInbodyUpdateInput,
 	): Promise<ProviderSuccessResponse> {
 		return {
 			success: true,

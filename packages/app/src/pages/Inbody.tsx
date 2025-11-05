@@ -68,6 +68,16 @@ export function Inbody() {
 		return (value / 100).toFixed(fractionDigits);
 	};
 
+	const handleEditEntry = (entry: IInbodyData) => {
+		navigate(Routes.INBODY_EDIT.replace(":id", entry.id), {
+			state: {
+				record: entry,
+				selectedType,
+				returnTo: Routes.INBODY,
+			},
+		});
+	};
+
 	return (
 		<div className="space-y-4">
 			<div className="flex flex-wrap items-center justify-between gap-2">
@@ -107,6 +117,7 @@ export function Inbody() {
 					<InbodyHistoryTable
 						data={data}
 						formatMeasurement={formatMeasurement}
+						onEdit={handleEditEntry}
 					/>
 				</div>
 			) : (

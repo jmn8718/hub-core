@@ -8,6 +8,7 @@ import type {
 	IDbGearWithDistance,
 	IInbodyCreateInput,
 	IInbodyData,
+	IInbodyUpdateInput,
 	IOverviewData,
 	IWeeklyOverviewData,
 	InbodyType,
@@ -400,6 +401,15 @@ export class WebClient implements Client {
 
 	public async createInbodyData(
 		_data: IInbodyCreateInput,
+	): Promise<ProviderSuccessResponse> {
+		return {
+			success: false,
+			error: "Not implemented",
+		};
+	}
+
+	public async updateInbodyData(
+		_data: IInbodyUpdateInput,
 	): Promise<ProviderSuccessResponse> {
 		return {
 			success: false,

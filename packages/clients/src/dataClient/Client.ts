@@ -7,6 +7,7 @@ import type {
 	IDbGearWithDistance,
 	IInbodyCreateInput,
 	IInbodyData,
+	IInbodyUpdateInput,
 	IOverviewData,
 	IWeeklyOverviewData,
 	InbodyType,
@@ -44,6 +45,10 @@ export abstract class Client {
 
 	abstract createInbodyData(
 		data: IInbodyCreateInput,
+	): Promise<ProviderSuccessResponse>;
+
+	abstract updateInbodyData(
+		data: IInbodyUpdateInput,
 	): Promise<ProviderSuccessResponse>;
 
 	abstract getActivities(params: {

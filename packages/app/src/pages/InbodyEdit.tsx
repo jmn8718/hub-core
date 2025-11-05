@@ -1,39 +1,58 @@
-import { type IInbodyCreateInput, InbodyType } from "@repo/types";
+import {
+	type IInbodyData,
+	type IInbodyUpdateInput,
+	InbodyType,
+} from "@repo/types";
 import { cn } from "@repo/ui";
-import { type ChangeEvent, type FormEvent, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Box } from "../components/index.js";
 import { Routes } from "../constants.js";
 import { useDataClient, useTheme } from "../contexts/index.js";
 import {
 	type MeasurementValuesState,
 	createEmptyMeasurementValues,
+	createMeasurementValuesFromData,
 	measurementFields,
 	resolveInbodyType,
 	toDateTimeLocal,
 } from "./inbodyFormConfig.js";
 
-export function InbodyAdd() {
+type InbodyEditLocationState = {
+	record?: IInbodyData;
+	selectedType?: InbodyType;
+	returnTo?: string;
+} | null;
+
+export function InbodyEdit() {
 	const { client } = useDataClient();
 	const { isDarkMode } = useTheme();
 	const navigate = useNavigate();
 	const location = useLocation();
-	const locationState = location.state as {
-		returnTo?: string;
-		selectedType?: InbodyType;
-	} | null;
-
+	const { id } = useParams<{ id: string }>();
+	const locationState = location.state as InbodyEditLocationState;
+	const locationRecord = locationState?.record;
 	const originSelectedType = resolveInbodyType(locationState?.selectedType);
 	const returnTo = locationState?.returnTo ?? Routes.INBODY;
 
+	useEffect(() => {
+		if (!locationRecord || !id || locationRecord.id !== id) {
+			navigate(returnTo, { replace: true });
+		}
+	}, [id, locationRecord, navigate, returnTo]);
+
+	const initialRecord = locationRecord;
+
 	const [entryType, setEntryType] = useState<InbodyType>(
-		originSelectedType ?? InbodyType.BASIC,
+		initialRecord?.type ?? originSelectedType ?? InbodyType.BASIC,
 	);
 	const [timestamp, setTimestamp] = useState<string>(
-		toDateTimeLocal(new Date().toISOString()),
+		toDateTimeLocal(initialRecord?.timestamp ?? new Date().toISOString()),
 	);
 	const [values, setValues] = useState<MeasurementValuesState>(
-		createEmptyMeasurementValues(),
+		initialRecord
+			? createMeasurementValuesFromData(initialRecord)
+			: createEmptyMeasurementValues(),
 	);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,7 +67,7 @@ export function InbodyAdd() {
 	};
 
 	const goBackToList = () => {
-		navigateToList(originSelectedType ?? entryType);
+		navigateToList(initialRecord?.type ?? entryType);
 	};
 
 	const handleChange =
@@ -83,6 +102,10 @@ export function InbodyAdd() {
 		setError(null);
 		setIsSubmitting(true);
 		try {
+			const entryId = initialRecord?.id ?? id;
+			if (!entryId) {
+				throw new Error("Missing Inbody entry information");
+			}
 			if (!timestamp) {
 				throw new Error("Date and time is required");
 			}
@@ -91,7 +114,8 @@ export function InbodyAdd() {
 				throw new Error("Invalid date and time");
 			}
 
-			const payload: IInbodyCreateInput = {
+			const payload: IInbodyUpdateInput = {
+				id: entryId,
 				type: entryType,
 				timestamp: isoTimestamp.toISOString(),
 				weight: parseRequiredNumber(values.weight || "", "Weight"),
@@ -118,9 +142,9 @@ export function InbodyAdd() {
 				compositionBodyFat: parseOptionalNumber(values.compositionBodyFat),
 			};
 
-			const result = await client.createInbodyData(payload);
+			const result = await client.updateInbodyData(payload);
 			if (!result.success) {
-				throw new Error(result.error ?? "Unable to create Inbody entry");
+				throw new Error(result.error ?? "Unable to update Inbody entry");
 			}
 			navigateToList(payload.type);
 		} catch (err) {
@@ -159,7 +183,7 @@ export function InbodyAdd() {
 						className="rounded-full border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
 						disabled={isSubmitting}
 					>
-						{isSubmitting ? "Saving..." : "Save Entry"}
+						{isSubmitting ? "Saving..." : "Save Changes"}
 					</button>
 				</div>
 			</div>
@@ -171,6 +195,7 @@ export function InbodyAdd() {
 							{error}
 						</div>
 					) : null}
+
 					<div className="grid gap-4 md:grid-cols-2">
 						<label className="flex flex-col gap-1 text-sm font-medium">
 							<span>Entry Type</span>
