@@ -4,6 +4,7 @@ import { LOCAL_DB_FILE } from "./config.js";
 
 const dbClient = createDbClient({
 	url: LOCAL_DB_FILE,
+	logger: false,
 });
 
 migrateDb(dbClient)

@@ -1,4 +1,4 @@
-import { isBefore } from "@repo/dates";
+import { isAfter, isBefore } from "@repo/dates";
 import type {
 	CacheDb,
 	IInsertActivityPayload,
@@ -29,6 +29,10 @@ function mapActivityType(type: string): ActivityType {
 	switch (type.toLowerCase()) {
 		case "run":
 			return ActivityType.RUN;
+		case "ride":
+			return ActivityType.BIKE;
+		case "hike":
+			return ActivityType.HIKE;
 		default:
 			return ActivityType.OTHER;
 	}
@@ -47,7 +51,9 @@ function mapActivity(activity: StravaActivity): IDbActivity {
 	const timezone = normalizeTimezone(activity.timezone);
 	const type = mapActivityType(activity.type);
 	const subtype =
-		type === ActivityType.RUN ? mapActivitySubtype("") : undefined;
+		type === ActivityType.RUN
+			? mapActivitySubtype(activity.sport_type)
+			: undefined;
 	return {
 		id: activity.id.toString(),
 		timestamp: new Date(activity.start_date).getTime(),
@@ -181,16 +187,72 @@ export class StravaClient implements Client {
 		);
 	}
 
-	async sync(_params: {
+	async sync(params: {
 		id?: string;
 		lastTimestamp?: number;
 	}): Promise<IInsertActivityPayload[]> {
-		const result = await this.fetchRunningActivities({
-			per_page: 2,
-			before: _params.lastTimestamp,
-		});
-		console.log(result);
-		return [];
+		const perPage = 50;
+		const after = params.lastTimestamp
+			? Math.floor(params.lastTimestamp / 1000)
+			: undefined;
+		const activities: StravaActivity[] = [];
+		let page = 1;
+		let keepFetching = true;
+		while (keepFetching) {
+			const response = await this.fetchRunningActivities({
+				page,
+				per_page: perPage,
+				after,
+			});
+			if (response.length === 0) break;
+			activities.push(...response);
+			if (response.length < perPage) {
+				keepFetching = false;
+			} else {
+				page += 1;
+			}
+		}
+
+		const filteredActivities = (
+			params.lastTimestamp
+				? activities.filter((activity) =>
+						isAfter(activity.start_date, params.lastTimestamp),
+					)
+				: activities
+		).filter((activity) => activity.type.toLowerCase() === "run");
+
+		console.log(
+			`${StravaClient.PROVIDER}: ${filteredActivities.length} new activities fetched (${activities.length} total fetched pages: ${page})`,
+		);
+
+		if (filteredActivities.length === 0) return [];
+
+		return Promise.all(
+			filteredActivities.map(async (activity) => {
+				const dbActivity = mapActivity(activity);
+				await this._cache.set<StravaActivity>(
+					this._provider,
+					"activity",
+					dbActivity.id,
+					activity,
+				);
+				return {
+					activity: {
+						data: dbActivity,
+						providerActivity: {
+							id: dbActivity.id,
+							provider: StravaClient.PROVIDER,
+							original: !(
+								dbActivity.manufacturer.toLowerCase().includes("garmin") ||
+								dbActivity.manufacturer.toLowerCase().includes("coros")
+							),
+							timestamp: dbActivity.timestamp,
+							data: "{}",
+						},
+					},
+				};
+			}),
+		);
 	}
 
 	async syncActivity(activityId: string): Promise<IInsertActivityPayload> {

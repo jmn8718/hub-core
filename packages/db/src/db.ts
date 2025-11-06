@@ -679,7 +679,7 @@ export class Db {
 				}
 			});
 		}
-
+		console.log(gears);
 		if (gears && gears.length > 0) {
 			await pMap(
 				gears,
@@ -750,7 +750,6 @@ export class Db {
 				.limit(1);
 
 			let gearId = linkedGear[0]?.gearId;
-
 			if (gearId) {
 				if (data.dateEnd) {
 					const gearWithCode = await tx
@@ -795,6 +794,10 @@ export class Db {
 						})
 						.returning();
 				}
+				await tx.insert(gearsConnection).values({
+					gearId,
+					providerGearId,
+				});
 			}
 			return gearId;
 		});

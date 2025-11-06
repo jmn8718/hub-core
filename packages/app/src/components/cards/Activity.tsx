@@ -15,5 +15,5 @@ export function ActivityCard({ activity, gears }: ActivityCardProps) {
 		return <RunningCard activity={activity} gears={gears} />;
 	}
 
-	return <div>TYPE not supported</div>;
+	return <div>TYPE ({activity.type}) not supported</div>;
 }

@@ -7,6 +7,7 @@ export enum Providers {
 export enum FileExtensions {
 	TCX = "tcx",
 	FIT = "fit",
+	GPX = "gpx",
 }
 
 export enum AppType {

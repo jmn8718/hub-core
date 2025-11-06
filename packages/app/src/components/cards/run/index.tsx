@@ -152,6 +152,9 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 	const corosConnection = activityData.connections.find(
 		(connection) => connection.provider === Providers.COROS,
 	);
+	const stravaConnection = activityData.connections.find(
+		(connection) => connection.provider === Providers.STRAVA,
+	);
 	const shoeGear = activityData.gears.find(
 		(gear) => gear.type === GearType.SHOES,
 	);
@@ -237,7 +240,7 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 				hasBorder
 				className="flex justify-between items-center space-y-0"
 			>
-				<SectionContainer>
+				<SectionContainer className="md:flex md:flex-row md:items-center md:space-x-4 md:space-y-0">
 					<ProviderRow
 						activityId={activity.id}
 						provider={Providers.GARMIN}
@@ -254,6 +257,15 @@ export function RunningCard({ activity, gears }: RunningCardProps) {
 						connectionId={corosConnection?.id}
 						isOriginalSource={!!corosConnection?.original}
 						hasBeenExported={!!garminConnection}
+						refreshData={refreshActivity}
+					/>
+					<ProviderRow
+						activityId={activity.id}
+						provider={Providers.STRAVA}
+						hasConnection={!!stravaConnection}
+						connectionId={stravaConnection?.id}
+						isOriginalSource={!!stravaConnection?.original}
+						hasBeenExported={true}
 						refreshData={refreshActivity}
 					/>
 				</SectionContainer>

@@ -74,8 +74,8 @@ export interface StravaActivity {
 	moving_time: number;
 	elapsed_time: number;
 	total_elevation_gain: number;
-	type: "Run" | "Workout" | string;
-	sport_type: "Run" | "Workout" | string;
+	type: "Run" | "Workout" | "Ride" | "Hike" | string;
+	sport_type: "Run" | "Workout" | "Ride" | "Hike" | string;
 	workout_type: number | null;
 	id: number;
 	start_date: string;

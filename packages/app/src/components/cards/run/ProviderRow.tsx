@@ -78,6 +78,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	const handleManualUpload = async () => {
 		// if it is coros or we have the activity, we do nothing
 		if (provider === Providers.COROS || connectionId) return;
+		if (provider !== Providers.GARMIN) return;
 		setLocalLoading(true);
 		setLoading(true);
 
@@ -171,6 +172,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 					"mx-2 px-3 w-[80px] flex justify-center py-1 rounded-full text-sm uppercase",
 					provider === Providers.COROS && "bg-blue-100 text-blue-800",
 					provider === Providers.GARMIN && "bg-orange-100 text-orange-800",
+					provider === Providers.STRAVA && "bg-red-100 text-red-800",
 				])}
 			>
 				{provider}
