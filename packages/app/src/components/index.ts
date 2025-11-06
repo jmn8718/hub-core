@@ -14,6 +14,7 @@ export * from "./Text.js";
 export * from "./Layout.js";
 export * from "./Link.js";
 export * from "./providers/CardInput.js";
+export * from "./providers/StravaCardInput.js";
 export * from "./providers/CardSync.js";
 export * from "./SectionContainer.js";
 export * from "./Sidebar.js";

@@ -9,9 +9,10 @@ export function HomeProvidersSection() {
 
 	useEffect(() => {
 		const resolveProviders = async () => {
-			const [hasCoros, hasGarmin] = await Promise.all([
+			const [hasCoros, hasGarmin, hasStrava] = await Promise.all([
 				getValue(StorageKeys.COROS_CREDENTIALS),
 				getValue(StorageKeys.GARMIN_CREDENTIALS),
+				getValue(StorageKeys.STRAVA_CREDENTIALS),
 			]);
 			const foundProviders: Providers[] = [];
 			if (hasCoros) {
@@ -19,6 +20,9 @@ export function HomeProvidersSection() {
 			}
 			if (hasGarmin) {
 				foundProviders.push(Providers.GARMIN);
+			}
+			if (hasStrava) {
+				foundProviders.push(Providers.STRAVA);
 			}
 			setAvailableProviders(foundProviders);
 		};

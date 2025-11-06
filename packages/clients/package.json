@@ -28,7 +28,8 @@
     "coros-connect": "0.1.4",
     "garmin-connect": "1.6.2",
     "p-map": "7.0.3",
-    "p-queue": "8.1.0"
+    "p-queue": "8.1.0",
+    "strava-v3": "2.2.1"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

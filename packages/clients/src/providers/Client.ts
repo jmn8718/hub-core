@@ -1,7 +1,11 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { IInsertActivityPayload, IInsertGearPayload } from "@repo/db";
-import type { DbActivityPopulated, FileExtensions } from "@repo/types";
+import type {
+	Credentials,
+	DbActivityPopulated,
+	FileExtensions,
+} from "@repo/types";
 
 export function generateActivityFilePath(
 	downloadPath: string,
@@ -17,10 +21,7 @@ export function generateActivityFilePath(
 }
 
 export abstract class Client {
-	abstract connect(params: {
-		username: string;
-		password: string;
-	}): Promise<void>;
+	abstract connect(params: Credentials): Promise<void>;
 
 	abstract sync(params: {
 		id?: string;

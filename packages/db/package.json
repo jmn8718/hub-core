@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./migrations": "./dist/migrations.js",
+    "./utils": "./dist/utils.js",
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

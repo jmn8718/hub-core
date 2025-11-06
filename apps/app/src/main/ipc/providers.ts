@@ -1,6 +1,45 @@
-import { Channels, type Credentials, type Providers } from "@repo/types";
+import {
+	type ApiClientCredentials,
+	Channels,
+	type Credentials,
+	type LoginCredentials,
+	Providers,
+} from "@repo/types";
 import { ipcMain } from "electron";
 import { manager } from "../client.js";
+import {
+	STRAVA_CLIENT_ID,
+	STRAVA_CLIENT_SECRET,
+	STRAVA_REDIRECT_URI,
+} from "../config.js";
+
+function isLoginCredentials(
+	credentials: Credentials,
+): credentials is LoginCredentials {
+	return (
+		typeof (credentials as LoginCredentials).username === "string" &&
+		typeof (credentials as LoginCredentials).password === "string"
+	);
+}
+
+function isApiClientCredentials(
+	credentials: Credentials,
+): credentials is ApiClientCredentials {
+	return typeof (credentials as ApiClientCredentials).refreshToken === "string";
+}
+
+function ensureProviderInitialized(provider: Providers) {
+	if (provider === Providers.STRAVA) {
+		manager.initializeClient(provider, {
+			clientId: STRAVA_CLIENT_ID,
+			clientSecret: STRAVA_CLIENT_SECRET,
+			redirectUri: STRAVA_REDIRECT_URI,
+		});
+		return;
+	}
+
+	manager.initializeClient(provider);
+}
 
 ipcMain.handle(
 	Channels.PROVIDERS_SYNC,
@@ -32,7 +71,17 @@ ipcMain.handle(
 	) => {
 		// force add a client when we ask to connect
 		// as it might not be added before
-		manager.initializeClient(provider);
+		ensureProviderInitialized(provider);
+		if (provider === Providers.STRAVA) {
+			if (!isApiClientCredentials(credentials)) {
+				throw new Error("Invalid Strava credentials");
+			}
+			await manager.connect(provider, credentials);
+			return;
+		}
+		if (!isLoginCredentials(credentials)) {
+			throw new Error("Invalid credentials");
+		}
 		await manager.connect(provider, credentials);
 	},
 );

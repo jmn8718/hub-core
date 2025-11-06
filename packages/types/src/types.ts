@@ -93,10 +93,16 @@ export type GearsData = {
 export type BasicValue = string | boolean | number;
 export type Value = BasicValue | Record<string, BasicValue>;
 
-export interface Credentials {
+export interface LoginCredentials {
 	username: string;
 	password: string;
 }
+
+export interface ApiClientCredentials {
+	refreshToken: string;
+}
+
+export type Credentials = LoginCredentials | ApiClientCredentials;
 
 export interface IInbodyData {
 	id: string;

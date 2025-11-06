@@ -1,6 +1,6 @@
+import { createTestCacheDb } from "@repo/db/utils";
 import { describe, expect, test, vi } from "vitest";
 import { activities, activitiesData } from "../mocks/coros.js";
-import { Cache } from "./cache.js";
 import { CorosClient } from "./coros.js";
 
 vi.mock(import("coros-connect"), () => {
@@ -19,19 +19,18 @@ vi.mock(import("coros-connect"), () => {
 					dataList: activities,
 				}),
 			),
-			getActivityDetails: vi
-				.fn()
-				.mockImplementation((id: string) =>
-					Promise.resolve(activitiesData[id]),
-				),
+			getActivityDetails: vi.fn().mockImplementation((id: string) =>
+				// @ts-expect-error
+				Promise.resolve(activitiesData[id]),
+			),
 		}),
 	};
 });
 
 describe("coros client", () => {
-	const client = new CorosClient(new Cache());
-
 	test("should connect", async () => {
+		const cache = await createTestCacheDb();
+		const client = new CorosClient(cache);
 		await client.connect({
 			username: "user1",
 			password: "password2",

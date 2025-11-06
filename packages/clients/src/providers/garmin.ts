@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { dateWithTimezoneToUTC, formatDate, isBefore } from "@repo/dates";
+import { dateWithTimezoneToUTC, isBefore } from "@repo/dates";
 import type {
 	CacheDb,
 	IInsertActivityPayload,
@@ -12,6 +12,7 @@ import {
 	FileExtensions,
 	GearType,
 	type IDbActivity,
+	type LoginCredentials,
 	Providers,
 } from "@repo/types";
 import {
@@ -148,10 +149,7 @@ export class GarminClient implements Client {
 		this._cache = cache;
 	}
 
-	async connect({
-		username,
-		password,
-	}: { username: string; password: string }) {
+	async connect({ username, password }: LoginCredentials) {
 		try {
 			await this._client.login(username, password);
 			this._lastTokenRefreshed = new Date();

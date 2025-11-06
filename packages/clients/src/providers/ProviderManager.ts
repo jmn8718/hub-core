@@ -5,16 +5,38 @@ import pQueue from "p-queue";
 import type { Client } from "./Client.js";
 import { CorosClient } from "./coros.js";
 import { GarminClient } from "./garmin.js";
+import { StravaClient, type StravaClientOptions } from "./strava.js";
 
-const initializeProviderClient = (provider: Providers, cache: CacheDb) => {
+function initializeProviderClient(
+	provider: Providers.COROS | Providers.GARMIN,
+	cache: CacheDb,
+): Client;
+
+function initializeProviderClient(
+	provider: Providers.STRAVA,
+	cache: CacheDb,
+	options: StravaClientOptions,
+): Client;
+
+function initializeProviderClient(
+	provider: Providers,
+	cache: CacheDb,
+	options?: StravaClientOptions,
+): Client {
 	if (provider === Providers.COROS) {
 		return new CorosClient(cache);
 	}
 	if (provider === Providers.GARMIN) {
 		return new GarminClient(cache);
 	}
+	if (provider === Providers.STRAVA) {
+		if (!options) {
+			throw new Error("Strava client requires configuration options");
+		}
+		return new StravaClient(cache, options);
+	}
 	throw new Error("Invalid client");
-};
+}
 
 export class ProviderManager {
 	private _queue = new pQueue({ concurrency: 1 });
@@ -35,12 +57,27 @@ export class ProviderManager {
 		return this._clients[provider];
 	}
 
-	public initializeClient(provider: Providers) {
+	public initializeClient(provider: Providers.COROS | Providers.GARMIN): void;
+	public initializeClient(
+		provider: Providers.STRAVA,
+		options: StravaClientOptions,
+	): void;
+	public initializeClient(provider: Providers, options?: StravaClientOptions) {
 		if (this._clients[provider]) return;
+		if (provider === Providers.STRAVA) {
+			this._clients[provider] = initializeProviderClient(
+				provider,
+				this._cache,
+				// biome-ignore lint/style/noNonNullAssertion: validated above
+				options!,
+			);
+			return;
+		}
 		this._clients[provider] = initializeProviderClient(provider, this._cache);
 	}
 
 	public connect(provider: Providers, credentials: Credentials) {
+		console.log(`Connecting to provider ${provider}`);
 		const client = this._getProvider(provider);
 		return client.connect(credentials);
 	}
@@ -74,8 +111,10 @@ export class ProviderManager {
 				this._queue
 					.add(() => this._db.insertActivity(activityPayload))
 					.catch((err) => {
+						console.error(err);
+						console.debug(activityPayload);
 						console.warn(
-							`error on ${activityPayload.activity.providerActivity?.id}`,
+							`error on ${activityPayload.activity?.providerActivity?.id}`,
 						);
 						console.error(err);
 					}),

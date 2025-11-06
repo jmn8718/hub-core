@@ -1,4 +1,4 @@
-import type { Gear } from "garmin-connect";
+import { type Gear, GearStatus } from "garmin-connect";
 
 export const gears: Gear[] = [
 	{
@@ -6,7 +6,7 @@ export const gears: Gear[] = [
 		uuid: "abcdefg",
 		userProfilePk: 123,
 		gearTypeName: "Other",
-		gearStatusName: "active",
+		gearStatusName: GearStatus.ACTIVE,
 		gearMakeName: "SIDAS",
 		gearModelName: "",
 		customMakeModel: "SIDAS Insole XL 2",
@@ -26,7 +26,7 @@ export const gears: Gear[] = [
 		uuid: "abcdefj",
 		userProfilePk: 123,
 		gearTypeName: "Shoes",
-		gearStatusName: "active",
+		gearStatusName: GearStatus.ACTIVE,
 		gearMakeName: "Nike",
 		gearModelName: "",
 		customMakeModel: "Nike Pegasus 38",

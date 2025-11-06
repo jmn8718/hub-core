@@ -1,6 +1,6 @@
+import { createTestCacheDb } from "@repo/db/utils";
 import { describe, expect, test, vi } from "vitest";
 import { activities, activitiesData, gears } from "../mocks/garmin.js";
-import { Cache } from "./cache.js";
 import { GarminClient } from "./garmin.js";
 
 vi.mock(import("garmin-connect"), async (importOriginal) => {
@@ -15,6 +15,7 @@ vi.mock(import("garmin-connect"), async (importOriginal) => {
 			getActivity: vi
 				.fn()
 				.mockImplementation(({ activityId }: { activityId: string }) =>
+					// @ts-expect-error
 					Promise.resolve(activitiesData[activityId]),
 				),
 			getActivityGear: vi.fn().mockImplementation(() => Promise.resolve(gears)),
@@ -22,10 +23,10 @@ vi.mock(import("garmin-connect"), async (importOriginal) => {
 	};
 });
 
-describe("coros client", () => {
-	const client = new GarminClient(new Cache());
-
+describe("garmin client", () => {
 	test("should fetch all the activities", async () => {
+		const cache = await createTestCacheDb();
+		const client = new GarminClient(cache);
 		await client.connect({
 			username: "user1",
 			password: "password2",
@@ -42,6 +43,8 @@ describe("coros client", () => {
 	});
 
 	test("should fetch no new activities", async () => {
+		const cache = await createTestCacheDb();
+		const client = new GarminClient(cache);
 		await client.connect({
 			username: "user1",
 			password: "password2",

@@ -1,18 +1,10 @@
 import {
-	type LoginCredentials,
-	type Providers,
+	type ApiClientCredentials,
+	Providers,
 	StorageKeys,
 	type Value,
 } from "@repo/types";
-import {
-	CheckCircle2,
-	FolderSync,
-	Loader2,
-	RefreshCw,
-	RotateCcw,
-	Save,
-	XCircle,
-} from "lucide-react";
+import { CheckCircle2, Loader2, RotateCcw, Save, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { useDataClient, useLoading, useStore } from "../../contexts/index.js";
@@ -22,46 +14,39 @@ import { SectionContainer } from "../SectionContainer.js";
 import { ActionButton } from "./ActionButton.js";
 import { InputField } from "./InputField.js";
 
-interface ProviderCardInputProps {
-	provider: Providers.COROS | Providers.GARMIN;
-}
-
 type ValidationStatus = "pending" | "validating" | "success" | "error";
 
-export function ProviderCardInput({ provider }: ProviderCardInputProps) {
+const provider = Providers.STRAVA;
+
+export function StravaCardInput() {
 	const { setLocalLoading, isLocalLoading, setGlobalLoading } = useLoading();
 	const { client } = useDataClient();
 	const { setValue, getValue } = useStore();
-	const [credentials, setCredentials] = useState<LoginCredentials>({
-		username: "",
-		password: "",
+	const [credentials, setCredentials] = useState<ApiClientCredentials>({
+		refreshToken: "",
 	});
 	const [hasChanges, setHasChanges] = useState(false);
 	const [validationStatus, setValidationStatus] =
 		useState<ValidationStatus>("pending");
 
-	const handleInputChange =
-		(field: keyof LoginCredentials) => (value: string) => {
-			setCredentials((prev) => ({ ...prev, [field]: value }));
-			setHasChanges(true);
-		};
+	const handleInputChange = (value: string) => {
+		setCredentials({ refreshToken: value });
+		setHasChanges(true);
+	};
 
-	const saveOnStore = async (newCredentials: LoginCredentials) => {
+	const saveOnStore = async (newCredentials: ApiClientCredentials) => {
 		setLocalLoading(true);
 		try {
 			await setValue(
-				StorageKeys[`${provider}_CREDENTIALS`],
+				StorageKeys.STRAVA_CREDENTIALS,
 				newCredentials as unknown as Value,
 			);
 			setValidationStatus("pending");
 			setCredentials(newCredentials);
-			await setValue(StorageKeys[`${provider}_VALIDATED`], false);
-			toast.success(
-				`Credentials ${newCredentials.username ? "stored" : "cleared"}`,
-				{
-					transition: Bounce,
-				},
-			);
+			await setValue(StorageKeys.STRAVA_VALIDATED, false);
+			toast.success("Refresh token stored", {
+				transition: Bounce,
+			});
 		} catch (error) {
 			toast.error((error as Error).message, {
 				hideProgressBar: false,
@@ -80,22 +65,22 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 	};
 
 	const handleClear = () => {
-		saveOnStore({ username: "", password: "" });
+		saveOnStore({ refreshToken: "" });
 	};
 
 	const validateCredentials = async () => {
-		if (hasChanges || !credentials.username || !credentials.password) return;
+		if (hasChanges || !credentials.refreshToken) return;
 		setValidationStatus("validating");
 		setLocalLoading(true);
 		try {
 			const result = await client.providerConnect(provider, credentials);
+			console.log(result);
 			if (result.success) {
-				await setValue(StorageKeys[`${provider}_VALIDATED`], true);
+				await setValue(StorageKeys.STRAVA_VALIDATED, true);
 				setValidationStatus("success");
 				toast.success("Validated successfully", {
 					transition: Bounce,
 				});
-				await setValue(StorageKeys[`${provider}_VALIDATED`], true);
 			} else {
 				throw new Error(result.error);
 			}
@@ -116,13 +101,13 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 	useEffect(() => {
 		const loadInitialData = async () => {
 			try {
-				const storedCredentials = await getValue<LoginCredentials>(
-					StorageKeys[`${provider}_CREDENTIALS`],
+				const storedCredentials = await getValue<ApiClientCredentials>(
+					StorageKeys.STRAVA_CREDENTIALS,
 				);
 				if (storedCredentials) {
 					setCredentials(storedCredentials);
 					const credentialsValidated = await getValue<boolean>(
-						StorageKeys[`${provider}_VALIDATED`],
+						StorageKeys.STRAVA_VALIDATED,
 					);
 					if (credentialsValidated) {
 						setValidationStatus("success");
@@ -143,64 +128,9 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 		loadInitialData();
 	}, []);
 
-	const handlePullGear = async () => {
-		if (validationStatus !== "success") return;
-		setLocalLoading(true);
-
-		try {
-			const result = await client.providerSyncGear(provider);
-			if (result.success) {
-				toast.success("Gear synced", { transition: Bounce });
-			} else {
-				throw new Error(result.error);
-			}
-		} catch (error) {
-			toast.error((error as Error).message, {
-				hideProgressBar: false,
-				closeOnClick: false,
-				transition: Bounce,
-			});
-		}
-
-		setTimeout(() => {
-			setLocalLoading(false);
-		}, 200);
-	};
-
-	const handleSync = async () => {
-		if (validationStatus !== "success") return;
-		setLocalLoading(true);
-
-		try {
-			const result = await client.providerSync(provider, true);
-			if (result.success) {
-				toast.success("Activities synced", { transition: Bounce });
-				setValue(
-					StorageKeys[`${provider}_LAST_SYNC`],
-					new Date().toISOString(),
-				);
-			} else {
-				throw new Error(result.error);
-			}
-		} catch (error) {
-			toast.error((error as Error).message, {
-				hideProgressBar: false,
-				closeOnClick: false,
-				transition: Bounce,
-			});
-		}
-
-		setTimeout(() => {
-			setLocalLoading(false);
-		}, 200);
-	};
-
 	const getValidationButton = () => {
 		const canValidate =
-			!hasChanges &&
-			validationStatus === "pending" &&
-			credentials.username &&
-			credentials.password;
+			!hasChanges && validationStatus === "pending" && credentials.refreshToken;
 		switch (validationStatus) {
 			case "validating":
 				return (
@@ -214,7 +144,7 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 				return (
 					<ActionButton
 						icon={<CheckCircle2 size={20} className="text-green-500" />}
-						tooltip="Credentials validated"
+						tooltip="Refresh token validated"
 					/>
 				);
 			case "error":
@@ -230,14 +160,13 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 					<ActionButton
 						icon={<CheckCircle2 size={20} className="text-yellow-400" />}
 						onClick={validateCredentials}
-						tooltip="Validate credentials"
+						tooltip="Validate refresh token"
 						disabled={!canValidate}
 					/>
 				);
 		}
 	};
 
-	const disabledAction = isLocalLoading || validationStatus !== "success";
 	return (
 		<Box>
 			<SectionContainer hasBorder>
@@ -247,50 +176,26 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 						<ActionButton
 							icon={<Save size={20} />}
 							onClick={handleSave}
-							tooltip="Save credentials"
+							tooltip="Save refresh token"
 							disabled={isLocalLoading || !hasChanges}
 						/>
 						{getValidationButton()}
 						<ActionButton
 							icon={<RotateCcw size={20} />}
 							onClick={handleClear}
-							tooltip="Clear credentials"
+							tooltip="Clear refresh token"
 							disabled={isLocalLoading}
 						/>
 					</div>
 				</div>
 				<div className="max-w-2xl">
 					<InputField
-						id={`${provider}-username`}
-						label="Username"
-						type="text"
-						value={credentials.username}
-						onChange={handleInputChange("username")}
-						placeholder="Enter username"
-					/>
-					<InputField
-						id={`${provider}-password`}
-						label="Password"
+						id="strava-refresh-token"
+						label="Refresh Token"
 						type="password"
-						value={credentials.password}
-						onChange={handleInputChange("password")}
-						placeholder="Enter password"
-					/>
-				</div>
-			</SectionContainer>
-			<SectionContainer>
-				<div className="flex gap-4 items-center">
-					<ActionButton
-						icon={<FolderSync size={20} />}
-						onClick={handlePullGear}
-						text="Sync Gears"
-						disabled={disabledAction}
-					/>
-					<ActionButton
-						icon={<RefreshCw size={20} />}
-						onClick={handleSync}
-						text="Sync Activities"
-						disabled={disabledAction}
+						value={credentials.refreshToken}
+						onChange={handleInputChange}
+						placeholder="Enter Strava refresh token"
 					/>
 				</div>
 			</SectionContainer>

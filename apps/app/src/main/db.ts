@@ -1,13 +1,9 @@
 import { CacheDb, Db, createDbClient } from "@repo/db";
 import { migrateDb } from "@repo/db/migrations";
+import { LOCAL_DB_FILE } from "./config.js";
 
-// @ts-expect-error
-if (!import.meta.env.MAIN_VITE_LOCAL_DB_FILE) {
-	throw new Error("Missing MAIN_VITE_LOCAL_DB_FILE");
-}
 const dbClient = createDbClient({
-	// @ts-expect-error
-	url: import.meta.env.MAIN_VITE_LOCAL_DB_FILE,
+	url: LOCAL_DB_FILE,
 });
 
 migrateDb(dbClient)

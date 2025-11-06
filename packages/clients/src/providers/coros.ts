@@ -1,4 +1,4 @@
-import { dayjs, formatDate } from "@repo/dates";
+import { dayjs } from "@repo/dates";
 import type {
 	CacheDb,
 	IInsertActivityPayload,
@@ -9,6 +9,7 @@ import {
 	ActivityType,
 	FileExtensions,
 	type IDbActivity,
+	type LoginCredentials,
 	Providers,
 } from "@repo/types";
 import { type ActivityData, CorosApi, downloadFile } from "coros-connect";
@@ -67,10 +68,7 @@ export class CorosClient implements Client {
 		this._cache = cache;
 	}
 
-	async connect({
-		username,
-		password,
-	}: { username: string; password: string }) {
+	async connect({ username, password }: LoginCredentials) {
 		try {
 			const result = await this._client.login(username, password);
 			this._userId = result.userId;

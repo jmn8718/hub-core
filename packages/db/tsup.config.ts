@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-	entry: ["src/index.ts", "src/migrations.ts"],
+	entry: ["src/index.ts", "src/migrations.ts", "src/utils.ts"],
 	format: ["esm"],
 	dts: true,
 	minify: false,
