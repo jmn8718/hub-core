@@ -15,6 +15,7 @@ import type {
 	InbodyType,
 	Providers,
 } from "@repo/types";
+import { ActivityType } from "@repo/types";
 import {
 	and,
 	asc,
@@ -241,7 +242,12 @@ export class Db {
 				week: weekIdentifier,
 			})
 			.from(activities)
-			.where(gte(activities.timestamp, weeksBefore(limit).getTime()))
+			.where(
+				and(
+					gte(activities.timestamp, weeksBefore(limit).getTime()),
+					eq(activities.type, ActivityType.RUN),
+				),
+			)
 			.groupBy(activities.timestamp)
 			.orderBy(desc(activities.timestamp))
 			.as("subquery");
@@ -321,6 +327,7 @@ export class Db {
 				and(
 					gte(activities.timestamp, startDateValue.getTime()),
 					lte(activities.timestamp, endDateValue.getTime()),
+					eq(activities.type, ActivityType.RUN),
 				),
 			)
 			.groupBy(activities.timestamp)
