@@ -1,6 +1,8 @@
 import type { Db } from "@repo/db";
 import type {
 	ActivitiesData,
+	ActivitySubType,
+	ActivityType,
 	Credentials,
 	DbActivityPopulated,
 	GearsData,
@@ -108,6 +110,11 @@ export class WebClient implements Client {
 		cursor?: string;
 		limit?: number;
 		offset?: number;
+		type?: ActivityType;
+		subtype?: ActivitySubType;
+		startDate?: string;
+		endDate?: string;
+		search?: string;
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
@@ -153,6 +160,8 @@ export class WebClient implements Client {
 			notes?: string;
 			locationCountry?: string;
 			name?: string;
+			type?: ActivityType;
+			subtype?: ActivitySubType;
 		},
 	): Promise<ProviderSuccessResponse> {
 		try {

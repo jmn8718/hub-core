@@ -25,7 +25,18 @@ function normalizeTimezone(timezone?: string | null): string {
 	return cleaned || "Etc/UTC";
 }
 
-function mapActivityType(type: string): ActivityType {
+function mapActivityType(type: string, title: string): ActivityType {
+	let defaultType = ActivityType.OTHER;
+	if (title.toLowerCase().includes("run")) {
+		defaultType = ActivityType.RUN;
+	} else if (
+		title.toLowerCase().includes("bike") ||
+		title.toLowerCase().includes("ride")
+	) {
+		defaultType = ActivityType.BIKE;
+	} else if (title.toLowerCase().includes("hike")) {
+		defaultType = ActivityType.HIKE;
+	}
 	switch (type.toLowerCase()) {
 		case "run":
 			return ActivityType.RUN;
@@ -34,7 +45,7 @@ function mapActivityType(type: string): ActivityType {
 		case "hike":
 			return ActivityType.HIKE;
 		default:
-			return ActivityType.OTHER;
+			return defaultType;
 	}
 }
 
@@ -49,7 +60,7 @@ function mapActivitySubtype(type: string): ActivitySubType {
 
 function mapActivity(activity: StravaActivity): IDbActivity {
 	const timezone = normalizeTimezone(activity.timezone);
-	const type = mapActivityType(activity.type);
+	const type = mapActivityType(activity.type, activity.name);
 	const subtype =
 		type === ActivityType.RUN
 			? mapActivitySubtype(activity.sport_type)

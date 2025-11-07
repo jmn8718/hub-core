@@ -1,5 +1,7 @@
 import type {
 	ActivitiesData,
+	ActivitySubType,
+	ActivityType,
 	Credentials,
 	DbActivityPopulated,
 	GearsData,
@@ -55,6 +57,11 @@ export abstract class Client {
 		cursor?: string;
 		limit?: number;
 		offset?: number;
+		type?: ActivityType;
+		subtype?: ActivitySubType;
+		startDate?: string;
+		endDate?: string;
+		search?: string;
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
@@ -74,6 +81,8 @@ export abstract class Client {
 			locationCountry?: string;
 			notes?: string;
 			name?: string;
+			type?: ActivityType;
+			subtype?: ActivitySubType;
 		},
 	): Promise<ProviderSuccessResponse>;
 

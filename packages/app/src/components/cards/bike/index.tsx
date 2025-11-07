@@ -2,10 +2,9 @@ import { formatDateWithTime } from "@repo/dates";
 import {
 	ActivitySubType,
 	type DbActivityPopulated,
-	GearType,
 	type IDbGear,
 } from "@repo/types";
-import { Clock, Footprints, MapIcon, MapPin, Route } from "lucide-react";
+import { Clock, MapIcon, MapPin, Route } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import {
@@ -18,29 +17,27 @@ import { SectionContainer } from "../../SectionContainer.js";
 import { EditableText } from "../../forms/EditableText.js";
 import { ActivityCardTemplate } from "../ActivityCardTemplate.js";
 import type { ActivityCardTemplateRenderProps } from "../ActivityCardTemplate.js";
-import GearSelector from "./GearSelector.js";
 
-interface RunningCardProps {
+interface BikeCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 }
 
-export function RunningCard({ activity, gears }: RunningCardProps) {
+export function BikeCard({ activity, gears }: BikeCardProps) {
 	return (
 		<ActivityCardTemplate activity={activity} gears={gears}>
-			{(context) => <RunningCardBody context={context} gears={gears} />}
+			{(context) => <BikeCardBody context={context} />}
 		</ActivityCardTemplate>
 	);
 }
 
-interface RunningBodyProps {
+function BikeCardBody({
+	context,
+}: {
 	context: ActivityCardTemplateRenderProps;
-	gears: IDbGear[];
-}
-
-function RunningCardBody({ context, gears }: RunningBodyProps) {
-	const { activityData, handleEditActivity, refreshActivity } = context;
+}) {
 	const { isDarkMode } = useTheme();
+	const { activityData, handleEditActivity, refreshActivity } = context;
 	const { client } = useDataClient();
 	const { setLocalLoading } = useLoading();
 	const [locationName, setLocationName] = useState(
@@ -59,40 +56,6 @@ function RunningCardBody({ context, gears }: RunningBodyProps) {
 		setSelectedSubtype((activityData.subtype as ActivitySubType) || "");
 	}, [activityData]);
 
-	const handleGearSelect = (type: GearType) => async (gearId: string) => {
-		setLocalLoading(true);
-		const result = await client.providerGearLink(activityData.id, gearId);
-		if (!result.success) {
-			toast.error(result.error, {
-				hideProgressBar: false,
-				closeOnClick: false,
-				transition: Bounce,
-			});
-		} else {
-			await refreshActivity();
-		}
-		setTimeout(() => {
-			setLocalLoading(false);
-		}, 250);
-	};
-
-	const handleGearRemove = (type: GearType) => async (gearId: string) => {
-		setLocalLoading(true);
-		const result = await client.providerGearUnlink(activityData.id, gearId);
-		if (!result.success) {
-			toast.error(result.error, {
-				hideProgressBar: false,
-				closeOnClick: false,
-				transition: Bounce,
-			});
-		} else {
-			await refreshActivity();
-		}
-		setTimeout(() => {
-			setLocalLoading(false);
-		}, 250);
-	};
-
 	const handleLocationNameChange = (value: string) => {
 		setLocationName(value);
 		if (value !== activityData.locationName) {
@@ -106,10 +69,6 @@ function RunningCardBody({ context, gears }: RunningBodyProps) {
 		}
 	};
 
-	const subtypeOptions: (ActivitySubType | "")[] = [
-		"",
-		...Object.values(ActivitySubType),
-	];
 	const hasSubtypeChanged =
 		(selectedSubtype || "") !== (activityData.subtype || "");
 
@@ -132,13 +91,6 @@ function RunningCardBody({ context, gears }: RunningBodyProps) {
 			setLocalLoading(false);
 		}, 250);
 	};
-
-	const shoeGear = activityData.gears.find(
-		(gear) => gear.type === GearType.SHOES,
-	);
-	const insoleGear = activityData.gears.find(
-		(gear) => gear.type === GearType.INSOLE,
-	);
 
 	return (
 		<>
@@ -178,34 +130,6 @@ function RunningCardBody({ context, gears }: RunningBodyProps) {
 					</div>
 				</div>
 			</SectionContainer>
-			<SectionContainer hasBorder>
-				<div className="flex items-center gap-2">
-					<Footprints size={16} className="text-gray-500" />
-					<span
-						className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
-					>
-						Gear
-					</span>
-				</div>
-				<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-					<GearSelector
-						activityDate={activityData.timestamp}
-						type={GearType.SHOES}
-						availableGear={gears}
-						selectedGearId={shoeGear?.id}
-						onSelect={handleGearSelect(GearType.SHOES)}
-						onRemove={handleGearRemove(GearType.SHOES)}
-					/>
-					<GearSelector
-						activityDate={activityData.timestamp}
-						type={GearType.INSOLE}
-						availableGear={gears}
-						selectedGearId={insoleGear?.id}
-						onSelect={handleGearSelect(GearType.INSOLE)}
-						onRemove={handleGearRemove(GearType.INSOLE)}
-					/>
-				</div>
-			</SectionContainer>
 			<SectionContainer hasBorder className="space-y-3">
 				<div className="text-sm font-medium">Subtype</div>
 				<div className="flex flex-col gap-2 md:flex-row md:items-center">
@@ -216,7 +140,7 @@ function RunningCardBody({ context, gears }: RunningBodyProps) {
 							setSelectedSubtype(event.target.value as ActivitySubType | "")
 						}
 					>
-						{subtypeOptions.map((option) => (
+						{["", ...Object.values(ActivitySubType)].map((option) => (
 							<option key={option || "none"} value={option}>
 								{option || "None"}
 							</option>

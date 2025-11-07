@@ -1,6 +1,8 @@
 import type { Client } from "@repo/clients";
 import {
 	type ActivitiesData,
+	type ActivitySubType,
+	type ActivityType,
 	Channels,
 	type Credentials,
 	type DbActivityPopulated,
@@ -109,6 +111,11 @@ export class AppClient implements Client {
 		cursor?: string;
 		limit?: number;
 		offset?: number;
+		type?: ActivityType;
+		subtype?: ActivitySubType;
+		startDate?: string;
+		endDate?: string;
+		search?: string;
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
@@ -160,6 +167,8 @@ export class AppClient implements Client {
 			locationCountry?: string;
 			name?: string;
 			notes?: string;
+			type?: ActivityType;
+			subtype?: ActivitySubType;
 		},
 	): Promise<ProviderSuccessResponse> {
 		try {

@@ -1,4 +1,10 @@
-import type { ActivitiesData, GearsData } from "@repo/types";
+import { dayjs } from "@repo/dates";
+import type {
+	ActivitiesData,
+	ActivitySubType,
+	ActivityType,
+	GearsData,
+} from "@repo/types";
 import { cn } from "@repo/ui";
 import { RefreshCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -12,6 +18,23 @@ export function DataList() {
 	const { setGlobalLoading, isGlobalLoading, isLocalLoading, setLocalLoading } =
 		useLoading();
 	const [search, setSearch] = useState("");
+	const [typeFilter, setTypeFilter] = useState<ActivityType | "ALL">("ALL");
+	const [subtypeFilter, setSubtypeFilter] = useState<ActivitySubType | "">("");
+	const [startDate, setStartDate] = useState("");
+	const [endDate, setEndDate] = useState("");
+	const [appliedFilters, setAppliedFilters] = useState<{
+		type: ActivityType | "ALL";
+		subtype: ActivitySubType | "";
+		startDate: string;
+		endDate: string;
+		search: string;
+	}>({
+		type: "ALL",
+		subtype: "",
+		startDate: "",
+		endDate: "",
+		search: "",
+	});
 
 	const [data, setData] = useState<ActivitiesData>({
 		count: 0,
@@ -50,15 +73,27 @@ export function DataList() {
 		async ({
 			cursor,
 			limit,
+			reset = false,
 		}: {
 			cursor?: string;
 			limit: number;
+			reset?: boolean;
 		}) => {
-			const result = await client.getActivities({ limit, cursor });
+			const result = await client.getActivities({
+				limit,
+				cursor,
+				type: appliedFilters.type === "ALL" ? undefined : appliedFilters.type,
+				subtype: appliedFilters.subtype || undefined,
+				startDate: appliedFilters.startDate || undefined,
+				endDate: appliedFilters.endDate || undefined,
+				search: appliedFilters.search || undefined,
+			});
 			if (result.success) {
 				setData((current) => ({
 					count: result.data.count,
-					data: current.data.concat(result.data.data),
+					data: reset
+						? result.data.data
+						: current.data.concat(result.data.data),
 					cursor: result.data.cursor,
 				}));
 			} else {
@@ -69,23 +104,32 @@ export function DataList() {
 				});
 			}
 			setTimeout(() => {
-				if (!cursor) setGlobalLoading(false);
+				if (!cursor || reset) setGlobalLoading(false);
 				else setLocalLoading(false);
 			}, 250);
 		},
-		[client, setGlobalLoading, setLocalLoading],
+		[appliedFilters, client, setGlobalLoading, setLocalLoading],
 	);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		setGlobalLoading(true);
+		setData({
+			count: 0,
+			data: [],
+			cursor: "",
+		});
 		fetchData({
 			limit: 20,
+			reset: true,
 		});
+	}, [fetchData]);
+
+	useEffect(() => {
 		fetchGears({
 			limit: 50,
 		});
-	}, []);
+	}, [fetchGears]);
 
 	const loadMoreClick = () => {
 		setLocalLoading(true);
@@ -96,24 +140,44 @@ export function DataList() {
 	};
 
 	const filteredActivities = useMemo(() => {
-		return data.data
-			.filter(
-				(activity) =>
-					search === "" ||
-					activity.id.toLowerCase().includes(search) ||
-					activity.name.toLowerCase().includes(search.toLowerCase()) ||
-					(activity.locationName || "")
-						.toLowerCase()
-						.includes(search.toLowerCase()),
-			)
-			.sort(
-				(a, b) =>
-					new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-			);
-	}, [search, data]);
+		return [...data.data].sort(
+			(a, b) =>
+				new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+		);
+	}, [data]);
+
+	const applyFilters = () => {
+		if (startDate && endDate && dayjs(startDate).isAfter(dayjs(endDate))) {
+			toast.error("Start date must be before end date", {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+			return;
+		}
+		setAppliedFilters({
+			type: typeFilter,
+			subtype: subtypeFilter,
+			startDate,
+			endDate,
+			search,
+		});
+	};
 	return (
 		<>
-			<ActivityFilters search={search} setSearch={setSearch} />
+			<ActivityFilters
+				search={search}
+				setSearch={setSearch}
+				type={typeFilter}
+				setType={setTypeFilter}
+				subtype={subtypeFilter}
+				setSubtype={setSubtypeFilter}
+				startDate={startDate}
+				endDate={endDate}
+				setStartDate={setStartDate}
+				setEndDate={setEndDate}
+				onApplyFilters={applyFilters}
+			/>
 
 			{filteredActivities.length === 0 ? (
 				!isGlobalLoading && (

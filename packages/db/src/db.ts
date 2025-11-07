@@ -15,7 +15,7 @@ import type {
 	InbodyType,
 	Providers,
 } from "@repo/types";
-import { ActivityType } from "@repo/types";
+import { type ActivitySubType, ActivityType } from "@repo/types";
 import {
 	and,
 	asc,
@@ -408,10 +408,20 @@ export class Db {
 		limit = 20,
 		cursor,
 		sort = "DESC",
+		type,
+		subtype,
+		startDate,
+		endDate,
+		search,
 	}: {
 		cursor?: string;
 		limit?: number;
 		sort?: "ASC" | "DESC";
+		type?: ActivityType;
+		subtype?: ActivitySubType;
+		startDate?: string;
+		endDate?: string;
+		search?: string;
 	}): Promise<ActivitiesData> {
 		const connections = this._client.$with("connections").as(
 			this._client
@@ -462,12 +472,59 @@ export class Db {
 			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId))
 			.orderBy(order(activities.timestamp));
 
-		const dataQuery = cursor
-			? select.where(lt(activities.timestamp, Number.parseInt(cursor, 10)))
-			: select;
+		const baseConditions = [];
+		if (type) {
+			baseConditions.push(eq(activities.type, type));
+		}
+		if (subtype) {
+			baseConditions.push(eq(activities.subtype, subtype));
+		}
+		if (startDate) {
+			baseConditions.push(
+				gte(activities.timestamp, dayjs(startDate).startOf("day").valueOf()),
+			);
+		}
+		if (endDate) {
+			baseConditions.push(
+				lte(activities.timestamp, dayjs(endDate).endOf("day").valueOf()),
+			);
+		}
+		if (search) {
+			const searchTerm = `%${search.toLowerCase()}%`;
+			baseConditions.push(
+				sql`(
+					lower(${activities.name}) LIKE ${searchTerm}
+					OR lower(${activities.locationName}) LIKE ${searchTerm}
+					OR lower(${activities.locationCountry}) LIKE ${searchTerm}
+					OR lower(${activities.id}) LIKE ${searchTerm}
+				)`,
+			);
+		}
 
+		const baseWhere =
+			baseConditions.length > 0 ? and(...baseConditions) : undefined;
+
+		const cursorCondition = cursor
+			? lt(activities.timestamp, Number.parseInt(cursor, 10))
+			: undefined;
+
+		const combinedCondition = (() => {
+			if (baseWhere && cursorCondition) return and(baseWhere, cursorCondition);
+			if (baseWhere) return baseWhere;
+			if (cursorCondition) return cursorCondition;
+			return undefined;
+		})();
+
+		const dataQuery = combinedCondition
+			? select.where(combinedCondition)
+			: select;
 		const result = await this._client.batch([
-			this._client.select({ count: count() }).from(activities),
+			baseWhere
+				? this._client
+						.select({ count: count() })
+						.from(activities)
+						.where(baseWhere)
+				: this._client.select({ count: count() }).from(activities),
 			dataQuery.limit(limit),
 		]);
 

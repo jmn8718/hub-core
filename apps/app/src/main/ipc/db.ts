@@ -1,4 +1,6 @@
 import {
+	type ActivitySubType,
+	type ActivityType,
 	Channels,
 	type IInbodyCreateInput,
 	type IInbodyUpdateInput,
@@ -62,7 +64,19 @@ ipcMain.handle(
 
 ipcMain.handle(
 	Channels.DB_ACTIVITIES,
-	async (_event, params: { limit?: number; cursor?: string }) => {
+	async (
+		_event,
+		params: {
+			limit?: number;
+			cursor?: string;
+			offset?: number;
+			type?: ActivityType;
+			subtype?: ActivitySubType;
+			startDate?: string;
+			endDate?: string;
+			search?: string;
+		},
+	) => {
 		return db.getActivities(params);
 	},
 );
@@ -82,6 +96,8 @@ ipcMain.handle(
 				locationCountry?: string;
 				name?: string;
 				notes?: string;
+				type?: ActivityType;
+				subtype?: ActivitySubType;
 			};
 		},
 	) => {

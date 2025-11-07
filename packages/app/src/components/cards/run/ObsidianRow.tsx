@@ -1,5 +1,6 @@
 import { formatDate } from "@repo/dates";
 import {
+	ActivityType,
 	type DbActivityPopulated,
 	GearType,
 	type IDbGear,
@@ -29,9 +30,9 @@ const prepareObsidianFile = (data: DbActivityPopulated, gears: IDbGear[]) => {
 		`date: ${formatDate(new Date(data.timestamp), { format: "YYYY-MM-DDTHH:mm:ss", timezone: data.timezone })}`,
 		`time: ${formatDuration(data.duration)}`,
 		`distance: ${formatDistance(data.distance, false)}`,
-		`shoes: ${shoe?.code ?? ""}`,
-		`insole: ${insole?.code ?? ""}`,
-		`type: ${data.subtype}`,
+		data.type === ActivityType.RUN ? `shoes: ${shoe?.code ?? ""}` : "",
+		data.type === ActivityType.RUN ? `insole: ${insole?.code ?? ""}` : "",
+		data.subtype ? `type: ${data.subtype}` : "",
 		"tags:",
 		`  - ${data.type}`,
 		`  - ${data.locationName.toLowerCase() || "cheongra"}`,

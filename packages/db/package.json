@@ -23,6 +23,7 @@
     "db:seed:import": "tsx src/seed/import.ts",
     "db:seed:health": "tsx src/seed/health.ts",
     "db:seed:clear": "tsx src/seed/clear.ts",
+    "db:update:rides": "tsx src/scripts/updateRideActivities.ts",
     "test": "vitest"
   },
   "dependencies": {
