@@ -1,6 +1,14 @@
 import { ActivityType } from "@repo/types";
 import { cn } from "@repo/ui";
-import { Bike, Dumbbell, Rabbit } from "lucide-react";
+import {
+	Bike,
+	Donut,
+	Dumbbell,
+	Footprints,
+	Mountain,
+	Rabbit,
+	Waves,
+} from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext.js";
 
 interface Props {
@@ -27,8 +35,20 @@ const ActivityTypeIcon: React.FC<Props> = ({
 		case ActivityType.BIKE:
 			Icon = Bike;
 			break;
-		default:
+		case ActivityType.HIKE:
+			Icon = Mountain;
+			break;
+		case ActivityType.CARDIO:
+			Icon = Footprints;
+			break;
+		case ActivityType.SWIM:
+			Icon = Waves;
+			break;
+		case ActivityType.GYM:
 			Icon = Dumbbell;
+			break;
+		default:
+			Icon = Donut;
 			break;
 	}
 	return (

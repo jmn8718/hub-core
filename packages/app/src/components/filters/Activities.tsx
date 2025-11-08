@@ -1,4 +1,5 @@
 import { ActivitySubType, ActivityType } from "@repo/types";
+import { cn } from "@repo/ui";
 import { Search } from "lucide-react";
 import type React from "react";
 import { useTheme } from "../../contexts/ThemeContext.js";
@@ -50,9 +51,10 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 
 	return (
 		<div
-			className={`${
-				isDarkMode ? "bg-gray-800" : "bg-white"
-			} p-4 rounded-lg shadow-md flex flex-wrap gap-4`}
+			className={cn(
+				"min-w-[240px] flex flex-col p-4 rounded-lg shadow-md flex-wrap gap-4",
+				isDarkMode ? "bg-gray-800" : "bg-white",
+			)}
 		>
 			<div className="flex-1 min-w-[240px]">
 				<div className="relative">
@@ -69,65 +71,75 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 					/>
 				</div>
 			</div>
-			<div className="flex flex-col min-w-[160px]">
-				{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-				<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-					Type
-				</label>
-				<select
-					value={type}
-					onChange={(e) => setType(e.target.value as ActivityType | "ALL")}
-					className={inputClasses}
-				>
-					{typeOptions.map((value) => (
-						<option key={value} value={value}>
-							{value}
-						</option>
-					))}
-				</select>
-			</div>
-			<div className="flex flex-col min-w-[160px]">
-				{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-				<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-					Subtype
-				</label>
-				<select
-					value={subtype}
-					onChange={(e) => setSubtype(e.target.value as ActivitySubType | "")}
-					className={inputClasses}
-				>
-					{subtypeOptions.map((value) => (
-						<option key={value || "NONE"} value={value}>
-							{value || "ALL"}
-						</option>
-					))}
-				</select>
-			</div>
-			<div className="flex flex-col min-w-[160px]">
-				{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-				<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-					Start Date
-				</label>
-				<input
-					type="date"
-					value={startDate}
-					onChange={(e) => setStartDate(e.target.value)}
-					className={inputClasses}
-				/>
-			</div>
-			<div className="flex flex-col min-w-[160px]">
-				{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-				<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-					End Date
-				</label>
-				<input
-					type="date"
-					value={endDate}
-					onChange={(e) => setEndDate(e.target.value)}
-					className={inputClasses}
-				/>
-			</div>
-			<div className="flex items-end">
+			<div className="flex flex-row items-center justify-between gap-4 w-full md:items-end md:flex-wrap">
+				<div className="flex flex-col md:flex-row gap-4">
+					<div className="flex flex-row gap-4">
+						<div className="flex flex-col gap-2">
+							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
+							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+								Type
+							</label>
+							<select
+								value={type}
+								onChange={(e) =>
+									setType(e.target.value as ActivityType | "ALL")
+								}
+								className={inputClasses}
+							>
+								{typeOptions.map((value) => (
+									<option key={value} value={value}>
+										{value}
+									</option>
+								))}
+							</select>
+						</div>
+						<div className="flex flex-col gap-2">
+							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
+							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+								Subtype
+							</label>
+							<select
+								value={subtype}
+								onChange={(e) =>
+									setSubtype(e.target.value as ActivitySubType | "")
+								}
+								className={inputClasses}
+							>
+								{subtypeOptions.map((value) => (
+									<option key={value || "NONE"} value={value}>
+										{value || "ALL"}
+									</option>
+								))}
+							</select>
+						</div>
+					</div>
+					<div className="flex flex-row gap-4">
+						<div className="flex flex-col gap-2">
+							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
+							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+								Start Date
+							</label>
+							<input
+								type="date"
+								value={startDate}
+								onChange={(e) => setStartDate(e.target.value)}
+								className={inputClasses}
+							/>
+						</div>
+						<div className="flex flex-col gap-2">
+							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
+							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+								End Date
+							</label>
+							<input
+								type="date"
+								value={endDate}
+								onChange={(e) => setEndDate(e.target.value)}
+								className={inputClasses}
+							/>
+						</div>
+					</div>
+				</div>
 				<button
 					type="button"
 					onClick={onApplyFilters}

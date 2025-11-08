@@ -5,7 +5,7 @@ import {
 	Providers,
 	StorageKeys,
 } from "@repo/types";
-import { Pencil } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 import {
 	type ReactNode,
 	useCallback,
@@ -13,7 +13,9 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
+import { Routes as AppRoutes } from "../../constants.js";
 import {
 	useDataClient,
 	useLoading,
@@ -37,12 +39,14 @@ interface ActivityCardTemplateProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 	children?: (props: ActivityCardTemplateRenderProps) => ReactNode;
+	showDetailsButton?: boolean;
 }
 
 export function ActivityCardTemplate({
 	activity,
 	gears,
 	children,
+	showDetailsButton = false,
 }: ActivityCardTemplateProps) {
 	const { isDarkMode } = useTheme();
 	const { client, type } = useDataClient();
@@ -52,6 +56,7 @@ export function ActivityCardTemplate({
 		useState<DbActivityPopulated>(activity);
 	const [activityName, setActivityName] = useState(activity.name || "");
 	const [activityNotes, setActivityNotes] = useState(activity.notes || "");
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		setActivityData(activity);
@@ -143,8 +148,20 @@ export function ActivityCardTemplate({
 							/>
 						</div>
 					</div>
-					<div className="text-right text-sm text-gray-500 dark:text-gray-400">
-						{activityData.manufacturer || "Unknown device"}
+					<div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+						<span>{activityData.manufacturer || "-"}</span>
+						{showDetailsButton && (
+							<button
+								type="button"
+								className="flex items-center px-3 py-1"
+								onClick={(event) => {
+									event.stopPropagation();
+									navigate(`${AppRoutes.DETAILS}/${activity.id}`);
+								}}
+							>
+								<Eye size={16} />
+							</button>
+						)}
 					</div>
 				</div>
 			</SectionContainer>

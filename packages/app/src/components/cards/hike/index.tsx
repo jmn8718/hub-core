@@ -1,6 +1,6 @@
 import { formatDateWithTime } from "@repo/dates";
 import type { DbActivityPopulated, IDbGear } from "@repo/types";
-import { Clock, MapIcon, MapPin, Route } from "lucide-react";
+import { Clock, MapIcon, MapPin, Mountain, Route } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatDistance, formatDuration } from "../../../utils/formatters.js";
 import { SectionContainer } from "../../SectionContainer.js";
@@ -8,29 +8,29 @@ import { EditableText } from "../../forms/EditableText.js";
 import { ActivityCardTemplate } from "../ActivityCardTemplate.js";
 import type { ActivityCardTemplateRenderProps } from "../ActivityCardTemplate.js";
 
-interface BikeCardProps {
+interface HikeCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 	showDetailsButton?: boolean;
 }
 
-export function BikeCard({
+export function HikeCard({
 	activity,
 	gears,
 	showDetailsButton,
-}: BikeCardProps) {
+}: HikeCardProps) {
 	return (
 		<ActivityCardTemplate
 			activity={activity}
 			gears={gears}
 			showDetailsButton={showDetailsButton}
 		>
-			{(context) => <BikeCardBody context={context} />}
+			{(context) => <HikeCardBody context={context} />}
 		</ActivityCardTemplate>
 	);
 }
 
-function BikeCardBody({
+function HikeCardBody({
 	context,
 }: { context: ActivityCardTemplateRenderProps }) {
 	const { activityData, handleEditActivity } = context;
@@ -60,43 +60,38 @@ function BikeCardBody({
 	};
 
 	return (
-		<>
-			<SectionContainer hasBorder>
-				<div className="space-y-2">
-					<div className="flex items-center gap-2 text-sm">
-						<Clock size={16} className="text-gray-500" />
-						<span className="pl-2">
-							{formatDateWithTime(
-								activityData.timestamp,
-								activityData.timezone,
-							)}
-						</span>
-					</div>
-					<div className="flex items-center gap-2 text-sm">
-						<MapPin size={16} className="text-gray-500 min-w-4" />
-						<EditableText
-							value={locationName}
-							onSave={handleLocationNameChange}
-							className="h-8"
-						/>
-					</div>
-					<div className="flex items-center gap-2 text-sm">
-						<MapIcon size={16} className="text-gray-500 min-w-4" />
-						<EditableText
-							value={locationCountry}
-							onSave={handleLocationCountryChange}
-							className="h-8"
-						/>
-					</div>
-					<div className="flex items-center gap-2 text-sm">
-						<Route size={16} className="text-gray-500" />
-						<span className="pl-2">
-							{formatDistance(activityData.distance)} •{" "}
-							{formatDuration(activityData.duration)}
-						</span>
-					</div>
+		<SectionContainer hasBorder>
+			<div className="space-y-2">
+				<div className="flex items-center gap-2 text-sm">
+					<Clock size={16} className="text-gray-500" />
+					<span className="pl-2">
+						{formatDateWithTime(activityData.timestamp, activityData.timezone)}
+					</span>
 				</div>
-			</SectionContainer>
-		</>
+				<div className="flex items-center gap-2 text-sm">
+					<MapPin size={16} className="text-gray-500 min-w-4" />
+					<EditableText
+						value={locationName}
+						onSave={handleLocationNameChange}
+						className="h-8"
+					/>
+				</div>
+				<div className="flex items-center gap-2 text-sm">
+					<MapIcon size={16} className="text-gray-500 min-w-4" />
+					<EditableText
+						value={locationCountry}
+						onSave={handleLocationCountryChange}
+						className="h-8"
+					/>
+				</div>
+				<div className="flex items-center gap-2 text-sm">
+					<Route size={16} className="text-gray-500" />
+					<span className="pl-2">
+						{formatDistance(activityData.distance)} •{" "}
+						{formatDuration(activityData.duration)}
+					</span>
+				</div>
+			</div>
+		</SectionContainer>
 	);
 }

@@ -1,10 +1,5 @@
 import { formatDateWithTime } from "@repo/dates";
-import {
-	ActivitySubType,
-	type DbActivityPopulated,
-	GearType,
-	type IDbGear,
-} from "@repo/types";
+import { type DbActivityPopulated, GearType, type IDbGear } from "@repo/types";
 import { Clock, Footprints, MapIcon, MapPin, Route } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
@@ -23,11 +18,20 @@ import GearSelector from "./GearSelector.js";
 interface RunningCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
+	showDetailsButton?: boolean;
 }
 
-export function RunningCard({ activity, gears }: RunningCardProps) {
+export function RunningCard({
+	activity,
+	gears,
+	showDetailsButton,
+}: RunningCardProps) {
 	return (
-		<ActivityCardTemplate activity={activity} gears={gears}>
+		<ActivityCardTemplate
+			activity={activity}
+			gears={gears}
+			showDetailsButton={showDetailsButton}
+		>
 			{(context) => <RunningCardBody context={context} gears={gears} />}
 		</ActivityCardTemplate>
 	);
@@ -49,14 +53,10 @@ function RunningCardBody({ context, gears }: RunningBodyProps) {
 	const [locationCountry, setLocationCountry] = useState(
 		activityData.locationCountry || "",
 	);
-	const [selectedSubtype, setSelectedSubtype] = useState<ActivitySubType | "">(
-		(activityData.subtype as ActivitySubType) || "",
-	);
 
 	useEffect(() => {
 		setLocationName(activityData.locationName || "");
 		setLocationCountry(activityData.locationCountry || "");
-		setSelectedSubtype((activityData.subtype as ActivitySubType) || "");
 	}, [activityData]);
 
 	const handleGearSelect = (type: GearType) => async (gearId: string) => {
@@ -104,33 +104,6 @@ function RunningCardBody({ context, gears }: RunningBodyProps) {
 		if (value !== activityData.locationCountry) {
 			void handleEditActivity("locationCountry", value);
 		}
-	};
-
-	const subtypeOptions: (ActivitySubType | "")[] = [
-		"",
-		...Object.values(ActivitySubType),
-	];
-	const hasSubtypeChanged =
-		(selectedSubtype || "") !== (activityData.subtype || "");
-
-	const handleSubtypeUpdate = async () => {
-		if (!hasSubtypeChanged) return;
-		setLocalLoading(true);
-		const payload: { subtype?: ActivitySubType } = {};
-		if (selectedSubtype) payload.subtype = selectedSubtype;
-		const result = await client.editActivity(activityData.id, payload);
-		if (!result.success) {
-			toast.error(result.error, {
-				hideProgressBar: false,
-				closeOnClick: false,
-				transition: Bounce,
-			});
-		} else {
-			await refreshActivity();
-		}
-		setTimeout(() => {
-			setLocalLoading(false);
-		}, 250);
 	};
 
 	const shoeGear = activityData.gears.find(
@@ -204,32 +177,6 @@ function RunningCardBody({ context, gears }: RunningBodyProps) {
 						onSelect={handleGearSelect(GearType.INSOLE)}
 						onRemove={handleGearRemove(GearType.INSOLE)}
 					/>
-				</div>
-			</SectionContainer>
-			<SectionContainer hasBorder className="space-y-3">
-				<div className="text-sm font-medium">Subtype</div>
-				<div className="flex flex-col gap-2 md:flex-row md:items-center">
-					<select
-						className="rounded border border-gray-300 bg-transparent px-3 py-2 text-sm"
-						value={selectedSubtype}
-						onChange={(event) =>
-							setSelectedSubtype(event.target.value as ActivitySubType | "")
-						}
-					>
-						{subtypeOptions.map((option) => (
-							<option key={option || "none"} value={option}>
-								{option || "None"}
-							</option>
-						))}
-					</select>
-					<button
-						type="button"
-						onClick={handleSubtypeUpdate}
-						disabled={!hasSubtypeChanged}
-						className="rounded border border-blue-500 px-4 py-2 text-sm font-medium text-blue-600 disabled:border-gray-300 disabled:text-gray-400"
-					>
-						Apply subtype
-					</button>
 				</div>
 			</SectionContainer>
 		</>

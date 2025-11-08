@@ -194,6 +194,7 @@ export function DataList() {
 							key={activity.id}
 							activity={activity}
 							gears={gears.data}
+							showDetailsButton
 						/>
 					))}
 				</div>

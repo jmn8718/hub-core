@@ -8,3 +8,4 @@ export { Inbody as InbodyPage } from "./Inbody.js";
 export { InbodyAdd as InbodyAddPage } from "./InbodyAdd.js";
 export { InbodyEdit as InbodyEditPage } from "./InbodyEdit.js";
 export { ProvidersPage } from "./Providers.js";
+export { ActivityDetails as ActivityDetailsPage } from "./ActivityDetails.js";

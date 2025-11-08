@@ -61,6 +61,10 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										element={<Pages.AnalyticsPage />}
 									/>
 									<Route
+										path={`${AppRoutes.DETAILS}/:activityId`}
+										element={<Pages.ActivityDetailsPage />}
+									/>
+									<Route
 										path="*"
 										element={<Navigate to={AppRoutes.HOME} replace />}
 									/>

@@ -5,6 +5,7 @@ import {
 	type DbActivityPopulated,
 	type IDbGear,
 } from "@repo/types";
+import { cn } from "@repo/ui";
 import { useEffect, useMemo, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import {
@@ -19,13 +20,22 @@ import { ActivityCardTemplate } from "../ActivityCardTemplate.js";
 interface OtherActivityCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
+	showDetailsButton?: boolean;
 }
 
 const subtypeOptions = ["", ...Object.values(ActivitySubType)];
 
-export function OtherActivityCard({ activity, gears }: OtherActivityCardProps) {
+export function OtherActivityCard({
+	activity,
+	gears,
+	showDetailsButton,
+}: OtherActivityCardProps) {
 	return (
-		<ActivityCardTemplate activity={activity} gears={gears}>
+		<ActivityCardTemplate
+			activity={activity}
+			gears={gears}
+			showDetailsButton={showDetailsButton}
+		>
 			{(context) => <OtherActivityBody activity={activity} context={context} />}
 		</ActivityCardTemplate>
 	);
@@ -108,7 +118,12 @@ function OtherActivityBody({
 	return (
 		<>
 			<SectionContainer hasBorder>
-				<div className="text-sm text-gray-500 dark:text-gray-400">
+				<div
+					className={cn(
+						"text-sm",
+						isDarkMode ? "text-gray-300" : "text-gray-600",
+					)}
+				>
 					{formatDateWithTime(
 						context.activityData.timestamp,
 						context.activityData.timezone,
