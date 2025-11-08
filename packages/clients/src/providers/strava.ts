@@ -224,13 +224,11 @@ export class StravaClient implements Client {
 			}
 		}
 
-		const filteredActivities = (
-			params.lastTimestamp
-				? activities.filter((activity) =>
-						isAfter(activity.start_date, params.lastTimestamp),
-					)
-				: activities
-		).filter((activity) => activity.type.toLowerCase() === "run");
+		const filteredActivities = params.lastTimestamp
+			? activities.filter((activity) =>
+					isAfter(activity.start_date, params.lastTimestamp),
+				)
+			: activities;
 
 		console.log(
 			`${StravaClient.PROVIDER}: ${filteredActivities.length} new activities fetched (${activities.length} total fetched pages: ${page})`,

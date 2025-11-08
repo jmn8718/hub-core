@@ -139,17 +139,15 @@ export function ActivityCardTemplate({
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-4">
 						<ActivityTypeIcon type={activityData.type} />
-						<div className="space-y-2">
-							<EditableText
-								value={activityName}
-								onSave={handleNameChange}
-								className="text-xl font-semibold h-8"
-								placeholder="Enter activity name..."
-							/>
-							{activityData.isEvent === 1 && (
-								<Medal size={16} className="text-yellow-500" />
-							)}
-						</div>
+						{activityData.isEvent === 1 && (
+							<Medal size={16} className="text-yellow-500" />
+						)}
+						<EditableText
+							value={activityName}
+							onSave={handleNameChange}
+							className="text-xl font-semibold h-8"
+							placeholder="Enter activity name..."
+						/>
 					</div>
 					<div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
 						<span>{activityData.manufacturer || "-"}</span>
