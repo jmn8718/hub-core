@@ -1,11 +1,11 @@
 import type { DbActivityPopulated, IDbGearWithDistance } from "@repo/types";
-import { ActivitySubType, ActivityType } from "@repo/types";
-import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { ActivitySubType, ActivityType, Providers } from "@repo/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import { Box } from "../components/Box.js";
 import { SectionContainer } from "../components/SectionContainer.js";
-import { ActivityCard, Text } from "../components/index.js";
+import { ActivityCard } from "../components/index.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useLoading } from "../contexts/LoadingContext.js";
 
@@ -74,16 +74,294 @@ export function ActivityDetails() {
 					reload={loadActivity}
 				/>
 			)}
-			<Box classes="flex flex-col gap-1">
-				<Text text={activity.id} className="font-md" />
-				{activity.connections.map((connection) => (
-					<Text
-						key={connection.id}
-						text={`${connection.provider}: ${connection.id}`}
-					/>
-				))}
-			</Box>
+			<ActivityConnectionsPanel activity={activity} reload={loadActivity} />
+			<EventToggle activity={activity} reload={loadActivity} />
+			<ActivityDeleteSection
+				activity={activity}
+				gears={gears}
+				hasConnections={activity.connections.length > 0}
+			/>
 		</div>
+	);
+}
+
+function ActivityConnectionsPanel({
+	activity,
+	reload,
+}: {
+	activity: DbActivityPopulated;
+	reload: () => Promise<void> | void;
+}) {
+	const { client } = useDataClient();
+	const { setLocalLoading } = useLoading();
+	const [pendingProvider, setPendingProvider] = useState<Providers | null>(
+		null,
+	);
+	const [inputValues, setInputValues] = useState<Record<Providers, string>>({
+		[Providers.GARMIN]: "",
+		[Providers.COROS]: "",
+		[Providers.STRAVA]: "",
+	});
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(() => {
+		setInputValues({
+			[Providers.GARMIN]: "",
+			[Providers.COROS]: "",
+			[Providers.STRAVA]: "",
+		});
+	}, [activity.id]);
+
+	const connectionMap = useMemo(() => {
+		return new Map(
+			activity.connections.map((connection) => [
+				connection.provider,
+				connection.id,
+			]),
+		);
+	}, [activity.connections]);
+
+	const handleUnlink = async (provider: Providers) => {
+		const providerActivityId = connectionMap.get(provider);
+		if (!providerActivityId) return;
+		setPendingProvider(provider);
+		setLocalLoading(true);
+		try {
+			const result = await client.unlinkActivityConnection(
+				activity.id,
+				providerActivityId,
+			);
+			if (!result.success) throw new Error(result.error);
+			await reload();
+			toast.success(`${provider} connection removed`, { transition: Bounce });
+		} catch (err) {
+			toast.error((err as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		} finally {
+			setPendingProvider(null);
+			setTimeout(() => setLocalLoading(false), 200);
+		}
+	};
+
+	const handleLink = async (provider: Providers) => {
+		const providerActivityId = inputValues[provider];
+		if (!providerActivityId) {
+			toast.error("Enter provider activity id", { transition: Bounce });
+			return;
+		}
+		setPendingProvider(provider);
+		setLocalLoading(true);
+		try {
+			const result = await client.linkActivityConnection(
+				activity.id,
+				providerActivityId,
+			);
+			if (!result.success) throw new Error(result.error);
+			await reload();
+			toast.success(`${provider} connection added`, { transition: Bounce });
+			setInputValues((prev) => ({ ...prev, [provider]: "" }));
+		} catch (err) {
+			toast.error((err as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		} finally {
+			setPendingProvider(null);
+			setTimeout(() => setLocalLoading(false), 200);
+		}
+	};
+
+	const providersList = [Providers.GARMIN, Providers.COROS, Providers.STRAVA];
+
+	return (
+		<Box>
+			<p className="text-sm font-semibold">Provider Connections</p>
+			<p className="text-xs text-gray-500">
+				Link this activity to provider entries already imported into the system.
+			</p>
+			<div className="space-y-3">
+				{providersList.map((provider) => {
+					const connectionId = connectionMap.get(provider);
+					const isProcessing = pendingProvider === provider;
+					return (
+						<div
+							key={provider}
+							className="flex flex-col gap-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:flex-row md:items-center md:justify-between"
+						>
+							<div>
+								<p className="text-sm font-semibold">{provider}</p>
+								<p className="text-xs text-gray-500">
+									{connectionId
+										? `Connected to ${connectionId}`
+										: "No provider link set"}
+								</p>
+							</div>
+							{connectionId ? (
+								<button
+									type="button"
+									onClick={() => handleUnlink(provider)}
+									disabled={isProcessing}
+									className="rounded border border-red-500 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400"
+								>
+									{isProcessing ? "Removing..." : "Disconnect"}
+								</button>
+							) : (
+								<div className="flex flex-col gap-2 md:flex-row">
+									<input
+										type="text"
+										value={inputValues[provider]}
+										onChange={(event) =>
+											setInputValues((prev) => ({
+												...prev,
+												[provider]: event.target.value,
+											}))
+										}
+										placeholder="Provider activity id"
+										className="rounded border border-gray-300 px-3 py-1 text-sm"
+									/>
+									<button
+										type="button"
+										onClick={() => handleLink(provider)}
+										disabled={isProcessing}
+										className="rounded border border-blue-500 px-3 py-1 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400"
+									>
+										{isProcessing ? "Linking..." : "Link"}
+									</button>
+								</div>
+							)}
+						</div>
+					);
+				})}
+			</div>
+		</Box>
+	);
+}
+
+function EventToggle({
+	activity,
+	reload,
+}: {
+	activity: DbActivityPopulated;
+	reload: () => Promise<void> | void;
+}) {
+	const { client } = useDataClient();
+	const { setLocalLoading } = useLoading();
+	const [isSaving, setIsSaving] = useState(false);
+	const isRace = activity.isEvent === 1;
+
+	const handleToggle = async () => {
+		setIsSaving(true);
+		setLocalLoading(true);
+		try {
+			const result = await client.editActivity(activity.id, {
+				isEvent: isRace ? 0 : 1,
+			});
+			if (!result.success) {
+				throw new Error(result.error);
+			}
+			await reload();
+			toast.success(`Marked as ${isRace ? "non-race" : "race"}.`, {
+				transition: Bounce,
+			});
+		} catch (err) {
+			toast.error((err as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		} finally {
+			setIsSaving(false);
+			setTimeout(() => setLocalLoading(false), 200);
+		}
+	};
+
+	return (
+		<Box>
+			<div>
+				<p className="text-sm font-semibold">Race Flag</p>
+				<p className="text-xs text-gray-500">
+					Mark this workout as an event you raced.
+				</p>
+			</div>
+			<button
+				type="button"
+				onClick={handleToggle}
+				disabled={isSaving}
+				className={`rounded-full px-4 py-2 text-sm font-medium ${
+					isRace
+						? "bg-rose-600 text-white hover:bg-rose-700"
+						: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+				}`}
+			>
+				{isSaving ? "Saving…" : isRace ? "Unset race" : "Mark as race"}
+			</button>
+		</Box>
+	);
+}
+
+function ActivityDeleteSection({
+	activity,
+	gears,
+	hasConnections,
+}: {
+	activity: DbActivityPopulated;
+	gears: IDbGearWithDistance[];
+	hasConnections: boolean;
+}) {
+	const { client } = useDataClient();
+	const navigate = useNavigate();
+	const { setLocalLoading } = useLoading();
+	const [isDeleting, setIsDeleting] = useState(false);
+	const hasGearConnected = activity.gears.length > 0;
+
+	const handleDelete = async () => {
+		if (hasGearConnected || hasConnections) return;
+		setIsDeleting(true);
+		setLocalLoading(true);
+		try {
+			const result = await client.deleteActivity(activity.id);
+			if (!result.success) {
+				throw new Error(result.error);
+			}
+			toast.success("Activity deleted", { transition: Bounce });
+			navigate("/");
+		} catch (err) {
+			toast.error((err as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		} finally {
+			setIsDeleting(false);
+			setTimeout(() => setLocalLoading(false), 200);
+		}
+	};
+
+	return (
+		<Box>
+			<p className="text-sm font-semibold text-red-600">Danger Zone</p>
+			<p className="text-xs text-gray-500">
+				Remove this activity permanently. This action is not reversible.
+			</p>
+			<button
+				type="button"
+				disabled={hasGearConnected || hasConnections || isDeleting}
+				onClick={handleDelete}
+				className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-gray-300"
+			>
+				{hasGearConnected
+					? "Remove gear before deleting"
+					: hasConnections
+						? "Remove provider links first"
+						: isDeleting
+							? "Deleting..."
+							: "Delete activity"}
+			</button>
+		</Box>
 	);
 }
 

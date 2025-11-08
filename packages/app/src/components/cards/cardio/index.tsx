@@ -27,6 +27,7 @@ export function CardioCard({
 			{(context) => (
 				<CardioCardBody
 					activityData={context.activityData}
+					handleEditActivity={context.handleEditActivity}
 					isSwim={activity.type === ActivityType.SWIM}
 				/>
 			)}
@@ -36,9 +37,11 @@ export function CardioCard({
 
 function CardioCardBody({
 	activityData,
+	handleEditActivity,
 	isSwim,
 }: {
 	activityData: DbActivityPopulated;
+	handleEditActivity: (field: string, value: string) => Promise<void>;
 	isSwim: boolean;
 }) {
 	const [locationName, setLocationName] = useState(
@@ -70,7 +73,12 @@ function CardioCardBody({
 					<MapPin size={16} className="text-gray-500 min-w-4" />
 					<EditableText
 						value={locationName}
-						onSave={() => {}}
+						onSave={(value) => {
+							setLocationName(value);
+							if (value !== activityData.locationName) {
+								void handleEditActivity("locationName", value);
+							}
+						}}
 						className="h-8"
 					/>
 				</div>

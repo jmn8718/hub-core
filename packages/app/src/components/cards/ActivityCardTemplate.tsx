@@ -5,7 +5,7 @@ import {
 	Providers,
 	StorageKeys,
 } from "@repo/types";
-import { Eye, Pencil } from "lucide-react";
+import { Eye, Medal, Pencil } from "lucide-react";
 import {
 	type ReactNode,
 	useCallback,
@@ -146,6 +146,9 @@ export function ActivityCardTemplate({
 								className="text-xl font-semibold h-8"
 								placeholder="Enter activity name..."
 							/>
+							{activityData.isEvent === 1 && (
+								<Medal size={16} className="text-yellow-500" />
+							)}
 						</div>
 					</div>
 					<div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">

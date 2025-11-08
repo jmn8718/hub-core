@@ -62,6 +62,7 @@ export abstract class Client {
 		startDate?: string;
 		endDate?: string;
 		search?: string;
+		isEvent?: 0 | 1;
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
@@ -83,7 +84,18 @@ export abstract class Client {
 			name?: string;
 			type?: ActivityType;
 			subtype?: ActivitySubType;
+			isEvent?: 0 | 1;
 		},
+	): Promise<ProviderSuccessResponse>;
+
+	abstract deleteActivity(activityId: string): Promise<ProviderSuccessResponse>;
+	abstract linkActivityConnection(
+		activityId: string,
+		providerActivityId: string,
+	): Promise<ProviderSuccessResponse>;
+	abstract unlinkActivityConnection(
+		activityId: string,
+		providerActivityId: string,
 	): Promise<ProviderSuccessResponse>;
 
 	abstract getGears(params: {

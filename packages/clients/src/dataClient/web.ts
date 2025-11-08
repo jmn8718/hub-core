@@ -115,6 +115,7 @@ export class WebClient implements Client {
 		startDate?: string;
 		endDate?: string;
 		search?: string;
+		isEvent?: 0 | 1;
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
@@ -162,6 +163,7 @@ export class WebClient implements Client {
 			name?: string;
 			type?: ActivityType;
 			subtype?: ActivitySubType;
+			isEvent?: 0 | 1;
 		},
 	): Promise<ProviderSuccessResponse> {
 		try {
@@ -169,6 +171,48 @@ export class WebClient implements Client {
 			return {
 				success: true,
 			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async deleteActivity(activityId: string): Promise<ProviderSuccessResponse> {
+		try {
+			await this._db.deleteActivity(activityId);
+			return { success: true };
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async linkActivityConnection(
+		activityId: string,
+		providerActivityId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await this._db.linkActivityConnection(activityId, providerActivityId);
+			return { success: true };
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async unlinkActivityConnection(
+		activityId: string,
+		providerActivityId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await this._db.unlinkActivityConnection(activityId, providerActivityId);
+			return { success: true };
 		} catch (err) {
 			return {
 				success: false,

@@ -88,6 +88,7 @@ export class MockClient implements Client {
 		startDate?: string;
 		endDate?: string;
 		search?: string;
+		isEvent?: 0 | 1;
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
@@ -123,6 +124,7 @@ export class MockClient implements Client {
 			name?: string;
 			type?: ActivityType;
 			subtype?: ActivitySubType;
+			isEvent?: 0 | 1;
 		},
 	): Promise<ProviderSuccessResponse> {
 		try {
@@ -168,6 +170,24 @@ export class MockClient implements Client {
 				error: (err as Error).message,
 			};
 		}
+	}
+
+	async deleteActivity(_activityId: string): Promise<ProviderSuccessResponse> {
+		return { success: true };
+	}
+
+	async linkActivityConnection(
+		_activityId: string,
+		_providerActivityId: string,
+	): Promise<ProviderSuccessResponse> {
+		return { success: true };
+	}
+
+	async unlinkActivityConnection(
+		_activityId: string,
+		_providerActivityId: string,
+	): Promise<ProviderSuccessResponse> {
+		return { success: true };
 	}
 
 	async editGear(

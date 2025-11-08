@@ -413,6 +413,7 @@ export class Db {
 		startDate,
 		endDate,
 		search,
+		isEvent,
 	}: {
 		cursor?: string;
 		limit?: number;
@@ -422,6 +423,7 @@ export class Db {
 		startDate?: string;
 		endDate?: string;
 		search?: string;
+		isEvent?: 0 | 1;
 	}): Promise<ActivitiesData> {
 		const connections = this._client.$with("connections").as(
 			this._client
@@ -466,6 +468,7 @@ export class Db {
 				...getTableColumns(activities),
 				connections: connections.connections,
 				gears: groupedGears.gears,
+				isEvent: activities.isEvent,
 			})
 			.from(activities)
 			.leftJoin(connections, eq(activities.id, connections.activityId))
@@ -499,6 +502,9 @@ export class Db {
 					OR lower(${activities.id}) LIKE ${searchTerm}
 				)`,
 			);
+		}
+		if (typeof isEvent === "number") {
+			baseConditions.push(eq(activities.isEvent, isEvent));
 		}
 
 		const baseWhere =
@@ -630,17 +636,53 @@ export class Db {
 		return this._client.update(gears).set(data).where(eq(gears.id, id));
 	}
 
-	editActivity(id: string, data: Record<string, string>) {
+	editActivity(id: string, data: Record<string, string | number | null>) {
 		return this._client
 			.update(activities)
 			.set(data)
 			.where(eq(activities.id, id));
 	}
 
+	deleteActivity(activityId: string) {
+		return this._client.transaction(async (tx) => {
+			await tx
+				.delete(activityGears)
+				.where(eq(activityGears.activityId, activityId));
+			await tx
+				.delete(activitiesConnection)
+				.where(eq(activitiesConnection.activityId, activityId));
+			await tx.delete(activities).where(eq(activities.id, activityId));
+		});
+	}
+
 	async insertActivity({ activity, gears }: IInsertActivityPayload) {
 		let activityId = "";
 		const providerActivity = activity.providerActivity;
 		if (providerActivity) {
+			const providerExists = await this._client
+				.select({ id: providerActivities.id })
+				.from(providerActivities)
+				.where(eq(providerActivities.id, providerActivity.id))
+				.limit(1);
+			if (providerExists[0]) {
+				const existingConnection = await this._client
+					.select({ activityId: activitiesConnection.activityId })
+					.from(activitiesConnection)
+					.where(
+						eq(activitiesConnection.providerActivityId, providerActivity.id),
+					)
+					.limit(1);
+				if (existingConnection[0]?.activityId) {
+					console.log(
+						`${providerActivity.id} provider activity already exists, skipping insert`,
+					);
+					return existingConnection[0].activityId;
+				}
+				console.log(
+					`${providerActivity.id} provider activity exists without connection, skipping insert`,
+				);
+				return providerActivity.id;
+			}
 			// search first by activitiesConnection
 			const dbActivityConnection = await this._client
 				.select()
@@ -913,6 +955,41 @@ export class Db {
 				and(
 					eq(activitiesConnection.activityId, activityId),
 					eq(providerActivities.provider, provider),
+				),
+			);
+	}
+
+	linkActivityConnection(activityId: string, providerActivityId: string) {
+		return this._client.transaction(async (tx) => {
+			const providerActivity = await tx
+				.select({ id: providerActivities.id })
+				.from(providerActivities)
+				.where(eq(providerActivities.id, providerActivityId))
+				.limit(1);
+			if (!providerActivity[0]) {
+				throw new Error("Provider activity not found");
+			}
+			const existing = await tx
+				.select({ activityId: activitiesConnection.activityId })
+				.from(activitiesConnection)
+				.where(eq(activitiesConnection.providerActivityId, providerActivityId))
+				.limit(1);
+			if (existing[0]) {
+				throw new Error("Provider activity already linked");
+			}
+			await tx
+				.insert(activitiesConnection)
+				.values({ activityId, providerActivityId });
+		});
+	}
+
+	unlinkActivityConnection(activityId: string, providerActivityId: string) {
+		return this._client
+			.delete(activitiesConnection)
+			.where(
+				and(
+					eq(activitiesConnection.activityId, activityId),
+					eq(activitiesConnection.providerActivityId, providerActivityId),
 				),
 			);
 	}

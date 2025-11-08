@@ -75,6 +75,7 @@ ipcMain.handle(
 			startDate?: string;
 			endDate?: string;
 			search?: string;
+			isEvent?: 0 | 1;
 		},
 	) => {
 		return db.getActivities(params);
@@ -84,6 +85,13 @@ ipcMain.handle(
 ipcMain.handle(Channels.DB_ACTIVITY, async (_event, activityId: string) => {
 	return db.getActivity(activityId);
 });
+
+ipcMain.handle(
+	Channels.DB_ACTIVITY_DELETE,
+	async (_event, params: { activityId: string }) => {
+		return db.deleteActivity(params.activityId);
+	},
+);
 
 ipcMain.handle(
 	Channels.DB_ACTIVITY_EDIT,
@@ -98,10 +106,37 @@ ipcMain.handle(
 				notes?: string;
 				type?: ActivityType;
 				subtype?: ActivitySubType;
+				isEvent?: 0 | 1;
 			};
 		},
 	) => {
 		return db.editActivity(params.activityId, params.data);
+	},
+);
+
+ipcMain.handle(
+	Channels.DB_ACTIVITY_CONNECTION_LINK,
+	async (
+		_event,
+		params: { activityId: string; providerActivityId: string },
+	) => {
+		return db.linkActivityConnection(
+			params.activityId,
+			params.providerActivityId,
+		);
+	},
+);
+
+ipcMain.handle(
+	Channels.DB_ACTIVITY_CONNECTION_UNLINK,
+	async (
+		_event,
+		params: { activityId: string; providerActivityId: string },
+	) => {
+		return db.unlinkActivityConnection(
+			params.activityId,
+			params.providerActivityId,
+		);
 	},
 );
 

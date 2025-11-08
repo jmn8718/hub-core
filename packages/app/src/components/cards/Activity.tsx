@@ -56,6 +56,15 @@ export function ActivityCard({
 			/>
 		);
 	}
+	if (activity.type === ActivityType.SWIM) {
+		return (
+			<CardioCard
+				activity={activity}
+				gears={gears}
+				showDetailsButton={showDetailsButton}
+			/>
+		);
+	}
 	return (
 		<OtherActivityCard
 			activity={activity}

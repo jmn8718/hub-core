@@ -116,6 +116,7 @@ export class AppClient implements Client {
 		startDate?: string;
 		endDate?: string;
 		search?: string;
+		isEvent?: 0 | 1;
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;
@@ -169,6 +170,7 @@ export class AppClient implements Client {
 			notes?: string;
 			type?: ActivityType;
 			subtype?: ActivitySubType;
+			isEvent?: 0 | 1;
 		},
 	): Promise<ProviderSuccessResponse> {
 		try {
@@ -179,6 +181,56 @@ export class AppClient implements Client {
 			return {
 				success: true,
 			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async deleteActivity(activityId: string): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.DB_ACTIVITY_DELETE, {
+				activityId,
+			});
+			return { success: true };
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async linkActivityConnection(
+		activityId: string,
+		providerActivityId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(
+				Channels.DB_ACTIVITY_CONNECTION_LINK,
+				{ activityId, providerActivityId },
+			);
+			return { success: true };
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async unlinkActivityConnection(
+		activityId: string,
+		providerActivityId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(
+				Channels.DB_ACTIVITY_CONNECTION_UNLINK,
+				{ activityId, providerActivityId },
+			);
+			return { success: true };
 		} catch (err) {
 			return {
 				success: false,

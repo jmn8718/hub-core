@@ -15,6 +15,8 @@ interface ActivityFiltersProps {
 	endDate: string;
 	setStartDate: (value: string) => void;
 	setEndDate: (value: string) => void;
+	isRace: boolean | "ALL";
+	setIsRace: (value: boolean | "ALL") => void;
 	onApplyFilters: () => void;
 }
 
@@ -41,6 +43,8 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 	endDate,
 	setStartDate,
 	setEndDate,
+	isRace,
+	setIsRace,
 	onApplyFilters,
 }) => {
 	const { isDarkMode } = useTheme();
@@ -91,6 +95,24 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 										{value}
 									</option>
 								))}
+							</select>
+						</div>
+						<div className="flex flex-col min-w-[160px]">
+							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
+							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+								Race
+							</label>
+							<select
+								value={isRace === "ALL" ? "ALL" : isRace ? "1" : "0"}
+								onChange={(e) => {
+									const value = e.target.value;
+									setIsRace(value === "ALL" ? "ALL" : value === "1");
+								}}
+								className={inputClasses}
+							>
+								<option value="ALL">All</option>
+								<option value="1">Race</option>
+								<option value="0">Training</option>
 							</select>
 						</div>
 						<div className="flex flex-col gap-2">

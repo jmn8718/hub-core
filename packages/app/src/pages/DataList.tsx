@@ -22,18 +22,21 @@ export function DataList() {
 	const [subtypeFilter, setSubtypeFilter] = useState<ActivitySubType | "">("");
 	const [startDate, setStartDate] = useState("");
 	const [endDate, setEndDate] = useState("");
+	const [isRaceFilter, setIsRaceFilter] = useState<boolean | "ALL">("ALL");
 	const [appliedFilters, setAppliedFilters] = useState<{
 		type: ActivityType | "ALL";
 		subtype: ActivitySubType | "";
 		startDate: string;
 		endDate: string;
 		search: string;
+		isEvent: boolean | "ALL";
 	}>({
 		type: "ALL",
 		subtype: "",
 		startDate: "",
 		endDate: "",
 		search: "",
+		isEvent: "ALL",
 	});
 
 	const [data, setData] = useState<ActivitiesData>({
@@ -87,6 +90,12 @@ export function DataList() {
 				startDate: appliedFilters.startDate || undefined,
 				endDate: appliedFilters.endDate || undefined,
 				search: appliedFilters.search || undefined,
+				isEvent:
+					appliedFilters.isEvent === "ALL"
+						? undefined
+						: appliedFilters.isEvent
+							? 1
+							: 0,
 			});
 			if (result.success) {
 				setData((current) => ({
@@ -160,6 +169,7 @@ export function DataList() {
 			subtype: subtypeFilter,
 			startDate,
 			endDate,
+			isEvent: isRaceFilter,
 			search,
 		});
 	};
@@ -177,6 +187,8 @@ export function DataList() {
 				setStartDate={setStartDate}
 				setEndDate={setEndDate}
 				onApplyFilters={applyFilters}
+				isRace={isRaceFilter}
+				setIsRace={setIsRaceFilter}
 			/>
 
 			{filteredActivities.length === 0 ? (
