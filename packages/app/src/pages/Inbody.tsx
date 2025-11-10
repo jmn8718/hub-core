@@ -39,7 +39,6 @@ export function Inbody() {
 	const [data, setData] = useState<IInbodyData[]>([]);
 
 	const fetchInbodyData = async (isMainLoading: boolean) => {
-		console.log("Fetching inbody data...", isMainLoading);
 		if (isMainLoading) {
 			setGlobalLoading(true);
 		} else {

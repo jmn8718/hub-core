@@ -15,6 +15,7 @@ export function Sidebar({
 		>;
 		href: string;
 		label: string;
+		hideOnWeb?: boolean;
 	}[];
 }) {
 	const { isDarkMode } = useTheme();
@@ -24,13 +25,12 @@ export function Sidebar({
 		<aside
 			className={cn(
 				"fixed left-0 top-0 h-full shadow-lg flex flex-col items-center py-6 transition-colors duration-200",
-				"fixed left-0 top-0 h-full shadow-lg flex flex-col items-center py-6 transition-colors duration-200",
 				isDarkMode ? "bg-gray-800" : "bg-white",
 				type === AppType.DESKTOP ? "w-16" : "w-12",
 			)}
 		>
 			<nav className="flex flex-col items-center space-y-4">
-				{sidebarItems.map(({ icon: Icon, href, label }) => (
+				{sidebarItems.map(({ icon: Icon, href, label, hideOnWeb }) => (
 					<Link
 						key={href}
 						to={href}
@@ -38,6 +38,7 @@ export function Sidebar({
 							"relative group flex items-center justify-center w-8 h-8 rounded-lg",
 							isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-200",
 							type === AppType.DESKTOP ? "w-12 h-12" : "w-8 h-8",
+							type === AppType.WEB && hideOnWeb && "hidden",
 						)}
 					>
 						<Icon

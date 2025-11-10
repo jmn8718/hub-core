@@ -190,11 +190,6 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 					};
 					setCredentials(mergedCredentials);
 					const credentialsValidated = await getValue<boolean>(validatedKey);
-					console.log(
-						"Credentials validated:",
-						credentialsValidated,
-						isCredentialComplete(mergedCredentials),
-					);
 					if (credentialsValidated && isCredentialComplete(mergedCredentials)) {
 						setValidationStatus("success");
 					}
@@ -211,12 +206,6 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 	}, [credentialsKey, getValue, isCredentialComplete, validatedKey]);
 
 	const getValidationButton = () => {
-		console.log(
-			"Validation status:",
-			!hasChanges,
-			validationStatus === "pending",
-			isCredentialComplete(credentials),
-		);
 		const canValidate =
 			!hasChanges &&
 			validationStatus === "pending" &&

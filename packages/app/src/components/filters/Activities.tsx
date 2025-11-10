@@ -32,6 +32,40 @@ const subtypeOptions: (ActivitySubType | "")[] = [
 	...Object.values(ActivitySubType),
 ];
 
+const SelectFilter = ({
+	label,
+	value,
+	onChange,
+	options,
+}: {
+	label: string;
+	value: string;
+	onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+	options: string[];
+}) => {
+	const { isDarkMode } = useTheme();
+
+	const inputClasses = isDarkMode
+		? `${inputBase} bg-gray-700 border-gray-600 text-white`
+		: `${inputBase} bg-white border-gray-300 text-gray-900`;
+
+	return (
+		<div className="flex flex-col gap-2">
+			{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
+			<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+				{label}
+			</label>
+			<select value={value} onChange={onChange} className={inputClasses}>
+				{options.map((opt) => (
+					<option key={opt} value={opt}>
+						{opt || "ALL"}
+					</option>
+				))}
+			</select>
+		</div>
+	);
+};
+
 export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 	search,
 	setSearch,
@@ -56,7 +90,7 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 	return (
 		<div
 			className={cn(
-				"min-w-[240px] flex flex-col p-4 rounded-lg shadow-md flex-wrap gap-4",
+				"flex flex-col p-4 rounded-lg shadow-md flex-wrap gap-4",
 				isDarkMode ? "bg-gray-800" : "bg-white",
 			)}
 		>
@@ -75,67 +109,34 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 					/>
 				</div>
 			</div>
-			<div className="flex flex-row items-center justify-between gap-4 w-full md:items-end md:flex-wrap">
+			<div className="hidden md:flex flex-row items-center justify-between gap-4 w-full md:items-end md:flex-wrap">
 				<div className="flex flex-col md:flex-row gap-4">
-					<div className="flex flex-row gap-4">
-						<div className="flex flex-col gap-2">
-							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-								Type
-							</label>
-							<select
-								value={type}
-								onChange={(e) =>
-									setType(e.target.value as ActivityType | "ALL")
-								}
-								className={inputClasses}
-							>
-								{typeOptions.map((value) => (
-									<option key={value} value={value}>
-										{value}
-									</option>
-								))}
-							</select>
-						</div>
-						<div className="flex flex-col min-w-[160px]">
-							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-								Race
-							</label>
-							<select
-								value={isRace === "ALL" ? "ALL" : isRace ? "1" : "0"}
-								onChange={(e) => {
-									const value = e.target.value;
-									setIsRace(value === "ALL" ? "ALL" : value === "1");
-								}}
-								className={inputClasses}
-							>
-								<option value="ALL">All</option>
-								<option value="1">Race</option>
-								<option value="0">Training</option>
-							</select>
-						</div>
-						<div className="flex flex-col gap-2">
-							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-								Subtype
-							</label>
-							<select
-								value={subtype}
-								onChange={(e) =>
-									setSubtype(e.target.value as ActivitySubType | "")
-								}
-								className={inputClasses}
-							>
-								{subtypeOptions.map((value) => (
-									<option key={value || "NONE"} value={value}>
-										{value || "ALL"}
-									</option>
-								))}
-							</select>
-						</div>
+					<div className="flex flex-col gap-2 md:flex-row md:gap-4">
+						<SelectFilter
+							label="Type"
+							value={type}
+							onChange={(e) => setType(e.target.value as ActivityType | "ALL")}
+							options={typeOptions.map((value) => value)}
+						/>
+						<SelectFilter
+							label="Race"
+							value={isRace === "ALL" ? "ALL" : isRace ? "YES" : "NO"}
+							onChange={(e) => {
+								const value = e.target.value;
+								setIsRace(value === "ALL" ? "ALL" : value === "YES");
+							}}
+							options={["ALL", "YES", "NO"]}
+						/>
+						<SelectFilter
+							label="Subtype"
+							value={subtype}
+							onChange={(e) =>
+								setSubtype(e.target.value as ActivitySubType | "")
+							}
+							options={subtypeOptions.map((value) => value || "NONE")}
+						/>
 					</div>
-					<div className="flex flex-row gap-4">
+					<div className="flex flex-col gap-2 md:flex-row md:gap-4">
 						<div className="flex flex-col gap-2">
 							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
 							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">

@@ -150,7 +150,9 @@ export function ActivityCardTemplate({
 						/>
 					</div>
 					<div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-						<span>{activityData.manufacturer || "-"}</span>
+						<span className="max-sm:hidden">
+							{activityData.manufacturer || "-"}
+						</span>
 						{showDetailsButton && (
 							<button
 								type="button"

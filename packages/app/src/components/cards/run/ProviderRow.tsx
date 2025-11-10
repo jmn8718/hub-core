@@ -177,7 +177,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			>
 				{provider}
 			</span>
-			<div className="flex items-center gap-2">
+			<div className="hidden md:flex items-center gap-2">
 				{hasConnection && isOriginalSource && (
 					<IconButton
 						icon={<Download size={16} />}
