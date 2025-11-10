@@ -1,6 +1,6 @@
 import { ProviderManager } from "@repo/clients";
 import {
-	// type LoginCredentials,
+	type LoginCredentials,
 	Providers,
 	StorageKeys,
 	type StravaCredentials,
@@ -11,32 +11,32 @@ import { storage } from "./storage.js";
 export const manager = new ProviderManager(db, cacheDb);
 
 export const initializeClients = async () => {
-	// const corosCredentials = storage.getValue<LoginCredentials>(
-	// 	StorageKeys.COROS_CREDENTIALS,
-	// );
-	// if (corosCredentials) {
-	// 	try {
-	// 		manager.initializeClient(Providers.COROS);
-	// 		manager.connect(Providers.COROS, corosCredentials);
-	// 	} catch (error) {
-	// 		console.warn("Error initializing Coros client:");
-	// 		console.error(error);
-	// 		storage.setValue(StorageKeys.COROS_VALIDATED, false);
-	// 	}
-	// }
-	// const garminCredentials = storage.getValue<LoginCredentials>(
-	// 	StorageKeys.GARMIN_CREDENTIALS,
-	// );
-	// if (garminCredentials) {
-	// 	try {
-	// 		manager.initializeClient(Providers.GARMIN);
-	// 		manager.connect(Providers.GARMIN, garminCredentials);
-	// 	} catch (error) {
-	// 		console.warn("Error initializing Garmin client:");
-	// 		console.error(error);
-	// 		storage.setValue(StorageKeys.GARMIN_VALIDATED, false);
-	// 	}
-	// }
+	const corosCredentials = storage.getValue<LoginCredentials>(
+		StorageKeys.COROS_CREDENTIALS,
+	);
+	if (corosCredentials) {
+		try {
+			manager.initializeClient(Providers.COROS);
+			manager.connect(Providers.COROS, corosCredentials);
+		} catch (error) {
+			console.warn("Error initializing Coros client:");
+			console.error(error);
+			storage.setValue(StorageKeys.COROS_VALIDATED, false);
+		}
+	}
+	const garminCredentials = storage.getValue<LoginCredentials>(
+		StorageKeys.GARMIN_CREDENTIALS,
+	);
+	if (garminCredentials) {
+		try {
+			manager.initializeClient(Providers.GARMIN);
+			manager.connect(Providers.GARMIN, garminCredentials);
+		} catch (error) {
+			console.warn("Error initializing Garmin client:");
+			console.error(error);
+			storage.setValue(StorageKeys.GARMIN_VALIDATED, false);
+		}
+	}
 	const stravaCredentials = storage.getValue<StravaCredentials>(
 		StorageKeys.STRAVA_CREDENTIALS,
 	);
