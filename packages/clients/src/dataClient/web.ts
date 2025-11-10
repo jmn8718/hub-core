@@ -1,4 +1,4 @@
-import type { Db } from "@repo/db";
+import { Providers, StorageKeys } from "@repo/types";
 import type {
 	ActivitiesData,
 	ActivitySubType,
@@ -13,26 +13,32 @@ import type {
 	IInbodyUpdateInput,
 	IOverviewData,
 	IWeeklyOverviewData,
-	InbodyType,
+	LoginCredentials,
 	ProviderSuccessResponse,
-	Providers,
-	StorageKeys,
 	StravaClientOptions,
+	StravaCredentials,
 	Value,
 } from "@repo/types";
-import type { ProviderManager } from "../providers/ProviderManager.js";
 import type { SupabaseClient } from "../supabase.js";
 import type { Client } from "./Client.js";
 
-export class WebClient implements Client {
-	private _supabase: SupabaseClient;
-	private _db: Db;
-	private _manager: ProviderManager;
+interface WebClientConfig {
+	apiBaseUrl: string;
+	supabase: SupabaseClient;
+}
 
-	constructor(supabase: SupabaseClient, db: Db, manager: ProviderManager) {
+type StoredProviderConfig = {
+	credentials: ConnectCredentials;
+	options?: StravaClientOptions;
+};
+
+export class WebClient implements Client {
+	private readonly _supabase: SupabaseClient;
+	private readonly _apiBaseUrl: string;
+
+	constructor({ apiBaseUrl, supabase }: WebClientConfig) {
 		this._supabase = supabase;
-		this._db = db;
-		this._manager = manager;
+		this._apiBaseUrl = `${apiBaseUrl.replace(/\/$/, "")}/api/client`;
 	}
 
 	async getDataOverview({ limit }: { limit?: number }): Promise<
@@ -40,18 +46,9 @@ export class WebClient implements Client {
 			data: IOverviewData[];
 		}>
 	> {
-		try {
-			const data = await this._db.getActivitiesOverview(limit);
-			return {
-				success: true,
-				data,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute<{ data: IOverviewData[] }>("getDataOverview", {
+			limit,
+		});
 	}
 
 	async getDailyOverview({
@@ -69,23 +66,12 @@ export class WebClient implements Client {
 			data: IDailyOverviewData[];
 		}>
 	> {
-		try {
-			const data = await this._db.getDailyActivitiesOverview({
-				startDate,
-				endDate,
-				periodType,
-				periodCount,
-			});
-			return {
-				success: true,
-				data,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute<{ data: IDailyOverviewData[] }>("getDailyOverview", {
+			startDate,
+			endDate,
+			periodType,
+			periodCount,
+		});
 	}
 
 	async getWeeklyOverview({ limit }: { limit?: number }): Promise<
@@ -93,18 +79,9 @@ export class WebClient implements Client {
 			data: IWeeklyOverviewData[];
 		}>
 	> {
-		try {
-			const data = await this._db.getWeeklyActivitiesOverview(limit);
-			return {
-				success: true,
-				data,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute<{ data: IWeeklyOverviewData[] }>("getWeeklyOverview", {
+			limit,
+		});
 	}
 
 	async getActivities(params: {
@@ -122,18 +99,10 @@ export class WebClient implements Client {
 			data: ActivitiesData;
 		}>
 	> {
-		try {
-			const data = await this._db.getActivities(params);
-			return {
-				success: true,
-				data,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute<{ data: ActivitiesData }>(
+			"getActivities",
+			params ?? {},
+		);
 	}
 
 	async getActivity(activityId: string): Promise<
@@ -141,18 +110,9 @@ export class WebClient implements Client {
 			data?: DbActivityPopulated;
 		}>
 	> {
-		try {
-			const data = await this._db.getActivity(activityId);
-			return {
-				success: true,
-				data,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute<{ data?: DbActivityPopulated }>("getActivity", {
+			activityId,
+		});
 	}
 
 	async editActivity(
@@ -167,59 +127,31 @@ export class WebClient implements Client {
 			isEvent?: 0 | 1;
 		},
 	): Promise<ProviderSuccessResponse> {
-		try {
-			await this._db.editActivity(id, data);
-			return {
-				success: true,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute("editActivity", { id, data });
 	}
 
 	async deleteActivity(activityId: string): Promise<ProviderSuccessResponse> {
-		try {
-			await this._db.deleteActivity(activityId);
-			return { success: true };
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute("deleteActivity", { activityId });
 	}
 
 	async linkActivityConnection(
 		activityId: string,
 		providerActivityId: string,
 	): Promise<ProviderSuccessResponse> {
-		try {
-			await this._db.linkActivityConnection(activityId, providerActivityId);
-			return { success: true };
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute("linkActivityConnection", {
+			activityId,
+			providerActivityId,
+		});
 	}
 
 	async unlinkActivityConnection(
 		activityId: string,
 		providerActivityId: string,
 	): Promise<ProviderSuccessResponse> {
-		try {
-			await this._db.unlinkActivityConnection(activityId, providerActivityId);
-			return { success: true };
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute("unlinkActivityConnection", {
+			activityId,
+			providerActivityId,
+		});
 	}
 
 	async getGears(params: {
@@ -231,18 +163,7 @@ export class WebClient implements Client {
 			data: GearsData;
 		}>
 	> {
-		try {
-			const data = await this._db.getGears(params);
-			return {
-				success: true,
-				data,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute<{ data: GearsData }>("getGears", params ?? {});
 	}
 
 	async getGear(gearId: string): Promise<
@@ -250,18 +171,9 @@ export class WebClient implements Client {
 			data?: IDbGearWithDistance;
 		}>
 	> {
-		try {
-			const data = await this._db.getGear(gearId);
-			return {
-				success: true,
-				data,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute<{ data?: IDbGearWithDistance }>("getGear", {
+			gearId,
+		});
 	}
 
 	async editGear(
@@ -273,110 +185,90 @@ export class WebClient implements Client {
 			maximumDistance?: string;
 		},
 	): Promise<ProviderSuccessResponse> {
-		try {
-			await this._db.editGear(id, data);
-			return {
-				success: true,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute("editGear", { id, data });
 	}
 
 	async getStoreValue<T = Value>(key: StorageKeys): Promise<T | undefined> {
-		const value = localStorage.getItem(key);
-		return value ? (JSON.parse(value) as { value: T }).value : undefined;
+		return this._readStoreValue<T>(key);
 	}
 
 	async setStoreValue(key: StorageKeys, value: Value): Promise<undefined> {
 		localStorage.setItem(key, JSON.stringify({ value }));
+		return undefined;
 	}
 
 	async providerGearLink(
 		activityId: string,
 		gearId: string,
 	): Promise<ProviderSuccessResponse> {
-		try {
-			await this._manager.linkGear({ activityId, gearId });
-			return {
-				success: true,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute("providerGearLink", { activityId, gearId });
 	}
 
 	async providerGearUnlink(
 		activityId: string,
 		gearId: string,
 	): Promise<ProviderSuccessResponse> {
-		try {
-			await this._manager.unlinkGear({ activityId, gearId });
-			return {
-				success: true,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		return this._execute("providerGearUnlink", { activityId, gearId });
 	}
 
 	async providerSyncGear(
 		provider: Providers,
 	): Promise<ProviderSuccessResponse> {
-		try {
-			await this._manager.syncGears(provider);
-			return {
-				success: true,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		const config = this._getStoredProviderConfig(provider);
+		return this._execute("providerSyncGear", {
+			provider,
+			credentials: config?.credentials,
+			options: config?.options,
+		});
 	}
 
 	async providerSync(
 		provider: Providers,
 		force = false,
 	): Promise<ProviderSuccessResponse> {
-		try {
-			await this._manager.sync(provider, force);
-			return {
-				success: true,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		throw new Error("Not supported in the web client");
+		// const config = this._getStoredProviderConfig(provider);
+		// return this._execute("providerSync", {
+		// 	provider,
+		// 	force,
+		// 	credentials: config?.credentials,
+		// 	options: config?.options,
+		// });
 	}
 
 	async providerConnect(
 		provider: Providers,
 		credentials: ConnectCredentials,
+		options?: StravaClientOptions,
 	): Promise<ProviderSuccessResponse> {
-		try {
-			await this._manager.connect(provider, credentials);
-			return {
-				success: true,
-			};
-		} catch (err) {
-			return {
-				success: false,
-				error: (err as Error).message,
-			};
-		}
+		throw new Error("Not supported in the web client");
+		// return this._execute("providerConnect", {
+		// 	provider,
+		// 	credentials,
+		// 	options,
+		// });
+	}
+
+	async getInbodyData(params: {
+		type: string;
+	}): Promise<ProviderSuccessResponse<{ data: IInbodyData[] }>> {
+		return this._execute<{ data: IInbodyData[] }>("getInbodyData", params);
+	}
+
+	async createInbodyData(
+		data: IInbodyCreateInput,
+	): Promise<ProviderSuccessResponse<{ data: IInbodyData }>> {
+		return this._execute<{ data: IInbodyData }>("createInbodyData", {
+			data,
+		});
+	}
+
+	async updateInbodyData(
+		data: IInbodyUpdateInput,
+	): Promise<ProviderSuccessResponse<{ data: IInbodyData }>> {
+		return this._execute<{ data: IInbodyData }>("updateInbodyData", {
+			data,
+		});
 	}
 
 	// on the web, this can not be implemented
@@ -393,6 +285,7 @@ export class WebClient implements Client {
 			throw result.error;
 		}
 	}
+
 	getDebugInfo(): ProviderSuccessResponse<{ data: string[] }> {
 		return {
 			success: true,
@@ -401,73 +294,134 @@ export class WebClient implements Client {
 	}
 
 	async openLink(url: string): Promise<undefined> {
-		throw new Error("Not implemented");
+		window.open(url, "_blank", "noopener,noreferrer");
+		return undefined;
 	}
 
-	existsFile(params: {
+	existsFile(_params: {
 		provider: Providers;
 		activityId: string;
 	}): Promise<ProviderSuccessResponse<{ data: { exists: boolean } }>> {
-		throw new Error("Not implemented");
+		throw new Error("Not implemented in the web client");
 	}
 
-	async uploadActivityFile(params: {
+	async uploadActivityFile(_params: {
 		provider: Providers;
 		providerActivityId: string;
 		target: Providers;
 		downloadPath: string;
 	}): Promise<ProviderSuccessResponse> {
-		throw new Error("Not implemented");
+		throw new Error("Not implemented in the web client");
 	}
 
-	async downloadActivityFile(params: {
+	async downloadActivityFile(_params: {
 		provider: Providers;
 		providerActivityId: string;
 		downloadPath: string;
 	}): Promise<ProviderSuccessResponse> {
-		throw new Error("Not implemented");
+		throw new Error("Not implemented in the web client");
 	}
 
-	async exportActivityManual(params: {
+	async exportActivityManual(_params: {
 		target: Providers;
 		activityId: string;
 	}): Promise<ProviderSuccessResponse> {
-		throw new Error("Not implemented");
+		throw new Error("Not implemented in the web client");
 	}
 
-	public exportActivityObsidian(params: {
+	public exportActivityObsidian(_params: {
 		folderPath: string;
 		fileName: string;
 		content: string;
 		fileFormat: string;
 	}): Promise<ProviderSuccessResponse> {
-		throw new Error("Not implemented");
+		throw new Error("Not implemented in the web client");
 	}
 
-	public async getInbodyData(params: {
-		type: InbodyType;
-	}): Promise<ProviderSuccessResponse<{ data: IInbodyData[] }>> {
-		return {
-			success: true,
-			data: [],
-		};
+	private async _execute<TResponse>(
+		action: string,
+		payload: Record<string, unknown> = {},
+	): Promise<ProviderSuccessResponse<TResponse>> {
+		try {
+			const accessToken = await this._getAccessToken();
+			const response = await fetch(`${this._apiBaseUrl}/${action}`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${accessToken}`,
+				},
+				body: JSON.stringify(payload),
+			});
+			const json = (await response
+				.json()
+				.catch(() => null)) as ProviderSuccessResponse<TResponse> | null;
+			if (!json) {
+				return {
+					success: false,
+					error: "Empty response from server",
+				};
+			}
+			return json;
+		} catch (error) {
+			return {
+				success: false,
+				error: (error as Error).message,
+			};
+		}
 	}
 
-	public async createInbodyData(
-		_data: IInbodyCreateInput,
-	): Promise<ProviderSuccessResponse> {
-		return {
-			success: false,
-			error: "Not implemented",
-		};
+	private async _getAccessToken(): Promise<string> {
+		const { data, error } = await this._supabase.auth.getSession();
+		if (error || !data.session?.access_token) {
+			throw new Error("Missing Supabase session");
+		}
+		return data.session.access_token;
 	}
 
-	public async updateInbodyData(
-		_data: IInbodyUpdateInput,
-	): Promise<ProviderSuccessResponse> {
-		return {
-			success: false,
-			error: "Not implemented",
-		};
+	private _readStoreValue<T>(key: StorageKeys): T | undefined {
+		const raw = localStorage.getItem(key);
+		if (!raw) return undefined;
+		try {
+			return (JSON.parse(raw) as { value: T }).value;
+		} catch {
+			localStorage.removeItem(key);
+		}
+		return undefined;
+	}
+
+	private _getStoredProviderConfig(
+		provider: Providers,
+	): StoredProviderConfig | null {
+		const storageKeyName =
+			`${provider}_CREDENTIALS` as keyof typeof StorageKeys;
+		const storageKey = StorageKeys[storageKeyName];
+		if (!storageKey) return null;
+		const storedValue = this._readStoreValue<unknown>(storageKey);
+		if (!storedValue) return null;
+
+		if (provider === Providers.STRAVA) {
+			const credentials = storedValue as StravaCredentials;
+			if (
+				!credentials?.refreshToken ||
+				!credentials.clientId ||
+				!credentials.clientSecret
+			) {
+				return null;
+			}
+			return {
+				credentials: { refreshToken: credentials.refreshToken },
+				options: {
+					clientId: credentials.clientId,
+					clientSecret: credentials.clientSecret,
+					redirectUri: credentials.redirectUri,
+				},
+			};
+		}
+
+		const credentials = storedValue as LoginCredentials;
+		if (!credentials?.username || !credentials.password) {
+			return null;
+		}
+		return { credentials };
 	}
 }

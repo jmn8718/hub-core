@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 
-import { db } from "@/libs/db.js";
-import { manager } from "@/libs/providers.js";
 import { supabase } from "@/libs/supabase.js";
 import Login from "@/login.js";
 import { App } from "@repo/app";
 import { type SupabaseUserSession, WebClient } from "@repo/clients";
 import { AppType } from "@repo/types";
 
-const client = new WebClient(supabase, db, manager);
+if (!import.meta.env.VITE_API_URL) {
+	throw new Error("Missing VITE_API_URL");
+}
+
+const client = new WebClient({
+	apiBaseUrl: import.meta.env.VITE_API_URL,
+	supabase,
+});
 
 export default function WebApp() {
 	const [userSession, setUserSession] = useState<SupabaseUserSession | null>(

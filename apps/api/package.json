@@ -11,6 +11,11 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.750.0",
+    "@libsql/client": "0.15.15",
+    "@repo/clients": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/dates": "workspace:*",
     "@supabase/auth-helpers-nextjs": "0.10.0",
     "@supabase/supabase-js": "2.48.1",
     "next": "15.1.6",

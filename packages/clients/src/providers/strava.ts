@@ -161,12 +161,10 @@ export class StravaClient implements Client {
 	}
 
 	async connect(params: ApiCredentials): Promise<void> {
-		console.log("Connecting Strava client");
 		if (params.refreshToken !== this._refreshToken) {
 			this._refreshToken = params.refreshToken;
 		}
-		const result = await this.getAccessToken(true);
-		console.log(result);
+		await this.getAccessToken(true);
 	}
 
 	private fetchRunningActivities(
