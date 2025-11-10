@@ -122,7 +122,7 @@ export class StravaClient implements Client {
 		if (
 			!refresh &&
 			this._auth?.expires_at &&
-			isBefore(Date.now(), this._auth.expires_at * 1000 - 60000)
+			isBefore(this._auth.expires_at * 1000 - 60000, Date.now())
 		) {
 			return Promise.resolve(
 				`${this._auth.token_type} ${this._auth.access_token}`,
@@ -218,7 +218,7 @@ export class StravaClient implements Client {
 
 		const filteredActivities = params.lastTimestamp
 			? activities.filter((activity) =>
-					isAfter(activity.start_date, params.lastTimestamp),
+					isAfter(params.lastTimestamp || 0, activity.start_date),
 				)
 			: activities;
 
