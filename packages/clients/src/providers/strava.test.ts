@@ -1,5 +1,5 @@
 import { createTestCacheDb } from "@repo/db/utils";
-import { describe, expect, beforeEach, vi, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { activities, activitiesData } from "../mocks/strava.js";
 import { StravaClient } from "./strava.js";
 
@@ -56,13 +56,12 @@ describe("strava client", () => {
 		});
 	});
 
-	test("connects with refresh token", async () => {
+	test("connects with refresh token", async () =>
 		await expect(
 			client.connect({
 				refreshToken: "123789456",
 			}),
-		).resolves.not.toThrow();
-	});
+		).resolves.not.toThrow());
 
 	test("sync fetches activities", async () => {
 		await client.connect({ refreshToken: "token" });
@@ -72,7 +71,8 @@ describe("strava client", () => {
 
 	test("sync activity fetches detailed record", async () => {
 		await client.connect({ refreshToken: "token" });
-		const result = await client.syncActivity(activities[0].id.toString());
-		expect(result.activity.data.id).toEqual(activities[0].id.toString());
+		const testActivityId = activities[0].id.toString();
+		const result = await client.syncActivity(testActivityId);
+		expect(result.activity.providerActivity?.id).toEqual(testActivityId);
 	});
 });

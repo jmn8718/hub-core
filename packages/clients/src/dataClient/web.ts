@@ -3,7 +3,7 @@ import type {
 	ActivitiesData,
 	ActivitySubType,
 	ActivityType,
-	Credentials,
+	ConnectCredentials,
 	DbActivityPopulated,
 	GearsData,
 	IDailyOverviewData,
@@ -17,6 +17,7 @@ import type {
 	ProviderSuccessResponse,
 	Providers,
 	StorageKeys,
+	StravaClientOptions,
 	Value,
 } from "@repo/types";
 import type { ProviderManager } from "../providers/ProviderManager.js";
@@ -363,7 +364,7 @@ export class WebClient implements Client {
 
 	async providerConnect(
 		provider: Providers,
-		credentials: Credentials,
+		credentials: ConnectCredentials,
 	): Promise<ProviderSuccessResponse> {
 		try {
 			await this._manager.connect(provider, credentials);

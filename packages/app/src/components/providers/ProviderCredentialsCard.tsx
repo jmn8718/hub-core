@@ -1,7 +1,11 @@
+import type { Client } from "@repo/clients";
 import {
-	type Credentials,
+	type ApiCredentials,
+	type LoginCredentials,
+	ProviderSuccessResponse,
 	type Providers,
 	StorageKeys,
+	type StravaCredentials,
 	type Value,
 } from "@repo/types";
 import {
@@ -13,7 +17,7 @@ import {
 	Save,
 	XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { useDataClient, useLoading, useStore } from "../../contexts/index.js";
 import { Box } from "../Box.js";
@@ -25,17 +29,20 @@ import {
 	useProviderSyncActions,
 } from "./useProviderSyncActions.js";
 
-type CredentialRecord = Credentials & Record<string, string>;
+type CredentialRecord = LoginCredentials | StravaCredentials;
 
-interface RenderFieldsProps<T extends CredentialRecord> {
+interface RenderFieldsProps<T> {
 	credentials: T;
 	onChange: <K extends keyof T>(field: K, value: string) => void;
 }
 
-interface ProviderCredentialsCardProps<T extends CredentialRecord> {
+interface ProviderCredentialsCardProps<T> {
 	provider: Providers;
 	initialCredentials: T;
 	emptyCredentials: T;
+	providerConnect: (
+		credentials: T,
+	) => ReturnType<typeof Client.prototype.providerConnect>;
 	renderFields: (props: RenderFieldsProps<T>) => React.ReactNode;
 	isCredentialComplete: (credentials: T) => boolean;
 	labels: {
@@ -66,11 +73,16 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 	renderFields,
 	isCredentialComplete,
 	labels,
+	providerConnect,
 }: ProviderCredentialsCardProps<T>) {
 	const { setLocalLoading, isLocalLoading } = useLoading();
 	const { client } = useDataClient();
 	const { setValue, getValue } = useStore();
-	const [credentials, setCredentials] = useState<T>(initialCredentials);
+	const initialCredentialsRef = useRef(initialCredentials);
+	const emptyCredentialsRef = useRef(emptyCredentials);
+	const [credentials, setCredentials] = useState<T>(
+		initialCredentialsRef.current,
+	);
 	const [hasChanges, setHasChanges] = useState(false);
 	const [validationStatus, setValidationStatus] =
 		useState<ValidationStatus>("pending");
@@ -128,15 +140,15 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 	}, [credentials, saveOnStore]);
 
 	const handleClear = useCallback(() => {
-		saveOnStore(emptyCredentials);
-	}, [emptyCredentials, saveOnStore]);
+		saveOnStore(emptyCredentialsRef.current);
+	}, [saveOnStore]);
 
 	const validateCredentials = useCallback(async () => {
 		if (hasChanges || !isCredentialComplete(credentials)) return;
 		setValidationStatus("validating");
 		setLocalLoading(true);
 		try {
-			const result = await client.providerConnect(provider, credentials);
+			const result = await providerConnect(credentials);
 			if (result.success) {
 				await setValue(validatedKey, true);
 				setValidationStatus("success");
@@ -158,11 +170,10 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 			setLocalLoading(false);
 		}, 200);
 	}, [
-		client,
 		credentials,
 		hasChanges,
 		isCredentialComplete,
-		provider,
+		providerConnect,
 		setLocalLoading,
 		setValue,
 		validatedKey,
@@ -173,9 +184,18 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 			try {
 				const storedCredentials = await getValue<T>(credentialsKey);
 				if (storedCredentials) {
-					setCredentials(storedCredentials);
+					const mergedCredentials = {
+						...initialCredentialsRef.current,
+						...storedCredentials,
+					};
+					setCredentials(mergedCredentials);
 					const credentialsValidated = await getValue<boolean>(validatedKey);
-					if (credentialsValidated) {
+					console.log(
+						"Credentials validated:",
+						credentialsValidated,
+						isCredentialComplete(mergedCredentials),
+					);
+					if (credentialsValidated && isCredentialComplete(mergedCredentials)) {
 						setValidationStatus("success");
 					}
 				}
@@ -188,9 +208,15 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 			}
 		};
 		loadInitialData();
-	}, [credentialsKey, getValue, validatedKey]);
+	}, [credentialsKey, getValue, isCredentialComplete, validatedKey]);
 
 	const getValidationButton = () => {
+		console.log(
+			"Validation status:",
+			!hasChanges,
+			validationStatus === "pending",
+			isCredentialComplete(credentials),
+		);
 		const canValidate =
 			!hasChanges &&
 			validationStatus === "pending" &&

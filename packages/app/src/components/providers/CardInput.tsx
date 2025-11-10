@@ -1,4 +1,5 @@
-import type { Providers } from "@repo/types";
+import type { LoginCredentials, Providers } from "@repo/types";
+import { useDataClient } from "../../contexts/index.js";
 import { InputField } from "./InputField.js";
 import { ProviderCredentialsCard } from "./ProviderCredentialsCard.js";
 
@@ -6,15 +7,27 @@ interface ProviderCardInputProps {
 	provider: Providers.COROS | Providers.GARMIN;
 }
 
+interface UsernamePasswordCredentials {
+	username: string;
+	password: string;
+}
+
+const isCredentialComplete = (credentials: UsernamePasswordCredentials) =>
+	!!credentials.username && !!credentials.password;
+
 export function ProviderCardInput({ provider }: ProviderCardInputProps) {
+	const { client } = useDataClient();
+
+	const providerConnect = (credentials: LoginCredentials) => {
+		return client.providerConnect(provider, credentials);
+	};
 	return (
 		<ProviderCredentialsCard
 			provider={provider}
 			initialCredentials={{ username: "", password: "" }}
 			emptyCredentials={{ username: "", password: "" }}
-			isCredentialComplete={(credentials) =>
-				!!credentials.username && !!credentials.password
-			}
+			providerConnect={providerConnect}
+			isCredentialComplete={isCredentialComplete}
 			labels={{
 				saveTooltip: "Save credentials",
 				clearTooltip: "Clear credentials",

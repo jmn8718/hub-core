@@ -109,8 +109,8 @@ export interface StravaActivity {
 	device_watts?: boolean;
 	kilojoules?: number;
 	has_heartrate: boolean;
-	average_heartrate: number;
-	max_heartrate: number;
+	average_heartrate?: number;
+	max_heartrate?: number;
 	heartrate_opt_out: boolean;
 	display_hide_heartrate_option: boolean;
 	elev_high: number;

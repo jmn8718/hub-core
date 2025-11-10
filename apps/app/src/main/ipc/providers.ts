@@ -1,20 +1,16 @@
 import {
-	type ApiClientCredentials,
 	Channels,
-	type Credentials,
+	type ConnectCredentials,
 	type LoginCredentials,
 	Providers,
+	type StravaClientOptions,
+	type StravaCredentials,
 } from "@repo/types";
 import { ipcMain } from "electron";
 import { manager } from "../client.js";
-import {
-	STRAVA_CLIENT_ID,
-	STRAVA_CLIENT_SECRET,
-	STRAVA_REDIRECT_URI,
-} from "../config.js";
 
 function isLoginCredentials(
-	credentials: Credentials,
+	credentials: ConnectCredentials,
 ): credentials is LoginCredentials {
 	return (
 		typeof (credentials as LoginCredentials).username === "string" &&
@@ -22,18 +18,28 @@ function isLoginCredentials(
 	);
 }
 
-function isApiClientCredentials(
-	credentials: Credentials,
-): credentials is ApiClientCredentials {
-	return typeof (credentials as ApiClientCredentials).refreshToken === "string";
+function isStravaCredentials(
+	credentials: ConnectCredentials,
+): credentials is StravaCredentials {
+	return typeof (credentials as StravaCredentials).refreshToken === "string";
 }
 
-function ensureProviderInitialized(provider: Providers) {
+function ensureProviderInitialized(
+	provider: Providers,
+	credentials?: StravaClientOptions,
+) {
 	if (provider === Providers.STRAVA) {
+		if (!credentials) {
+			throw new Error("Invalid Strava credentials");
+		}
+		const { clientId, clientSecret, redirectUri } = credentials;
+		if (!clientId || !clientSecret) {
+			throw new Error("Missing Strava client ID or client secret");
+		}
 		manager.initializeClient(provider, {
-			clientId: STRAVA_CLIENT_ID,
-			clientSecret: STRAVA_CLIENT_SECRET,
-			redirectUri: STRAVA_REDIRECT_URI,
+			clientId,
+			clientSecret,
+			redirectUri,
 		});
 		return;
 	}
@@ -64,24 +70,32 @@ ipcMain.handle(
 		{
 			provider,
 			credentials,
+			options,
 		}: {
 			provider: Providers;
-			credentials: Credentials;
+			credentials: ConnectCredentials;
+			options?: StravaClientOptions;
 		},
 	) => {
 		// force add a client when we ask to connect
 		// as it might not be added before
-		ensureProviderInitialized(provider);
 		if (provider === Providers.STRAVA) {
-			if (!isApiClientCredentials(credentials)) {
+			if (!isStravaCredentials(credentials)) {
 				throw new Error("Invalid Strava credentials");
 			}
+			if (!options) {
+				throw new Error("Missing Strava client options");
+			}
+			// we can not initialize before as we need the options from credentials
+			// so if strava client is not initialized, it will fail on connect
+			ensureProviderInitialized(provider, options);
 			await manager.connect(provider, credentials);
 			return;
 		}
 		if (!isLoginCredentials(credentials)) {
 			throw new Error("Invalid credentials");
 		}
+		ensureProviderInitialized(provider);
 		await manager.connect(provider, credentials);
 	},
 );

@@ -98,11 +98,21 @@ export interface LoginCredentials {
 	password: string;
 }
 
-export interface ApiClientCredentials {
+// TODO this should be removed and it should use the auth flow of the user and store tokens accordingly
+export interface ApiCredentials {
 	refreshToken: string;
 }
 
-export type Credentials = LoginCredentials | ApiClientCredentials;
+export interface StravaClientOptions {
+	accessToken?: string;
+	clientId: string;
+	clientSecret: string;
+	redirectUri?: string;
+}
+
+export type StravaCredentials = ApiCredentials & StravaClientOptions;
+
+export type ConnectCredentials = LoginCredentials | ApiCredentials;
 
 export interface IInbodyData {
 	id: string;

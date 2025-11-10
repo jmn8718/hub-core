@@ -1,6 +1,8 @@
+import type { StravaActivity } from "@repo/types";
+
 export const gears = [];
 
-export const activitiesData = {
+export const activitiesData: Record<string, StravaActivity> = {
 	"16349844565": {
 		resource_state: 2,
 		athlete: { id: 5533532, resource_state: 1 },

@@ -2,7 +2,7 @@ import type {
 	ActivitiesData,
 	ActivitySubType,
 	ActivityType,
-	Credentials,
+	ConnectCredentials,
 	DbActivityPopulated,
 	GearsData,
 	IDailyOverviewData,
@@ -16,6 +16,7 @@ import type {
 	ProviderSuccessResponse,
 	Providers,
 	StorageKeys,
+	StravaClientOptions,
 	Value,
 } from "@repo/types";
 import type { Client } from "./Client.js";
@@ -252,7 +253,8 @@ export class MockClient implements Client {
 
 	async providerConnect(
 		provider: Providers,
-		credentials: Credentials,
+		credentials: ConnectCredentials,
+		options?: StravaClientOptions,
 	): Promise<ProviderSuccessResponse> {
 		return {
 			success: true,

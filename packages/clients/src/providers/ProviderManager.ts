@@ -1,11 +1,15 @@
 import type { CacheDb, Db } from "@repo/db";
-import { type Credentials, Providers } from "@repo/types";
+import {
+	type ConnectCredentials,
+	Providers,
+	type StravaClientOptions,
+} from "@repo/types";
 import pMap from "p-map";
 import pQueue from "p-queue";
 import type { Client } from "./Client.js";
 import { CorosClient } from "./coros.js";
 import { GarminClient } from "./garmin.js";
-import { StravaClient, type StravaClientOptions } from "./strava.js";
+import { StravaClient } from "./strava.js";
 
 function initializeProviderClient(
 	provider: Providers.COROS | Providers.GARMIN,
@@ -43,6 +47,7 @@ export class ProviderManager {
 	private _db: Db;
 	// @ts-expect-error no need to initialize with undefined
 	private _clients: Record<Providers, Client | undefined> = {};
+	private _stravaConfig?: StravaClientOptions;
 
 	private _cache: CacheDb;
 
@@ -63,20 +68,33 @@ export class ProviderManager {
 		options: StravaClientOptions,
 	): void;
 	public initializeClient(provider: Providers, options?: StravaClientOptions) {
-		if (this._clients[provider]) return;
 		if (provider === Providers.STRAVA) {
+			if (!options) {
+				throw new Error("Strava client requires configuration options");
+			}
+			const hasClient = Boolean(this._clients[provider]);
+			const configChanged =
+				!this._stravaConfig ||
+				this._stravaConfig.clientId !== options.clientId ||
+				this._stravaConfig.clientSecret !== options.clientSecret ||
+				this._stravaConfig.redirectUri !== options.redirectUri ||
+				this._stravaConfig.accessToken !== options.accessToken;
+			if (hasClient && !configChanged) {
+				return;
+			}
 			this._clients[provider] = initializeProviderClient(
 				provider,
 				this._cache,
-				// biome-ignore lint/style/noNonNullAssertion: validated above
-				options!,
+				options,
 			);
+			this._stravaConfig = options;
 			return;
 		}
+		if (this._clients[provider]) return;
 		this._clients[provider] = initializeProviderClient(provider, this._cache);
 	}
 
-	public connect(provider: Providers, credentials: Credentials) {
+	public connect(provider: Providers, credentials: ConnectCredentials) {
 		console.log(`Connecting to provider ${provider}`);
 		const client = this._getProvider(provider);
 		return client.connect(credentials);

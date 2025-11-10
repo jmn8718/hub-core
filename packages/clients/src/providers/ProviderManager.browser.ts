@@ -1,5 +1,5 @@
 import type { Db } from "@repo/db";
-import type { Credentials } from "@repo/types";
+import type { ConnectCredentials } from "@repo/types";
 import type { Providers } from "@repo/types";
 
 /**
@@ -20,7 +20,7 @@ export class ProviderManager {
 		throw new Error("Provider integrations are not available in the browser.");
 	}
 
-	connect(_provider: Providers, _credentials: Credentials) {
+	connect(_provider: Providers, _credentials: ConnectCredentials) {
 		throw new Error("Provider integrations are not available in the browser.");
 	}
 

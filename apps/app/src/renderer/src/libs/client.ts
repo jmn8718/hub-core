@@ -4,7 +4,7 @@ import {
 	type ActivitySubType,
 	type ActivityType,
 	Channels,
-	type Credentials,
+	type ConnectCredentials,
 	type DbActivityPopulated,
 	type GearsData,
 	type IDailyOverviewData,
@@ -18,6 +18,7 @@ import {
 	type ProviderSuccessResponse,
 	type Providers,
 	type StorageKeys,
+	type StravaClientOptions,
 	type Value,
 } from "@repo/types";
 
@@ -406,12 +407,14 @@ export class AppClient implements Client {
 
 	async providerConnect(
 		provider: Providers,
-		credentials: Credentials,
+		credentials: ConnectCredentials,
+		options?: StravaClientOptions,
 	): Promise<ProviderSuccessResponse> {
 		try {
 			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_CONNECT, {
 				provider,
 				credentials,
+				options,
 			});
 			return {
 				success: true,

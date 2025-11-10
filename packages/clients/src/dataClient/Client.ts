@@ -2,7 +2,7 @@ import type {
 	ActivitiesData,
 	ActivitySubType,
 	ActivityType,
-	Credentials,
+	ConnectCredentials,
 	DbActivityPopulated,
 	GearsData,
 	IDailyOverviewData,
@@ -16,6 +16,7 @@ import type {
 	ProviderSuccessResponse,
 	Providers,
 	StorageKeys,
+	StravaClientOptions,
 	Value,
 } from "@repo/types";
 
@@ -145,7 +146,8 @@ export abstract class Client {
 	): Promise<ProviderSuccessResponse>;
 	abstract providerConnect(
 		provider: Providers,
-		credentials: Credentials,
+		credentials: ConnectCredentials,
+		options?: StravaClientOptions,
 	): Promise<ProviderSuccessResponse>;
 
 	abstract getFolder(

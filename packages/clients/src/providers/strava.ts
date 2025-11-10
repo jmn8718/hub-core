@@ -7,12 +7,13 @@ import type {
 import {
 	ActivitySubType,
 	ActivityType,
-	type ApiClientCredentials,
+	type ApiCredentials,
 	type DbActivityPopulated,
 	FileExtensions,
 	type IDbActivity,
 	Providers,
 	type StravaActivity,
+	type StravaClientOptions,
 } from "@repo/types";
 import strava from "strava-v3/index.js";
 import { type Client, generateActivityFilePath } from "./Client.js";
@@ -81,13 +82,6 @@ function mapActivity(activity: StravaActivity): IDbActivity {
 		type,
 		subtype,
 	};
-}
-
-export interface StravaClientOptions {
-	accessToken?: string;
-	clientId: string;
-	clientSecret: string;
-	redirectUri?: string;
 }
 
 export class StravaClient implements Client {
@@ -166,7 +160,7 @@ export class StravaClient implements Client {
 			});
 	}
 
-	async connect(params: ApiClientCredentials): Promise<void> {
+	async connect(params: ApiCredentials): Promise<void> {
 		console.log("Connecting Strava client");
 		if (params.refreshToken !== this._refreshToken) {
 			this._refreshToken = params.refreshToken;
