@@ -34,7 +34,7 @@ import {
 import pMap from "p-map";
 import { uuidv7 } from "uuidv7";
 import type { DbClient } from "./client";
-import { inbody } from "./schemas";
+import { inbody, profiles } from "./schemas";
 import {
 	activities,
 	activitiesConnection,
@@ -1163,5 +1163,70 @@ export class Db {
 		}
 
 		return updated as IInbodyData;
+	}
+
+	getProfileToken(provider: Providers, externalId?: string) {
+		const where = externalId
+			? and(
+					eq(profiles.provider, provider),
+					eq(profiles.externalId, externalId),
+				)
+			: eq(profiles.provider, provider);
+		return this._client
+			.select({
+				accessToken: profiles.accessToken,
+				refreshToken: profiles.refreshToken,
+				expiresAt: profiles.expiresAt,
+				tokenType: profiles.tokenType,
+			})
+			.from(profiles)
+			.where(where)
+			.then((data) => data[0]);
+	}
+
+	async setProfileToken(
+		provider: Providers,
+		tokenData: {
+			accessToken: string;
+			refreshToken: string;
+			expiresAt: number;
+			tokenType: string;
+		},
+		externalId?: string,
+	) {
+		const where = externalId
+			? and(
+					eq(profiles.provider, provider),
+					eq(profiles.externalId, externalId),
+				)
+			: eq(profiles.provider, provider);
+
+		const existing = await this._client
+			.select({ id: profiles.id })
+			.from(profiles)
+			.where(where)
+			.limit(1);
+
+		if (existing[0]) {
+			return this._client
+				.update(profiles)
+				.set({
+					accessToken: tokenData.accessToken,
+					refreshToken: tokenData.refreshToken,
+					expiresAt: tokenData.expiresAt,
+					tokenType: tokenData.tokenType,
+				})
+				.where(where);
+		}
+		const profilesId = uuidv7();
+		return this._client.insert(profiles).values({
+			id: profilesId,
+			provider,
+			externalId: externalId || "",
+			accessToken: tokenData.accessToken,
+			refreshToken: tokenData.refreshToken,
+			expiresAt: tokenData.expiresAt,
+			tokenType: tokenData.tokenType,
+		});
 	}
 }

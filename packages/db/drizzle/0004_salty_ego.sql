@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `provider` text DEFAULT '' NOT NULL;
