@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { dateWithTimezoneToUTC, isBefore } from "@repo/dates";
+import { dateWithTimezoneToUTC } from "@repo/dates";
 import type {
 	CacheDb,
 	Db,
@@ -283,31 +283,20 @@ export class GarminClient extends Base implements Client {
 
 	async sync({
 		id,
-		lastTimestamp,
 	}: {
 		id?: string;
-		lastTimestamp?: number;
 	}): Promise<IInsertActivityPayload[]> {
 		const newActivities = await this.getActivities({
 			size: id ? 3 : 100,
 			lastId: id,
 		});
 		console.log(
-			`${GarminClient.PROVIDER}: ${newActivities.length} new activities from ${lastTimestamp || "now"}`,
+			`${GarminClient.PROVIDER}: ${newActivities.length} new activities from id: ${id}`,
 		);
 		if (newActivities.length === 0 || !newActivities[0]) {
 			return [];
 		}
 
-		if (
-			lastTimestamp &&
-			isBefore(newActivities[0].beginTimestamp, lastTimestamp)
-		) {
-			console.log(
-				`${GarminClient.PROVIDER}: up to date data [${lastTimestamp} | ${new Date(newActivities[0].beginTimestamp).toISOString()}]`,
-			);
-			return [];
-		}
 		const results = await pMap(newActivities, (activity) =>
 			this._queue
 				.add(() => this.syncActivity(activity.activityId.toString()))

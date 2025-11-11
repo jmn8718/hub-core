@@ -1,4 +1,4 @@
-import { createTestCacheDb } from "@repo/db/utils";
+import { createTestCacheDb, createTestDb } from "@repo/db/utils";
 import { describe, expect, test, vi } from "vitest";
 import { activities, activitiesData } from "../mocks/coros.js";
 import { CorosClient } from "./coros.js";
@@ -27,19 +27,31 @@ vi.mock(import("coros-connect"), () => {
 	};
 });
 
+const createContext = async () => {
+	const cache = await createTestCacheDb({
+		clearDb: true,
+	});
+	const db = await createTestDb({
+		clearDb: true,
+	});
+	const client = new CorosClient(db, cache);
+	return { client };
+};
+
 describe("coros client", () => {
-	test("should connect", async () => {
-		const cache = await createTestCacheDb();
-		const client = new CorosClient(cache);
+	test("should sync with coros and fetch all the activities", async () => {
+		const { client } = await createContext();
 		await client.connect({
 			username: "user1",
 			password: "password2",
 		});
 		const data = await client.sync({});
-		expect(data.length).toEqual(2);
-		// biome-ignore lint/complexity/noForEach: <explanation>
-		data.forEach((row) => {
+		expect(data.length).toEqual(activities.length);
+		data.forEach((row, index) => {
 			expect(row).toHaveProperty("activity");
+			expect(row.activity.providerActivity?.id).to.equal(
+				activities[index].labelId.toString(),
+			);
 			expect(row).not.toHaveProperty("gears");
 		});
 	});

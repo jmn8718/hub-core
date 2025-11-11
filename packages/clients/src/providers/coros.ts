@@ -138,7 +138,6 @@ export class CorosClient extends Base implements Client {
 					pageNumber: activities.pageNumber,
 					totalPage: activities.totalPage,
 				});
-				console.debug(CorosClient.PROVIDER, { page, dataLength: data.length });
 				keepFetching = activities.dataList.length === activitiesToFetch;
 				page += 1;
 			} else {
