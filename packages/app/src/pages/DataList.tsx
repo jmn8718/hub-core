@@ -1,4 +1,4 @@
-import { dayjs } from "@repo/dates";
+import { isAfter } from "@repo/dates";
 import type {
 	ActivitiesData,
 	ActivitySubType,
@@ -156,7 +156,7 @@ export function DataList() {
 	}, [data]);
 
 	const applyFilters = () => {
-		if (startDate && endDate && dayjs(startDate).isAfter(dayjs(endDate))) {
+		if (startDate && endDate && isAfter(startDate, endDate)) {
 			toast.error("Start date must be before end date", {
 				hideProgressBar: false,
 				closeOnClick: false,

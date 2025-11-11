@@ -92,7 +92,12 @@ export class StravaClient extends Base implements Client {
 	private readonly _client: typeof strava.default;
 
 	private _refreshToken: string | null = null;
-	private _auth: strava.RefreshTokenResponse | null = null;
+	private _auth: {
+		access_token: string;
+		refresh_token: string;
+		expires_at: number;
+		token_type: string;
+	} | null = null;
 
 	public static PROVIDER = Providers.STRAVA;
 
@@ -115,34 +120,51 @@ export class StravaClient extends Base implements Client {
 		throw new Error("Strava client not implemented yet.");
 	}
 
-	private getAccessToken(refresh = false): Promise<string> {
+	private async getAccessToken(): Promise<string> {
+		console.log("Getting access token for Strava", this._refreshToken);
 		if (!this._refreshToken) {
-			return Promise.reject(new Error("No refresh token available"));
+			const dbToken = await this.getTokenFromDb(this._provider);
+			if (!dbToken) {
+				return Promise.reject(new Error("No refresh token available"));
+			}
+			console.log("Found token in DB", dbToken);
+			this._refreshToken = dbToken.refreshToken;
+			this._auth = {
+				access_token: dbToken.accessToken,
+				refresh_token: dbToken.refreshToken,
+				expires_at: dbToken.expiresAt,
+				token_type: dbToken.tokenType,
+			};
 		}
+
 		if (
-			!refresh &&
 			this._auth?.expires_at &&
-			isBefore(this._auth.expires_at * 1000 - 60000, Date.now())
+			isBefore(new Date(), this._auth.expires_at * 1000 - 60000)
 		) {
-			console.log("---- using cached access token ----");
+			console.log("Using existing access token");
 			return Promise.resolve(
 				`${this._auth.token_type} ${this._auth.access_token}`,
 			);
 		}
-		console.log("---- requesting new access token from refresh token ----");
-		return this._client.oauth
-			.refreshToken(this._refreshToken)
-			.then((response) => {
-				if (!response.access_token) {
-					throw new Error("Failed to refresh Strava access token");
-				}
-				if (response.refresh_token !== this._refreshToken) {
-					this._refreshToken = response.refresh_token;
-				}
-				this._auth = response;
-				return `${response.token_type} ${response.access_token}`;
-			});
+		const newToken = await this._client.oauth.refreshToken(this._refreshToken);
+		console.log("Refreshed access token", newToken);
+		await this.setTokenOnDb(this._provider, {
+			accessToken: newToken.access_token,
+			refreshToken: newToken.refresh_token,
+			expiresAt: newToken.expires_at,
+			tokenType: newToken.token_type,
+		});
+		this._refreshToken = newToken.refresh_token;
+		this._auth = {
+			access_token: newToken.access_token,
+			refresh_token: newToken.refresh_token,
+			expires_at: newToken.expires_at,
+			token_type: newToken.token_type,
+		};
+		await this.getTokenFromDb(this._provider).then(console.debug);
+		return `${this._auth.token_type} ${this._auth.access_token}`;
 	}
+
 	private _request<T>(url: string, options: RequestInit = {}): Promise<T> {
 		return this.getAccessToken()
 			.then((accessToken) =>
@@ -165,8 +187,9 @@ export class StravaClient extends Base implements Client {
 	async connect(params: ApiCredentials): Promise<void> {
 		if (params.refreshToken !== this._refreshToken) {
 			this._refreshToken = params.refreshToken;
+			this._auth = null;
 		}
-		await this.getAccessToken(true);
+		await this.getAccessToken();
 	}
 
 	private fetchRunningActivities(
@@ -220,7 +243,7 @@ export class StravaClient extends Base implements Client {
 
 		const filteredActivities = params.lastTimestamp
 			? activities.filter((activity) =>
-					isAfter(params.lastTimestamp || 0, activity.start_date),
+					isAfter(activity.start_date, params.lastTimestamp || 0),
 				)
 			: activities;
 

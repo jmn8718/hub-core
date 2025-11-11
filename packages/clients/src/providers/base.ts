@@ -14,11 +14,11 @@ export class Base {
 		this._cache = cache;
 	}
 
-	protected getToken(provider: Providers) {
+	protected getTokenFromDb(provider: Providers) {
 		return this._db.getProfileToken(provider);
 	}
 
-	protected setToken(
+	protected setTokenOnDb(
 		provider: Providers,
 		values: {
 			accessToken: string;

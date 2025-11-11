@@ -63,7 +63,7 @@ class StravaClient {
 			userProfile = profile[0];
 		}
 		let userAccessToken = userProfile.accessToken;
-		if (isAfter(new Date(userProfile.expiresAt * 1000), new Date())) {
+		if (isAfter(new Date(), new Date(userProfile.expiresAt * 1000 - 60000))) {
 			const refresh = await this._client.oauth.refreshToken(
 				userProfile.refreshToken,
 			);

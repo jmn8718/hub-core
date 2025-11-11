@@ -301,7 +301,7 @@ export class GarminClient extends Base implements Client {
 
 		if (
 			lastTimestamp &&
-			isBefore(lastTimestamp, newActivities[0].beginTimestamp)
+			isBefore(newActivities[0].beginTimestamp, lastTimestamp)
 		) {
 			console.log(
 				`${GarminClient.PROVIDER}: up to date data [${lastTimestamp} | ${new Date(newActivities[0].beginTimestamp).toISOString()}]`,

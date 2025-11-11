@@ -1181,6 +1181,8 @@ export class Db {
 			})
 			.from(profiles)
 			.where(where)
+			.orderBy(desc(profiles.createdAt))
+			.limit(1)
 			.then((data) => data[0]);
 	}
 
@@ -1205,8 +1207,8 @@ export class Db {
 			.select({ id: profiles.id })
 			.from(profiles)
 			.where(where)
+			.orderBy(desc(profiles.createdAt))
 			.limit(1);
-
 		if (existing[0]) {
 			return this._client
 				.update(profiles)
@@ -1216,7 +1218,7 @@ export class Db {
 					expiresAt: tokenData.expiresAt,
 					tokenType: tokenData.tokenType,
 				})
-				.where(where);
+				.where(eq(profiles.id, existing[0].id));
 		}
 		const profilesId = uuidv7();
 		return this._client.insert(profiles).values({

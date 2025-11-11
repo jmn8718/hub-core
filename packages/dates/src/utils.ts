@@ -10,37 +10,34 @@ dayjs.extend(isSameOrAfter);
 
 export const isBeforeDay = (
 	date: DateParam,
-	referenceDate?: DateParam,
+	referenceDate: DateParam,
 ): boolean => {
-	return dayjs(referenceDate).isBefore(date, "d");
+	return dayjs(date).isBefore(referenceDate, "d");
 };
 
 export const isSameOrBeforeDay = (
 	date: DateParam,
-	referenceDate?: DateParam,
+	referenceDate: DateParam,
 ): boolean => {
-	return dayjs(referenceDate).isSameOrBefore(date, "d");
+	return dayjs(date).isSameOrBefore(referenceDate, "d");
 };
 
 export const isSameOrAfterDay = (
 	date: DateParam,
-	referenceDate?: DateParam,
+	referenceDate: DateParam,
 ): boolean => {
-	return dayjs(referenceDate).isSameOrAfter(date, "d");
+	return dayjs(date).isSameOrAfter(referenceDate, "d");
 };
 
 export const isBefore = (
 	date: DateParam,
-	referenceDate?: DateParam,
+	referenceDate: DateParam,
 ): boolean => {
-	return dayjs(referenceDate).isBefore(date, "s");
+	return dayjs(date).isBefore(referenceDate, "s");
 };
 
-export const isAfter = (
-	date: DateParam,
-	referenceDate?: DateParam,
-): boolean => {
-	return dayjs(referenceDate).isAfter(date, "s");
+export const isAfter = (date: DateParam, referenceDate: DateParam): boolean => {
+	return dayjs(date).isAfter(referenceDate, "s");
 };
 
 export const monthsBefore = (months: number): Date => {
