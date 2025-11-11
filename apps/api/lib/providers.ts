@@ -72,12 +72,15 @@ async function initializeFromEnv() {
 		entries.map(async ([provider, config]) => {
 			try {
 				if (provider === Providers.STRAVA && config.options) {
-					manager.initializeClient(Providers.STRAVA, config.options);
+					manager.initializeClient({
+						provider: Providers.STRAVA,
+						options: config.options,
+					});
 				} else if (
 					provider === Providers.COROS ||
 					provider === Providers.GARMIN
 				) {
-					manager.initializeClient(provider);
+					manager.initializeClient({ provider });
 				}
 				await manager.connect(provider, config.credentials);
 			} catch (error) {

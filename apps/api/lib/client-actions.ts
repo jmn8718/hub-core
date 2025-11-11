@@ -119,15 +119,16 @@ const connectProvider = async ({
 	options?: StravaClientOptions;
 }) => {
 	const envConfig = getEnvProviderConfig(provider);
+	if (provider === Providers.STRAVA) {
+		manager.initializeClient({
+			provider: Providers.STRAVA,
+			options: normalizeStravaOptions(options ?? envConfig?.options),
+		});
+	} else {
+		manager.initializeClient({ provider });
+	}
 	const mergedCredentials = credentials ?? envConfig?.credentials;
 	const safeCredentials = ensureCredentials(mergedCredentials);
-	if (provider === Providers.STRAVA) {
-		const mergedOptions = options ?? envConfig?.options;
-		const normalizedOptions = normalizeStravaOptions(mergedOptions);
-		manager.initializeClient(provider, normalizedOptions);
-	} else {
-		manager.initializeClient(provider);
-	}
 	await manager.connect(provider, safeCredentials);
 };
 

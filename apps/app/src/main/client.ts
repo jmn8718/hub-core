@@ -16,7 +16,7 @@ export const initializeClients = async () => {
 	);
 	if (corosCredentials) {
 		try {
-			manager.initializeClient(Providers.COROS);
+			manager.initializeClient({ provider: Providers.COROS });
 			manager.connect(Providers.COROS, corosCredentials);
 		} catch (error) {
 			console.warn("Error initializing Coros client:");
@@ -29,7 +29,7 @@ export const initializeClients = async () => {
 	);
 	if (garminCredentials) {
 		try {
-			manager.initializeClient(Providers.GARMIN);
+			manager.initializeClient({ provider: Providers.GARMIN });
 			manager.connect(Providers.GARMIN, garminCredentials);
 		} catch (error) {
 			console.warn("Error initializing Garmin client:");
@@ -47,10 +47,13 @@ export const initializeClients = async () => {
 		stravaCredentials?.refreshToken
 	) {
 		try {
-			manager.initializeClient(Providers.STRAVA, {
-				clientId: stravaCredentials.clientId,
-				clientSecret: stravaCredentials.clientSecret,
-				redirectUri: stravaCredentials.redirectUri || "",
+			manager.initializeClient({
+				provider: Providers.STRAVA,
+				options: {
+					clientId: stravaCredentials.clientId,
+					clientSecret: stravaCredentials.clientSecret,
+					redirectUri: stravaCredentials.redirectUri || "",
+				},
 			});
 			await manager.connect(Providers.STRAVA, {
 				refreshToken: stravaCredentials.refreshToken,

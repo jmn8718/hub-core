@@ -17,8 +17,18 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const { provider: providerId } = await params;
-	await provider.sync(providerId);
-
-	return NextResponse.json({ success: true });
+	try {
+		const { provider: providerId } = await params;
+		await provider.sync(providerId);
+		return NextResponse.json({ success: true });
+	} catch (error) {
+		console.error(error);
+		return NextResponse.json(
+			{
+				success: false,
+				error: (error as Error).message,
+			},
+			{ status: 500 },
+		);
+	}
 }

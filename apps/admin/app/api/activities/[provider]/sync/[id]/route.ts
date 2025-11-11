@@ -17,11 +17,21 @@ export async function GET(
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const { provider: providerId, id: activityId } = await params;
-	const result = await provider.syncActivity(providerId, activityId);
-
-	if (result) {
-		return NextResponse.json({ success: true, id: result });
+	try {
+		const { provider: providerId, id: activityId } = await params;
+		const result = await provider.syncActivity(providerId, activityId);
+		if (result) {
+			return NextResponse.json({ success: true, id: result });
+		}
+		return NextResponse.json({ success: false });
+	} catch (error) {
+		console.error(error);
+		return NextResponse.json(
+			{
+				success: false,
+				error: (error as Error).message,
+			},
+			{ status: 500 },
+		);
 	}
-	return NextResponse.json({ success: false });
 }

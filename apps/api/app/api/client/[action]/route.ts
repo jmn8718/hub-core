@@ -38,7 +38,7 @@ export async function POST(
 				success: false,
 				error: (error as Error).message,
 			},
-			{ status: 400 },
+			{ status: 500 },
 		);
 	}
 }
