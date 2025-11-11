@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { dateWithTimezoneToUTC, isBefore } from "@repo/dates";
 import type {
 	CacheDb,
+	Db,
 	IInsertActivityPayload,
 	IInsertGearPayload,
 } from "@repo/db";
@@ -26,6 +27,7 @@ import {
 import pMap from "p-map";
 import pQueue from "p-queue";
 import { type Client, generateActivityFilePath } from "./Client.js";
+import { Base } from "./base.js";
 
 function mapActivityType(type: ActivityType) {
 	if (type === ActivityType.RUN) return "running";
@@ -121,7 +123,7 @@ function mapGear(gear: Gear): IInsertGearPayload {
 	};
 }
 
-export class GarminClient implements Client {
+export class GarminClient extends Base implements Client {
 	private readonly _provider = Providers.GARMIN;
 
 	private _client: GarminConnect;
@@ -138,15 +140,13 @@ export class GarminClient implements Client {
 
 	private _queue = new pQueue({ concurrency: 4 });
 
-	private _cache: CacheDb;
-
-	constructor(cache: CacheDb) {
+	constructor(db: Db, cache: CacheDb) {
+		super(db, cache);
 		this._client = new GarminConnect({
 			username: "",
 			password: "",
 		});
 		this._signedIn = false;
-		this._cache = cache;
 	}
 
 	async connect({ username, password }: LoginCredentials) {

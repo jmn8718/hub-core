@@ -1,6 +1,7 @@
 import { dayjs } from "@repo/dates";
 import type {
 	CacheDb,
+	Db,
 	IInsertActivityPayload,
 	IInsertGearPayload,
 } from "@repo/db";
@@ -16,6 +17,7 @@ import { type ActivityData, CorosApi, downloadFile } from "coros-connect";
 import pMap from "p-map";
 import pQueue from "p-queue";
 import { type Client, generateActivityFilePath } from "./Client.js";
+import { Base } from "./base.js";
 
 function mapActivityDetails(activity: ActivityData, id: string): IDbActivity {
 	return {
@@ -40,7 +42,7 @@ function mapActivityDetails(activity: ActivityData, id: string): IDbActivity {
 	};
 }
 
-export class CorosClient implements Client {
+export class CorosClient extends Base implements Client {
 	private readonly _provider = Providers.COROS;
 
 	private _client: CorosApi;
@@ -57,15 +59,13 @@ export class CorosClient implements Client {
 
 	private _queue = new pQueue({ concurrency: 3 });
 
-	private _cache: CacheDb;
-
-	constructor(cache: CacheDb) {
+	constructor(db: Db, cache: CacheDb) {
+		super(db, cache);
 		this._client = new CorosApi({
 			email: "",
 			password: "",
 		});
 		this._signedIn = false;
-		this._cache = cache;
 	}
 
 	async connect({ username, password }: LoginCredentials) {

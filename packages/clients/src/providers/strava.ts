@@ -1,6 +1,7 @@
 import { isAfter, isBefore } from "@repo/dates";
 import type {
 	CacheDb,
+	Db,
 	IInsertActivityPayload,
 	IInsertGearPayload,
 } from "@repo/db";
@@ -17,6 +18,7 @@ import {
 } from "@repo/types";
 import strava from "strava-v3/index.js";
 import { type Client, generateActivityFilePath } from "./Client.js";
+import { Base } from "./base.js";
 
 const API_URL = "https://www.strava.com/api/v3";
 
@@ -84,7 +86,7 @@ function mapActivity(activity: StravaActivity): IDbActivity {
 	};
 }
 
-export class StravaClient implements Client {
+export class StravaClient extends Base implements Client {
 	private readonly _provider = Providers.STRAVA;
 
 	private readonly _client: typeof strava.default;
@@ -92,14 +94,12 @@ export class StravaClient implements Client {
 	private _refreshToken: string | null = null;
 	private _auth: strava.RefreshTokenResponse | null = null;
 
-	private readonly _cache: CacheDb;
-
 	public static PROVIDER = Providers.STRAVA;
 
 	public static EXTENSION = FileExtensions.FIT;
 
-	constructor(cache: CacheDb, config: StravaClientOptions) {
-		this._cache = cache;
+	constructor(db: Db, cache: CacheDb, config: StravaClientOptions) {
+		super(db, cache);
 		// @ts-expect-error type issue with strava-v3
 		// it says strava is a namespace but it is actually an object
 		this._client = strava;
@@ -124,10 +124,12 @@ export class StravaClient implements Client {
 			this._auth?.expires_at &&
 			isBefore(this._auth.expires_at * 1000 - 60000, Date.now())
 		) {
+			console.log("---- using cached access token ----");
 			return Promise.resolve(
 				`${this._auth.token_type} ${this._auth.access_token}`,
 			);
 		}
+		console.log("---- requesting new access token from refresh token ----");
 		return this._client.oauth
 			.refreshToken(this._refreshToken)
 			.then((response) => {

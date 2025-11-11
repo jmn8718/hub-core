@@ -11,45 +11,45 @@ import { CorosClient } from "./coros.js";
 import { GarminClient } from "./garmin.js";
 import { StravaClient } from "./strava.js";
 
-function initializeProviderClient(
-	provider: Providers.COROS | Providers.GARMIN,
-	cache: CacheDb,
-): Client;
+type ProviderOptions =
+	| {
+			provider: Providers.COROS | Providers.GARMIN;
+	  }
+	| {
+			provider: Providers.STRAVA;
+			options: StravaClientOptions;
+	  };
 
 function initializeProviderClient(
-	provider: Providers.STRAVA,
+	db: Db,
 	cache: CacheDb,
-	options: StravaClientOptions,
-): Client;
-
-function initializeProviderClient(
-	provider: Providers,
-	cache: CacheDb,
-	options?: StravaClientOptions,
+	providerOptions: ProviderOptions,
 ): Client {
-	if (provider === Providers.COROS) {
-		return new CorosClient(cache);
+	if (providerOptions.provider === Providers.COROS) {
+		return new CorosClient(db, cache);
 	}
-	if (provider === Providers.GARMIN) {
-		return new GarminClient(cache);
+	if (providerOptions.provider === Providers.GARMIN) {
+		return new GarminClient(db, cache);
 	}
-	if (provider === Providers.STRAVA) {
-		if (!options) {
+	if (providerOptions.provider === Providers.STRAVA) {
+		if (!providerOptions.options) {
 			throw new Error("Strava client requires configuration options");
 		}
-		return new StravaClient(cache, options);
+		return new StravaClient(db, cache, providerOptions.options);
 	}
-	throw new Error("Invalid client");
+	throw new Error(`Unsupported provider: ${providerOptions.provider}`);
 }
 
 export class ProviderManager {
 	private _queue = new pQueue({ concurrency: 1 });
 	private _db: Db;
-	// @ts-expect-error no need to initialize with undefined
-	private _clients: Record<Providers, Client | undefined> = {};
-	private _stravaConfig?: StravaClientOptions;
-
 	private _cache: CacheDb;
+
+	private _clients: Record<Providers, Client | undefined> = {
+		[Providers.COROS]: undefined,
+		[Providers.GARMIN]: undefined,
+		[Providers.STRAVA]: undefined,
+	};
 
 	constructor(db: Db, cache: CacheDb) {
 		this._db = db;
@@ -62,36 +62,12 @@ export class ProviderManager {
 		return this._clients[provider];
 	}
 
-	public initializeClient(provider: Providers.COROS | Providers.GARMIN): void;
-	public initializeClient(
-		provider: Providers.STRAVA,
-		options: StravaClientOptions,
-	): void;
-	public initializeClient(provider: Providers, options?: StravaClientOptions) {
-		if (provider === Providers.STRAVA) {
-			if (!options) {
-				throw new Error("Strava client requires configuration options");
-			}
-			const hasClient = Boolean(this._clients[provider]);
-			const configChanged =
-				!this._stravaConfig ||
-				this._stravaConfig.clientId !== options.clientId ||
-				this._stravaConfig.clientSecret !== options.clientSecret ||
-				this._stravaConfig.redirectUri !== options.redirectUri ||
-				this._stravaConfig.accessToken !== options.accessToken;
-			if (hasClient && !configChanged) {
-				return;
-			}
-			this._clients[provider] = initializeProviderClient(
-				provider,
-				this._cache,
-				options,
-			);
-			this._stravaConfig = options;
-			return;
-		}
-		if (this._clients[provider]) return;
-		this._clients[provider] = initializeProviderClient(provider, this._cache);
+	public initializeClient(options: ProviderOptions) {
+		this._clients[options.provider] = initializeProviderClient(
+			this._db,
+			this._cache,
+			options,
+		);
 	}
 
 	public connect(provider: Providers, credentials: ConnectCredentials) {
