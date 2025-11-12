@@ -49,12 +49,8 @@ export class CacheDb {
 				),
 			)
 			.execute()
-			.then((result) => {
-				console.debug(result);
-				console.log(
-					`Deleted ${result.rowsAffected} cache records for ${provider} ${resource} ${resourceId}`,
-				);
-				return this._client
+			.then(() =>
+				this._client
 					.insert(cacheRecords)
 					.values({
 						id: uuidv7(),
@@ -63,7 +59,7 @@ export class CacheDb {
 						resourceId: resourceId,
 						value: JSON.stringify(value),
 					})
-					.execute();
-			});
+					.execute(),
+			);
 	}
 }

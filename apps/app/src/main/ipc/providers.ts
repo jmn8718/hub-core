@@ -36,15 +36,18 @@ function ensureProviderInitialized(
 		if (!clientId || !clientSecret) {
 			throw new Error("Missing Strava client ID or client secret");
 		}
-		manager.initializeClient(provider, {
-			clientId,
-			clientSecret,
-			redirectUri,
+		manager.initializeClient({
+			provider,
+			options: {
+				clientId,
+				clientSecret,
+				redirectUri,
+			},
 		});
 		return;
 	}
 
-	manager.initializeClient(provider);
+	manager.initializeClient({ provider });
 }
 
 ipcMain.handle(

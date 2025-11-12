@@ -121,33 +121,31 @@ export class StravaClient extends Base implements Client {
 	}
 
 	private async getAccessToken(): Promise<string> {
-		console.log("Getting access token for Strava", this._refreshToken);
-		if (!this._refreshToken) {
+		// if we do not have auth object, try to get it from the db
+		if (!this._refreshToken || !this._auth) {
 			const dbToken = await this.getTokenFromDb(this._provider);
-			if (!dbToken) {
-				return Promise.reject(new Error("No refresh token available"));
+			if (dbToken) {
+				this._refreshToken = dbToken.refreshToken;
+				this._auth = {
+					access_token: dbToken.accessToken,
+					refresh_token: dbToken.refreshToken,
+					expires_at: dbToken.expiresAt,
+					token_type: dbToken.tokenType,
+				};
 			}
-			console.log("Found token in DB", dbToken);
-			this._refreshToken = dbToken.refreshToken;
-			this._auth = {
-				access_token: dbToken.accessToken,
-				refresh_token: dbToken.refreshToken,
-				expires_at: dbToken.expiresAt,
-				token_type: dbToken.tokenType,
-			};
 		}
-
+		if (!this._refreshToken) {
+			return Promise.reject(new Error("No refresh token available"));
+		}
 		if (
 			this._auth?.expires_at &&
 			isBefore(new Date(), this._auth.expires_at * 1000 - 60000)
 		) {
-			console.log("Using existing access token");
 			return Promise.resolve(
 				`${this._auth.token_type} ${this._auth.access_token}`,
 			);
 		}
 		const newToken = await this._client.oauth.refreshToken(this._refreshToken);
-		console.log("Refreshed access token", newToken);
 		await this.setTokenOnDb(this._provider, {
 			accessToken: newToken.access_token,
 			refreshToken: newToken.refresh_token,

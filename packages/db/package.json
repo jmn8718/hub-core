@@ -22,7 +22,7 @@
     "db:seed:import": "tsx src/seed/import.ts",
     "db:seed:health": "tsx src/seed/health.ts",
     "db:seed:clear": "tsx src/seed/clear.ts",
-    "db:scripts:migrations": "tsx src/scripts/db.ts",
+    "db:scripts:db": "tsx src/scripts/db.ts",
     "db:scripts:webhooks": "tsx src/scripts/webhooks.ts",
     "test": "vitest"
   },
