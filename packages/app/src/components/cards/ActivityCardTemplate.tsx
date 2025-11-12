@@ -26,8 +26,8 @@ import ActivityTypeIcon from "../ActivityTypeIcon.js";
 import { Box } from "../Box.js";
 import { SectionContainer } from "../SectionContainer.js";
 import { EditableText } from "../forms/EditableText.js";
-import ObsidianRow from "./run/ObsidianRow.js";
-import ProviderRow from "./run/ProviderRow.js";
+import ObsidianRow from "./ObsidianRow.js";
+import ProviderRow from "./ProviderRow.js";
 
 export interface ActivityCardTemplateRenderProps {
 	activityData: DbActivityPopulated;

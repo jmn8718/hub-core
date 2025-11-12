@@ -30,9 +30,9 @@ const GearSelector: React.FC<GearSelectorProps> = ({
 		.filter(
 			(gear) =>
 				(gear.dateBegin
-					? isSameOrAfterDay(gear.dateBegin, activityDate)
+					? isSameOrAfterDay(activityDate, gear.dateBegin)
 					: true) &&
-				(gear.dateEnd ? isSameOrBeforeDay(gear.dateEnd, activityDate) : true),
+				(gear.dateEnd ? isSameOrBeforeDay(activityDate, gear.dateEnd) : true),
 		);
 
 	const selectedGear = useMemo(() => {

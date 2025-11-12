@@ -9,11 +9,11 @@ import {
 import { NotebookPen } from "lucide-react";
 import { useState } from "react";
 import { Bounce, toast } from "react-toastify";
-import { useLoading } from "../../../contexts/LoadingContext.js";
-import { useDataClient, useStore } from "../../../contexts/index.js";
-import { formatDistance, formatDuration } from "../../../utils/formatters.js";
-import { generateExternalLink } from "../../../utils/providers.js";
-import IconButton from "../../IconButton.js";
+import { useLoading } from "../../contexts/LoadingContext.js";
+import { useDataClient, useStore } from "../../contexts/index.js";
+import { formatDistance, formatDuration } from "../../utils/formatters.js";
+import { generateExternalLink } from "../../utils/providers.js";
+import IconButton from "../IconButton.js";
 
 interface ObsidianRowProps {
 	data: DbActivityPopulated;
@@ -34,7 +34,7 @@ const prepareObsidianFile = (data: DbActivityPopulated, gears: IDbGear[]) => {
 		data.type === ActivityType.RUN ? `insole: ${insole?.code ?? ""}` : "",
 		data.subtype ? `type: ${data.subtype}` : "",
 		"tags:",
-		`  - ${data.type}`,
+		`  - ${data.type === ActivityType.RUN ? "running" : data.type.toLowerCase()}`,
 		`  - ${data.locationName.toLowerCase() || "cheongra"}`,
 		`  - ${data.locationCountry.toLowerCase() || "korea"}`,
 		"---",
@@ -89,6 +89,8 @@ const ObsidianRow: React.FC<ObsidianRowProps> = ({ data, gears }) => {
 		setLocalLoading(false);
 	};
 
+	// at the moment only running activities are supported
+	if (data.type !== ActivityType.RUN) return null;
 	return (
 		<IconButton
 			icon={<NotebookPen size={16} />}

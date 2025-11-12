@@ -9,11 +9,11 @@ import {
 } from "lucide-react";
 import { type FC, useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
-import { useDataClient } from "../../../contexts/DataClientContext.js";
-import { useLoading } from "../../../contexts/LoadingContext.js";
-import { useStore } from "../../../contexts/StoreContext.js";
-import { generateExternalLink } from "../../../utils/providers.js";
-import IconButton from "../../IconButton.js";
+import { useDataClient } from "../../contexts/DataClientContext.js";
+import { useLoading } from "../../contexts/LoadingContext.js";
+import { useStore } from "../../contexts/StoreContext.js";
+import { generateExternalLink } from "../../utils/providers.js";
+import IconButton from "../IconButton.js";
 
 interface ProviderRowProps {
 	hasConnection: boolean;
