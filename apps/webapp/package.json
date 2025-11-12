@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "rimraf .turbo node_modules build dist",
     "dev": "vite --port 3002",
-    "x-build": "tsc && vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "check-types": "tsc --noEmit"
   },
