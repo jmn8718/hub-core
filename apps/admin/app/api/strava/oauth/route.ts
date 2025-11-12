@@ -1,6 +1,7 @@
 import db from "@/lib/db";
-import strava from "@/lib/strava";
+import StravaClient from "@/lib/strava";
 import { eq, profiles } from "@repo/db";
+import { Providers } from "@repo/types";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
@@ -13,9 +14,10 @@ export async function POST(req: NextRequest) {
 	if (!session) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
+	const stravaClient = new StravaClient(db);
 
 	const { code } = await req.json();
-	const token = await strava.client.oauth.getToken(code);
+	const token = await stravaClient.client.oauth.getToken(code);
 	const users = await db
 		.select({ id: profiles.id })
 		.from(profiles)
@@ -38,6 +40,7 @@ export async function POST(req: NextRequest) {
 			expiresAt: token.expires_at,
 			refreshToken: token.refresh_token,
 			accessToken: token.access_token,
+			provider: Providers.STRAVA,
 		});
 	}
 	return NextResponse.json({
@@ -54,8 +57,9 @@ export async function GET(req: NextRequest) {
 	if (!session) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
+	const stravaClient = new StravaClient(db);
 
-	const url = await strava.client.oauth.getRequestAccessURL({
+	const url = await stravaClient.client.oauth.getRequestAccessURL({
 		scope: "activity:read_all,profile:read_all",
 	});
 
