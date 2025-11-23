@@ -785,7 +785,6 @@ export class Db {
 				}
 			});
 		}
-		console.log(gears);
 		if (gears && gears.length > 0) {
 			await pMap(
 				gears,

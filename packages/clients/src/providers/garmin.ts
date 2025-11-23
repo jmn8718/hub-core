@@ -252,6 +252,7 @@ export class GarminClient extends Base implements Client {
 	public async syncActivity(
 		activityId: string,
 	): Promise<IInsertActivityPayload> {
+		console.log(`${GarminClient.PROVIDER}: syncing activity ${activityId}`);
 		const activity = await this.getActivity(activityId);
 		if (!activity) {
 			throw new Error(`Missing activity ${activityId}`);

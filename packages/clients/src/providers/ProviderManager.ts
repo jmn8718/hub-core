@@ -1,4 +1,4 @@
-import type { CacheDb, Db } from "@repo/db";
+import type { CacheDb, Db, IInsertActivityPayload } from "@repo/db";
 import {
 	type ConnectCredentials,
 	Providers,
@@ -86,6 +86,16 @@ export class ProviderManager {
 		});
 	}
 
+	private insertInDatabase(payload: IInsertActivityPayload) {
+		return this._queue
+			.add(() => this._db.insertActivity(payload))
+			.catch((err) => {
+				console.error(err);
+				console.debug(payload);
+				console.error(err);
+			});
+	}
+
 	public sync(provider: Providers, force = false) {
 		const client = this._getProvider(provider);
 		return (
@@ -99,29 +109,12 @@ export class ProviderManager {
 								lastTimestamp: lastDbProviderActivity?.timestamp,
 							}),
 						)
-		).then((activities) => {
-			if (activities.length === 0) return [];
-			return pMap(activities, (activityPayload) =>
-				this._queue
-					.add(() => this._db.insertActivity(activityPayload))
-					.catch((err) => {
-						console.error(err);
-						console.debug(activityPayload);
-						console.warn(
-							`error on ${activityPayload.activity?.providerActivity?.id}`,
-						);
-						console.error(err);
-					}),
-			);
-		});
+		).then((activities) => pMap(activities, this.insertInDatabase));
 	}
 
 	public syncActivity(provider: Providers, activityId: string) {
 		const client = this._getProvider(provider);
-		return client.syncActivity(activityId).then((activityPayload) => {
-			if (!activityPayload) return;
-			return this._db.insertActivity(activityPayload);
-		});
+		return client.syncActivity(activityId).then(this.insertInDatabase);
 	}
 
 	public linkGear({
@@ -224,7 +217,7 @@ export class ProviderManager {
 		const targetClient = this._getProvider(params.target);
 		return targetClient
 			.uploadActivity(filePath)
-			.then((activityId) => targetClient.syncActivity(activityId));
+			.then((activityId) => this.syncActivity(params.target, activityId));
 	}
 
 	public downloadActivityFile(params: {
@@ -258,7 +251,7 @@ export class ProviderManager {
 
 				return client.createManualActivity(activity);
 			})
-			.then((newActivityId) => client.syncActivity(newActivityId));
+			.then((newActivityId) => this.syncActivity(params.target, newActivityId));
 	}
 
 	public gearStatusUpdate(params: {
