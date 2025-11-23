@@ -23,6 +23,8 @@
     "db:seed:health": "tsx src/seed/health.ts",
     "db:seed:clear": "tsx src/seed/clear.ts",
     "db:scripts:db": "tsx src/scripts/db.ts",
+    "db:scripts:gears": "tsx src/scripts/gears.ts",
+    "db:scripts:inbody": "tsx src/scripts/inbody.ts",
     "db:scripts:webhooks": "tsx src/scripts/webhooks.ts",
     "test": "vitest"
   },
