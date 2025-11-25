@@ -1,8 +1,10 @@
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
+import { type ThemeColors, themeColors } from "../utils/style.js";
 
 interface ThemeContextType {
 	isDarkMode: boolean;
+	colors: ThemeColors;
 	toggleDarkMode: () => void;
 }
 
@@ -30,7 +32,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 	};
 
 	return (
-		<ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
+		<ThemeContext.Provider
+			value={{
+				isDarkMode,
+				toggleDarkMode,
+				colors: themeColors[isDarkMode ? "dark" : "light"],
+			}}
+		>
 			{children}
 		</ThemeContext.Provider>
 	);

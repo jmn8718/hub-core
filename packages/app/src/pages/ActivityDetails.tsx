@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import { Box } from "../components/Box.js";
-import { SectionContainer } from "../components/SectionContainer.js";
+import { Text } from "../components/Text.js";
+import { GearConnectionsSection } from "../components/cards/GearConnectionsSection.js";
 import { ActivityCard } from "../components/index.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useLoading } from "../contexts/LoadingContext.js";
@@ -66,6 +67,15 @@ export function ActivityDetails() {
 	return (
 		<div className="space-y-4">
 			<ActivityCard activity={activity} gears={gears} />
+			<GearConnectionsSection
+				activityId={activity.id}
+				selectedGearIds={activity.gears.map((gear) => gear.id)}
+				providers={activity.connections.map(
+					(connection) => connection.provider,
+				)}
+				gears={gears}
+				refreshActivity={loadActivity}
+			/>
 			{(activity.type === ActivityType.RUN ||
 				activity.type === ActivityType.BIKE) && (
 				<ActivitySubtypePanel
@@ -178,11 +188,10 @@ function ActivityConnectionsPanel({
 	const providersList = [Providers.GARMIN, Providers.COROS, Providers.STRAVA];
 
 	return (
-		<Box>
-			<p className="text-sm font-semibold">Provider Connections</p>
-			<p className="text-xs text-gray-500">
-				Link this activity to provider entries already imported into the system.
-			</p>
+		<Box
+			title="Provider Connections"
+			description="Link this activity to provider entries already imported into the system."
+		>
 			<div className="space-y-3">
 				{providersList.map((provider) => {
 					const connectionId = connectionMap.get(provider);
@@ -193,12 +202,16 @@ function ActivityConnectionsPanel({
 							className="flex flex-col gap-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:flex-row md:items-center md:justify-between"
 						>
 							<div>
-								<p className="text-sm font-semibold">{provider}</p>
-								<p className="text-xs text-gray-500">
-									{connectionId
-										? `Connected to ${connectionId}`
-										: "No provider link set"}
-								</p>
+								<Text className="text-sm font-semibold" text={provider} />
+								<Text
+									className="text-xs pt-1"
+									variant="description"
+									text={
+										connectionId
+											? `Connected to ${connectionId}`
+											: "No provider link set"
+									}
+								/>
 							</div>
 							{connectionId ? (
 								<button
@@ -280,13 +293,10 @@ function EventToggle({
 	};
 
 	return (
-		<Box>
-			<div>
-				<p className="text-sm font-semibold">Race Flag</p>
-				<p className="text-xs text-gray-500">
-					Mark this workout as an event you raced.
-				</p>
-			</div>
+		<Box
+			title="Race Flag"
+			description="Mark this workout as an event you raced."
+		>
 			<button
 				type="button"
 				onClick={handleToggle}
@@ -342,11 +352,10 @@ function ActivityDeleteSection({
 	};
 
 	return (
-		<Box>
-			<p className="text-sm font-semibold text-red-600">Danger Zone</p>
-			<p className="text-xs text-gray-500">
-				Remove this activity permanently. This action is not reversible.
-			</p>
+		<Box
+			title="Danger Zone"
+			description="Remove this activity permanently. This action is not reversible."
+		>
 			<button
 				type="button"
 				disabled={hasGearConnected || hasConnections || isDeleting}
@@ -410,8 +419,7 @@ function ActivitySubtypePanel({
 	};
 
 	return (
-		<Box>
-			<p className="text-sm font-medium uppercase">Subtype</p>
+		<Box title="Subtype">
 			<div className="flex flex-col gap-2 md:flex-row md:items-center">
 				<select
 					className="rounded border border-gray-300 bg-transparent px-3 py-2 text-sm"

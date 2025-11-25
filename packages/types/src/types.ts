@@ -52,6 +52,11 @@ export interface IGear {
 	type: GearType;
 }
 
+export interface IGearConnection {
+	provider: Providers;
+	providerId: string;
+}
+
 export interface IConnection {
 	provider: Providers;
 	id: string;
@@ -78,6 +83,7 @@ export interface IDbGear {
 	maximumDistance: number;
 	type: GearType;
 	brand: string;
+	providerConnections?: IGearConnection[];
 }
 
 export interface IDbGearWithDistance extends IDbGear {

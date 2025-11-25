@@ -109,12 +109,16 @@ export class ProviderManager {
 								lastTimestamp: lastDbProviderActivity?.timestamp,
 							}),
 						)
-		).then((activities) => pMap(activities, this.insertInDatabase));
+		).then((activities) =>
+			pMap(activities, this.insertInDatabase.bind(this), { concurrency: 1 }),
+		);
 	}
 
 	public syncActivity(provider: Providers, activityId: string) {
 		const client = this._getProvider(provider);
-		return client.syncActivity(activityId).then(this.insertInDatabase);
+		return client
+			.syncActivity(activityId)
+			.then(this.insertInDatabase.bind(this));
 	}
 
 	public linkGear({

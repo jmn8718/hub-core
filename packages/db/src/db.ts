@@ -7,6 +7,7 @@ import type {
 	IDailyOverviewData,
 	IDbGearWithDistance,
 	IGear,
+	IGearConnection,
 	IInbodyCreateInput,
 	IInbodyData,
 	IInbodyUpdateInput,
@@ -555,6 +556,24 @@ export class Db {
 		limit?: number;
 		offset?: number;
 	}): Promise<GearsData> {
+		const gearConnections = await this._client
+			.select({
+				gearId: gearsConnection.gearId,
+				connections: sql`json_group_array(
+						json_object(
+							'provider', ${providerGears.provider},
+							'providerId', ${providerGears.providerId}
+						)
+					)`.as("connections"),
+			})
+			.from(gearsConnection)
+			.leftJoin(
+				providerGears,
+				eq(gearsConnection.providerGearId, providerGears.id),
+			)
+			.groupBy(gearsConnection.gearId)
+			.as("gearConnections");
+
 		const subquery = await this._client
 			.select({
 				gearId: activityGears.gearId,
@@ -571,30 +590,40 @@ export class Db {
 					.select({
 						...getTableColumns(gears),
 						distance: sql`COALESCE(subquery.distance, 0)`.as("distance"),
+						providerConnections: gearConnections.connections,
 					})
 					.from(gears)
 					.leftJoin(subquery, eq(gears.id, subquery.gearId))
+					.leftJoin(gearConnections, eq(gears.id, gearConnections.gearId))
 					.where(gt(gears.id, cursor))
 			: this._client
 					.select({
 						...getTableColumns(gears),
 						distance: sql`COALESCE(subquery.distance, 0)`.as("distance"),
+						providerConnections: gearConnections.connections,
 					})
 					.from(gears)
-					.leftJoin(subquery, eq(gears.id, subquery.gearId));
+					.leftJoin(subquery, eq(gears.id, subquery.gearId))
+					.leftJoin(gearConnections, eq(gears.id, gearConnections.gearId));
 
 		const result = await this._client.batch([
 			this._client.select({ count: count() }).from(gears),
 			dataQuery.limit(limit).offset(offset),
 		]);
 		const dataCount = result[0][0]?.count || 0;
-		const data = result[1].map(
-			(record) =>
-				({
-					...record,
-					distance: Number.parseFloat(record.distance as string),
-				}) as IDbGearWithDistance,
-		);
+		const parseConnections = (value?: unknown) =>
+			(value ? JSON.parse(value as string) : []) as IGearConnection[];
+		const data = result[1].map((record) => {
+			const parsedRecord = record as {
+				distance: string | number | null;
+				providerConnections?: unknown;
+			} & IDbGearWithDistance;
+			return {
+				...parsedRecord,
+				distance: Number.parseFloat((parsedRecord.distance ?? 0).toString()),
+				providerConnections: parseConnections(parsedRecord.providerConnections),
+			} as IDbGearWithDistance;
+		});
 		return {
 			count: dataCount,
 			data,
@@ -603,6 +632,24 @@ export class Db {
 	}
 
 	async getGear(gearId: string): Promise<IDbGearWithDistance | undefined> {
+		const gearConnections = await this._client
+			.select({
+				gearId: gearsConnection.gearId,
+				connections: sql`json_group_array(
+						json_object(
+							'provider', ${providerGears.provider},
+							'providerId', ${providerGears.providerId}
+						)
+					)`.as("connections"),
+			})
+			.from(gearsConnection)
+			.leftJoin(
+				providerGears,
+				eq(gearsConnection.providerGearId, providerGears.id),
+			)
+			.groupBy(gearsConnection.gearId)
+			.as("gearConnections");
+
 		const subquery = await this._client
 			.select({
 				gearId: activityGears.gearId,
@@ -618,9 +665,11 @@ export class Db {
 			.select({
 				...getTableColumns(gears),
 				distance: sql`COALESCE(subquery.distance, 0)`.as("distance"),
+				providerConnections: gearConnections.connections,
 			})
 			.from(gears)
 			.leftJoin(subquery, eq(gears.id, subquery.gearId))
+			.leftJoin(gearConnections, eq(gears.id, gearConnections.gearId))
 			.where(eq(gears.id, gearId))
 			.limit(1);
 
@@ -628,7 +677,12 @@ export class Db {
 		if (!record) return;
 		return {
 			...record,
-			distance: Number.parseFloat(record.distance as string),
+			distance: Number.parseFloat((record.distance ?? 0).toString()),
+			providerConnections: record.providerConnections
+				? (JSON.parse(
+						record.providerConnections as string,
+					) as IGearConnection[])
+				: [],
 		} as IDbGearWithDistance;
 	}
 
@@ -909,10 +963,15 @@ export class Db {
 	}
 
 	linkActivityGear(activityId: string, gearId: string) {
-		return this._client.insert(activityGears).values({
-			gearId,
-			activityId,
-		});
+		return this._client
+			.insert(activityGears)
+			.values({
+				gearId,
+				activityId,
+			})
+			.onConflictDoNothing({
+				target: [activityGears.gearId, activityGears.activityId],
+			});
 	}
 
 	unlinkActivityGear(activityId: string, gearId: string) {
