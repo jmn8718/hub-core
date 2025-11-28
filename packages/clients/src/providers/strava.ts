@@ -47,6 +47,8 @@ function mapActivityType(type: string, title: string): ActivityType {
 			return ActivityType.BIKE;
 		case "hike":
 			return ActivityType.HIKE;
+		case "workout":
+			return ActivityType.CARDIO;
 		default:
 			return defaultType;
 	}
