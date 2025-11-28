@@ -1,8 +1,9 @@
 import { formatDateWithTime } from "@repo/dates";
 import type { DbActivityPopulated, IDbGear } from "@repo/types";
 import { ActivityType } from "@repo/types";
-import { Clock, HeartPulse, MapPin } from "lucide-react";
+import { Clock, MapPin, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
+import { formatDuration } from "../../../utils/formatters.js";
 import { SectionContainer } from "../../SectionContainer.js";
 import { EditableText } from "../../forms/EditableText.js";
 import { ActivityCardTemplate } from "../ActivityCardTemplate.js";
@@ -62,12 +63,8 @@ function CardioCardBody({
 					</span>
 				</div>
 				<div className="flex items-center gap-2 text-sm">
-					{isSwim ? (
-						<span className="text-gray-500">🏊</span>
-					) : (
-						<HeartPulse size={16} className="text-gray-500" />
-					)}
-					<span>{isSwim ? "Swim session" : "Cardio workout"}</span>
+					<Timer size={16} className="text-gray-500" />
+					<span className="pl-2">{formatDuration(activityData.duration)}</span>
 				</div>
 				<div className="flex items-center gap-2 text-sm">
 					<MapPin size={16} className="text-gray-500 min-w-4" />
