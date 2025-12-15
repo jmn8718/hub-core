@@ -20,13 +20,13 @@
     "@supabase/supabase-js": "2.48.1",
     "lru-cache": "^11.2.2",
     "lucide-react": "0.475.0",
-    "next": "15.1.6",
+    "next": "15.5.9",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "strava-v3": "2.2.1"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "15.1.6",
+    "@next/eslint-plugin-next": "15.5.9",
     "@repo/tailwind-config": "workspace:*",
     "@repo/types": "workspace:*",
     "@repo/typescript-config": "workspace:*",
