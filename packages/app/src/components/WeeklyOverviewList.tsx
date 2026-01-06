@@ -27,7 +27,15 @@ const formatWeekLabel = (start: string): string => {
 	return `${startDate.format(startFormat)} - ${endDate.format(endFormat)}`;
 };
 
-export const WeeklyOverviewList: React.FC<{ limit?: number }> = ({ limit }) => {
+type WeeklyOverviewListProps = {
+	limit?: number;
+	refreshToken?: number;
+};
+
+export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
+	limit,
+	refreshToken,
+}) => {
 	const { client } = useDataClient();
 	const { isDarkMode } = useTheme();
 	const [weeks, setWeeks] = useState<IWeeklyOverviewData[]>([]);
@@ -57,9 +65,10 @@ export const WeeklyOverviewList: React.FC<{ limit?: number }> = ({ limit }) => {
 		}
 	}, [client, limit]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		fetchWeeklyData();
-	}, [fetchWeeklyData]);
+	}, [fetchWeeklyData, refreshToken]);
 
 	const displayRows = useMemo(() => {
 		const sortedAsc = [...weeks].sort(

@@ -9,11 +9,16 @@ type DailyStats = {
 	activeDays: number;
 };
 
-export function HomeStatsSection() {
+export function HomeStatsSection({
+	refreshToken,
+}: {
+	refreshToken?: number;
+}) {
 	const { client } = useDataClient();
 	const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		const loadStats = async () => {
 			setIsLoading(true);
@@ -52,7 +57,7 @@ export function HomeStatsSection() {
 		};
 
 		loadStats();
-	}, [client]);
+	}, [client, refreshToken]);
 
 	return (
 		<Box>

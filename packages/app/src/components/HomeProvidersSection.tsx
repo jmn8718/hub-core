@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import { useStore } from "../contexts/StoreContext.js";
 import { ProviderCardSync } from "./providers/CardSync.js";
 
-export function HomeProvidersSection() {
+export function HomeProvidersSection({
+	onSyncDone,
+}: {
+	onSyncDone?: () => void;
+}) {
 	const { getValue } = useStore();
 	const [availableProviders, setAvailableProviders] = useState<Providers[]>([]);
 
@@ -37,7 +41,11 @@ export function HomeProvidersSection() {
 	return (
 		<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 			{availableProviders.map((provider) => (
-				<ProviderCardSync key={provider} provider={provider} />
+				<ProviderCardSync
+					key={provider}
+					provider={provider}
+					onSyncDone={onSyncDone}
+				/>
 			))}
 		</div>
 	);
