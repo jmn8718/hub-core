@@ -468,4 +468,9 @@ export class GarminClient extends Base implements Client {
 					},
 		);
 	}
+
+	async updateActivityNotes(_activityId: string, _notes?: string | null) {
+		// TODO implement when garmin-connect supports it
+		return;
+	}
 }

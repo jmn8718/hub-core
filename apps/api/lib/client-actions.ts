@@ -190,7 +190,20 @@ export async function handleClientAction(
 				throw new Error("Missing activity payload");
 			}
 			const activityData = data as Record<string, string | number | null>;
-			return withVoid(() => db.editActivity(activityId, activityData));
+			return withVoid(async () => {
+				await db.editActivity(activityId, activityData);
+				if (Object.hasOwn(activityData, "notes")) {
+					try {
+						const manager = await getProviderManager();
+						await manager.updateActivityNotes({
+							activityId,
+							notes: (activityData.notes as string | null | undefined) ?? null,
+						});
+					} catch (error) {
+						console.error(error);
+					}
+				}
+			});
 		}
 		case "deleteActivity": {
 			const { activityId } = payload as { activityId?: string };

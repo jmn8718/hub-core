@@ -272,4 +272,9 @@ export class CorosClient extends Base implements Client {
 	}) {
 		throw new Error("Not supported");
 	}
+
+	async updateActivityNotes(_activityId: string, _notes?: string | null) {
+		// TODO implement when coros-connect supports it
+		return;
+	}
 }

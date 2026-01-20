@@ -7,6 +7,7 @@ import {
 	type InbodyType,
 } from "@repo/types";
 import { ipcMain } from "electron";
+import { manager } from "../client.js";
 import { db } from "../db.js";
 
 ipcMain.handle(
@@ -110,7 +111,14 @@ ipcMain.handle(
 			};
 		},
 	) => {
-		return db.editActivity(params.activityId, params.data);
+		return db.editActivity(params.activityId, params.data).then(() => {
+			if (typeof params.data.notes !== "undefined") {
+				return manager.updateActivityNotes({
+					activityId: params.activityId,
+					notes: params.data.notes ?? null,
+				});
+			}
+		});
 	},
 );
 

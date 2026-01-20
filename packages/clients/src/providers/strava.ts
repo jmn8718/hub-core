@@ -171,6 +171,7 @@ export class StravaClient extends Base implements Client {
 				fetch(`${API_URL}${url}`, {
 					...options,
 					headers: {
+						...(options.headers ?? {}),
 						Authorization: accessToken,
 					},
 				}),
@@ -369,5 +370,21 @@ export class StravaClient extends Base implements Client {
 		dateEnd?: Date;
 	}): Promise<void> {
 		this._notImplemented();
+	}
+
+	updateActivityNotes(
+		activityId: string,
+		notes?: string | null,
+	): Promise<void> {
+		return this._request<StravaActivity>(`/activities/${activityId}`, {
+			method: "PUT",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			// https://developers.strava.com/docs/reference/#api-models-UpdatableActivity
+			body: JSON.stringify({
+				description: notes ?? "",
+			}),
+		}).then(() => undefined);
 	}
 }

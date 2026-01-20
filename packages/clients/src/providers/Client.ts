@@ -55,4 +55,9 @@ export abstract class Client {
 		status: "active" | "retired";
 		dateEnd?: Date;
 	}): Promise<void>;
+
+	abstract updateActivityNotes(
+		activityId: string,
+		notes?: string | null,
+	): Promise<void>;
 }

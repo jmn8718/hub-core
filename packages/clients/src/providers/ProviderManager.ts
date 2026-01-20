@@ -267,4 +267,30 @@ export class ProviderManager {
 		const client = this._getProvider(params.provider);
 		return client.gearStatusUpdate(params);
 	}
+
+	public updateActivityNotes(params: {
+		activityId: string;
+		notes?: string | null;
+	}) {
+		return this._db.getActivity(params.activityId).then((activity) => {
+			if (!activity?.connections?.length) return;
+			return pMap(
+				activity.connections,
+				async ({ provider, id }) => {
+					if (!provider || !this._clients[provider]) return;
+					const client = this._clients[provider];
+					if (!client) return;
+					try {
+						await client.updateActivityNotes(id, params.notes ?? undefined);
+					} catch (error) {
+						console.error(error);
+					}
+				},
+				{
+					concurrency: 1,
+					stopOnError: false,
+				},
+			);
+		});
+	}
 }
