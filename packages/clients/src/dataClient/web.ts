@@ -6,6 +6,7 @@ import type {
 	ConnectCredentials,
 	DbActivityPopulated,
 	GearsData,
+	IActivityCreateInput,
 	IDailyOverviewData,
 	IDbGearWithDistance,
 	IInbodyCreateInput,
@@ -113,6 +114,12 @@ export class WebClient implements Client {
 		return this._execute<{ data?: DbActivityPopulated }>("getActivity", {
 			activityId,
 		});
+	}
+
+	async createActivity(
+		data: IActivityCreateInput,
+	): Promise<ProviderSuccessResponse<{ id: string }>> {
+		return this._execute<{ id: string }>("createActivity", { data });
 	}
 
 	async editActivity(

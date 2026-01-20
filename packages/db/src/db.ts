@@ -3,8 +3,10 @@ import type {
 	ActivitiesData,
 	DbActivityPopulated,
 	GearsData,
+	IActivityCreateInput,
 	IConnection,
 	IDailyOverviewData,
+	IDbActivity,
 	IDbGearWithDistance,
 	IGear,
 	IGearConnection,
@@ -695,6 +697,47 @@ export class Db {
 			.update(activities)
 			.set(data)
 			.where(eq(activities.id, id));
+	}
+
+	async createActivity(data: IActivityCreateInput) {
+		const timestamp = new Date(data.timestamp).getTime();
+		if (Number.isNaN(timestamp)) {
+			throw new Error("Invalid activity timestamp");
+		}
+		const allowedTypes = new Set<ActivityType>([
+			ActivityType.SWIM,
+			ActivityType.GYM,
+			ActivityType.OTHER,
+		]);
+		if (!allowedTypes.has(data.type)) {
+			throw new Error("Only swim, gym, or other activities can be created");
+		}
+		const timezone =
+			data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+		const activityPayload = {
+			name: data.name,
+			timestamp,
+			timezone,
+			distance: data.distanceMeters ?? 0,
+			duration: data.durationSeconds ?? 0,
+			manufacturer: "manual",
+			device: "manual",
+			locationName: data.locationName ?? "",
+			locationCountry: data.locationCountry ?? "",
+			type: data.type,
+			subtype: data.subtype,
+			notes: data.notes ?? "",
+			isEvent: data.isEvent ? 1 : 0,
+			startLatitude: 0,
+			startLongitude: 0,
+		} as Omit<IDbActivity, "id">;
+
+		const id = await this.insertActivity({
+			activity: {
+				data: activityPayload,
+			},
+		});
+		return { id };
 	}
 
 	deleteActivity(activityId: string) {

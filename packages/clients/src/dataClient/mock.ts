@@ -5,6 +5,7 @@ import type {
 	ConnectCredentials,
 	DbActivityPopulated,
 	GearsData,
+	IActivityCreateInput,
 	IDailyOverviewData,
 	IDbGearWithDistance,
 	IInbodyCreateInput,
@@ -113,6 +114,15 @@ export class MockClient implements Client {
 		return {
 			success: true,
 			data: undefined,
+		};
+	}
+
+	async createActivity(
+		_data: IActivityCreateInput,
+	): Promise<ProviderSuccessResponse<{ id: string }>> {
+		return {
+			success: true,
+			id: crypto.randomUUID(),
 		};
 	}
 

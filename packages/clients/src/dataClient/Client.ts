@@ -5,6 +5,7 @@ import type {
 	ConnectCredentials,
 	DbActivityPopulated,
 	GearsData,
+	IActivityCreateInput,
 	IDailyOverviewData,
 	IDbGearWithDistance,
 	IInbodyCreateInput,
@@ -75,6 +76,10 @@ export abstract class Client {
 			data?: DbActivityPopulated;
 		}>
 	>;
+
+	abstract createActivity(
+		data: IActivityCreateInput,
+	): Promise<ProviderSuccessResponse<{ id: string }>>;
 
 	abstract editActivity(
 		id: string,

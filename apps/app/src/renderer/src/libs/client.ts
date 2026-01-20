@@ -7,6 +7,7 @@ import {
 	type ConnectCredentials,
 	type DbActivityPopulated,
 	type GearsData,
+	type IActivityCreateInput,
 	type IDailyOverviewData,
 	type IDbGearWithDistance,
 	type IInbodyCreateInput,
@@ -153,6 +154,28 @@ export class AppClient implements Client {
 			return {
 				success: true,
 				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async createActivity(
+		data: IActivityCreateInput,
+	): Promise<ProviderSuccessResponse<{ id: string }>> {
+		try {
+			const result = (await window.electron.ipcRenderer.invoke(
+				Channels.DB_ACTIVITY_CREATE,
+				{
+					data,
+				},
+			)) as Awaited<Promise<{ id: string }>>;
+			return {
+				success: true,
+				data: result,
 			};
 		} catch (err) {
 			return {

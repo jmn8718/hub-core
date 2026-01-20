@@ -3,6 +3,7 @@ import {
 	type ActivitySubType,
 	type ActivityType,
 	type ConnectCredentials,
+	type IActivityCreateInput,
 	type IInbodyCreateInput,
 	type IInbodyUpdateInput,
 	type InbodyType,
@@ -179,6 +180,13 @@ export async function handleClientAction(
 			const { activityId } = payload as { activityId?: string };
 			const id = ensureString(activityId, "activity id");
 			return withData(() => db.getActivity(id));
+		}
+		case "createActivity": {
+			const { data } = payload as { data?: IActivityCreateInput };
+			if (!data || typeof data !== "object") {
+				throw new Error("Missing activity payload");
+			}
+			return withData(() => db.createActivity(data));
 		}
 		case "editActivity": {
 			const { id, data } = payload as {

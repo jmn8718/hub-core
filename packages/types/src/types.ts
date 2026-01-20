@@ -47,6 +47,20 @@ export interface IDbActivity {
 	isEvent: 0 | 1;
 }
 
+export interface IActivityCreateInput {
+	name: string;
+	type: ActivityType;
+	timestamp: string;
+	timezone?: string;
+	durationSeconds?: number;
+	distanceMeters?: number;
+	notes?: string;
+	locationName?: string;
+	locationCountry?: string;
+	subtype?: ActivitySubType;
+	isEvent?: boolean;
+}
+
 export interface IGear {
 	id: string;
 	type: GearType;

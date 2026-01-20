@@ -6,6 +6,7 @@ import {
 	Database,
 	Dumbbell,
 	Home,
+	PlusSquare,
 	Settings,
 } from "lucide-react";
 import type React from "react";
@@ -32,6 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 				sidebarItems={[
 					{ icon: Home, href: AppRoutes.HOME, label: "Home" },
 					{ icon: Database, href: AppRoutes.DATA, label: "Data" },
+					{ icon: PlusSquare, href: AppRoutes.ADD, label: "Add Activity" },
 					{ icon: BookHeart, href: AppRoutes.INBODY, label: "Inbody" },
 					{ icon: ChartSpline, href: AppRoutes.ANALYTICS, label: "Analytics" },
 					{

@@ -2,6 +2,7 @@ import {
 	type ActivitySubType,
 	type ActivityType,
 	Channels,
+	type IActivityCreateInput,
 	type IInbodyCreateInput,
 	type IInbodyUpdateInput,
 	type InbodyType,
@@ -86,6 +87,13 @@ ipcMain.handle(
 ipcMain.handle(Channels.DB_ACTIVITY, async (_event, activityId: string) => {
 	return db.getActivity(activityId);
 });
+
+ipcMain.handle(
+	Channels.DB_ACTIVITY_CREATE,
+	async (_event, params: { data: unknown }) => {
+		return db.createActivity(params.data as IActivityCreateInput);
+	},
+);
 
 ipcMain.handle(
 	Channels.DB_ACTIVITY_DELETE,

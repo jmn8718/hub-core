@@ -65,6 +65,10 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										element={<Pages.ActivityDetailsPage />}
 									/>
 									<Route
+										path={AppRoutes.ADD}
+										element={<Pages.AddActivityPage />}
+									/>
+									<Route
 										path="*"
 										element={<Navigate to={AppRoutes.HOME} replace />}
 									/>
