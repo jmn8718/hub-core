@@ -60,7 +60,8 @@ export async function GET(req: NextRequest) {
 	const stravaClient = new StravaClient(db);
 
 	const url = await stravaClient.client.oauth.getRequestAccessURL({
-		scope: "activity:read_all,profile:read_all",
+		scope:
+			"read,read_all,activity:write,activity:read_all,profile:write,profile:read_all",
 	});
 
 	return NextResponse.json({

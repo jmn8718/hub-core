@@ -1,4 +1,5 @@
-import strava from "@/lib/strava";
+import db from "@/lib/db";
+import StravaClient from "@/lib/strava";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 /* eslint-disable turbo/no-undeclared-env-vars */
@@ -17,7 +18,8 @@ export async function POST(req: NextRequest) {
 	const { callbackUrl } = await req.json();
 
 	try {
-		const result = await strava.client.pushSubscriptions.create({
+		const stravaClient = new StravaClient(db);
+		const result = await stravaClient.client.pushSubscriptions.create({
 			callback_url: callbackUrl,
 			verify_token: process.env.STRAVA_VERIFY_TOKEN,
 			client_id: process.env.STRAVA_CLIENT_ID,
@@ -44,7 +46,8 @@ export async function GET(req: NextRequest) {
 	}
 
 	try {
-		const result = await strava.client.pushSubscriptions.list();
+		const stravaClient = new StravaClient(db);
+		const result = await stravaClient.client.pushSubscriptions.list();
 		return NextResponse.json(result);
 	} catch (error) {
 		console.error("Error fetching subscriptions:", error);
@@ -68,7 +71,8 @@ export async function DELETE(req: NextRequest) {
 	const { id } = await req.json();
 
 	try {
-		await strava.client.pushSubscriptions.delete({
+		const stravaClient = new StravaClient(db);
+		await stravaClient.client.pushSubscriptions.delete({
 			id,
 			client_id: process.env.STRAVA_CLIENT_ID,
 			client_secret: process.env.STRAVA_CLIENT_SECRET,

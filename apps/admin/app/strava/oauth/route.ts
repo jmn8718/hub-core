@@ -1,6 +1,7 @@
 import db from "@/lib/db";
-import strava from "@/lib/strava";
+import StravaClient from "@/lib/strava";
 import { eq, profiles } from "@repo/db";
+import { Providers } from "@repo/types";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -16,7 +17,8 @@ export async function GET(request: Request) {
 	let message = "";
 	try {
 		if (code) {
-			const token = await strava.client.oauth.getToken(code);
+			const stravaClient = new StravaClient(db);
+			const token = await stravaClient.client.oauth.getToken(code);
 			const users = await db
 				.select({ id: profiles.id })
 				.from(profiles)
@@ -40,6 +42,7 @@ export async function GET(request: Request) {
 					refreshToken: token.refresh_token,
 					accessToken: token.access_token,
 					tokenType: token.token_type,
+					provider: Providers.STRAVA,
 				});
 			}
 			status = "success";
