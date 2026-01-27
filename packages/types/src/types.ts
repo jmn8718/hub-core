@@ -29,7 +29,16 @@ export interface IDailyOverviewData {
 	count: number;
 }
 
-export interface IDbActivity {
+export type SwimActivityMetadata = {
+	laps?: number;
+	length?: number;
+};
+
+export type NonActivityMetadata = Record<string, unknown>;
+
+export type ActivityMetadata = NonActivityMetadata | SwimActivityMetadata;
+
+type DbActivityBase = {
 	id: string;
 	name: string;
 	timestamp: number;
@@ -42,10 +51,23 @@ export interface IDbActivity {
 	startLatitude: number;
 	startLongitude: number;
 	notes?: string;
+	metadata?: ActivityMetadata;
 	type: ActivityType;
 	subtype?: ActivitySubType;
 	isEvent: 0 | 1;
-}
+};
+
+export type SwimActivity = DbActivityBase & {
+	type: ActivityType.SWIM;
+	metadata?: SwimActivityMetadata;
+};
+
+export type NonSwimActivity = DbActivityBase & {
+	type: Exclude<ActivityType, ActivityType.SWIM>;
+	metadata?: NonActivityMetadata;
+};
+
+export type IDbActivity = SwimActivity | NonSwimActivity;
 
 export interface IActivityCreateInput {
 	name: string;
@@ -55,6 +77,7 @@ export interface IActivityCreateInput {
 	durationSeconds?: number;
 	distanceMeters?: number;
 	notes?: string;
+	metadata?: ActivityMetadata | SwimActivityMetadata;
 	locationName?: string;
 	locationCountry?: string;
 	subtype?: ActivitySubType;

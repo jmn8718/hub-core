@@ -26,6 +26,7 @@ export const activities = sqliteTable(
 		type: text("type").notNull(),
 		subtype: text("subtype"),
 		notes: text("notes").default(""),
+		metadata: text("metadata").default("{}"),
 		isEvent: integer("is_event").default(0),
 		startLatitude: real("start_latitude").default(0),
 		startLongitude: real("start_longitude").default(0),

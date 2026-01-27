@@ -1,6 +1,8 @@
 import { dayjs, formatDate, monthsBefore, weeksBefore } from "@repo/dates";
 import type {
 	ActivitiesData,
+	ActivityMetadata,
+	ActivitySubType,
 	DbActivityPopulated,
 	GearsData,
 	IActivityCreateInput,
@@ -18,7 +20,7 @@ import type {
 	InbodyType,
 	Providers,
 } from "@repo/types";
-import { type ActivitySubType, ActivityType } from "@repo/types";
+import { ActivityType } from "@repo/types";
 import {
 	and,
 	asc,
@@ -64,19 +66,44 @@ interface IDbActivityRow {
 	type: string;
 	subtype: string | null;
 	notes: string | null;
+	metadata: string | null;
 	isEvent: number | null;
 	startLatitude: number | null;
 	startLongitude: number | null;
+}
+
+function normalizeMetadata(
+	type: string,
+	metadataRaw: Record<string, unknown> | string,
+): ActivityMetadata {
+	const metadata: Record<string, unknown> =
+		typeof metadataRaw === "string" ? JSON.parse(metadataRaw) : metadataRaw;
+	const normalizedMetadata: ActivityMetadata = {};
+	if (type === ActivityType.SWIM) {
+		if (typeof metadata.laps === "number") {
+			normalizedMetadata.laps = metadata.laps;
+		} else if (metadata.laps !== undefined) {
+			normalizedMetadata.laps = Number(metadata.laps) || 0;
+		}
+		if (typeof metadata.length === "number") {
+			normalizedMetadata.length = metadata.length;
+		} else if (metadata.length !== undefined) {
+			normalizedMetadata.length = Number(metadata.length) || 0;
+		}
+	}
+	return normalizedMetadata;
 }
 
 function mapActivityRow({
 	connections,
 	gears,
 	isEvent,
+	metadata,
 	...row
 }: IDbActivityRow): DbActivityPopulated {
 	return {
 		...row,
+		metadata: normalizeMetadata(row.type, JSON.parse(metadata || "{}")),
 		isEvent: isEvent === 1 ? 1 : 0,
 		gears: (gears ? JSON.parse(gears as string) : []) as IGear[],
 		connections: (connections
@@ -693,9 +720,13 @@ export class Db {
 	}
 
 	editActivity(id: string, data: Record<string, string | number | null>) {
+		const updateData = { ...data };
+		if ("metadata" in updateData && typeof updateData.metadata === "object") {
+			updateData.metadata = JSON.stringify(updateData.metadata);
+		}
 		return this._client
 			.update(activities)
-			.set(data)
+			.set(updateData)
 			.where(eq(activities.id, id));
 	}
 
@@ -727,6 +758,7 @@ export class Db {
 			type: data.type,
 			subtype: data.subtype,
 			notes: data.notes ?? "",
+			metadata: data.metadata ? JSON.stringify(data.metadata) : "{}",
 			isEvent: data.isEvent ? 1 : 0,
 			startLatitude: 0,
 			startLongitude: 0,
@@ -831,6 +863,9 @@ export class Db {
 			activityId = uuidv7();
 			await this._client.insert(activities).values({
 				...activity.data,
+				metadata: activity.data.metadata
+					? JSON.stringify(activity.data.metadata)
+					: "{}",
 				id: activityId,
 			});
 		}
