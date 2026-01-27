@@ -30,6 +30,8 @@ export function AddActivity() {
 	const [notes, setNotes] = useState("");
 	const [locationName, setLocationName] = useState("");
 	const [locationCountry, setLocationCountry] = useState("");
+	const [laps, setLaps] = useState("");
+	const [poolLength, setPoolLength] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -81,16 +83,38 @@ export function AddActivity() {
 			return;
 		}
 
+		const parsedLaps =
+			laps.trim() === "" ? undefined : Math.max(0, Number.parseInt(laps));
+		const parsedPoolLength =
+			poolLength.trim() === "" ? undefined : Math.max(0, Number(poolLength));
+
+		if (parsedLaps !== undefined && Number.isNaN(parsedLaps)) {
+			setError("Laps must be a valid number");
+			return;
+		}
+		if (parsedPoolLength !== undefined && Number.isNaN(parsedPoolLength)) {
+			setError("Pool length must be a valid number");
+			return;
+		}
+
 		const payload: IActivityCreateInput = {
 			name: name.trim(),
 			type: activityType,
 			timestamp: parsedDate.toISOString(),
 			timezone,
 			durationSeconds: parsedDuration,
-			distanceMeters: parsedDistance,
+			distanceMeters:
+				activityType === ActivityType.SWIM || activityType === ActivityType.GYM
+					? undefined
+					: parsedDistance,
 			notes: notes.trim() || undefined,
 			locationName: locationName.trim() || undefined,
 			locationCountry: locationCountry.trim() || undefined,
+			metadata:
+				activityType === ActivityType.SWIM &&
+				(parsedLaps !== undefined || parsedPoolLength !== undefined)
+					? { laps: parsedLaps, length: parsedPoolLength }
+					: undefined,
 		};
 
 		setIsSubmitting(true);
@@ -201,17 +225,48 @@ export function AddActivity() {
 									className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 								/>
 							</label>
-							<label className="flex flex-col gap-1 text-sm font-medium">
-								<span>Distance (meters)</span>
-								<input
-									type="number"
-									min="0"
-									step="1"
-									value={distanceMeters}
-									onChange={(event) => setDistanceMeters(event.target.value)}
-									className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-								/>
-							</label>
+							{activityType !== ActivityType.SWIM &&
+								activityType !== ActivityType.GYM && (
+									<label className="flex flex-col gap-1 text-sm font-medium">
+										<span>Distance (meters)</span>
+										<input
+											type="number"
+											min="0"
+											step="1"
+											value={distanceMeters}
+											onChange={(event) =>
+												setDistanceMeters(event.target.value)
+											}
+											className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+										/>
+									</label>
+								)}
+							{activityType === ActivityType.SWIM && (
+								<>
+									<label className="flex flex-col gap-1 text-sm font-medium">
+										<span>Laps</span>
+										<input
+											type="number"
+											min="0"
+											step="1"
+											value={laps}
+											onChange={(event) => setLaps(event.target.value)}
+											className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+										/>
+									</label>
+									<label className="flex flex-col gap-1 text-sm font-medium">
+										<span>Pool Length (meters)</span>
+										<input
+											type="number"
+											min="0"
+											step="1"
+											value={poolLength}
+											onChange={(event) => setPoolLength(event.target.value)}
+											className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+										/>
+									</label>
+								</>
+							)}
 							<label className="flex flex-col gap-1 text-sm font-medium">
 								<span>Location</span>
 								<input
