@@ -151,9 +151,71 @@ export class GarminClient extends Base implements Client {
 
 	async connect({ username, password }: LoginCredentials) {
 		try {
+			// First, try to restore session from saved tokens if available
+			const savedProfile = await this._db.getProfileToken(
+				this._provider,
+				username,
+			);
+			if (savedProfile?.tokenData) {
+				try {
+					const tokenData = JSON.parse(savedProfile.tokenData);
+					if (tokenData.oauth1 && tokenData.oauth2) {
+						console.log(
+							`${GarminClient.PROVIDER}: attempting to restore session from saved tokens`,
+						);
+						this._client.loadToken(tokenData.oauth1, tokenData.oauth2);
+
+						// Verify the token is valid by making a test request
+						await this._client.getUserProfile();
+						this._lastTokenRefreshed = new Date();
+						this._signedIn = true;
+						console.log(
+							`${GarminClient.PROVIDER}: session restored successfully from saved tokens`,
+						);
+						return;
+					}
+				} catch (tokenError) {
+					console.warn(
+						`${GarminClient.PROVIDER}: failed to restore session from saved tokens, performing new login`,
+						tokenError,
+					);
+					// Fall through to login with credentials
+				}
+			}
+
+			// If no saved tokens or restoration failed, perform fresh login
+			console.log(`${GarminClient.PROVIDER}: performing fresh login`);
 			await this._client.login(username, password);
 			this._lastTokenRefreshed = new Date();
 			this._signedIn = true;
+
+			// Export and save the tokens to profile for future use
+			try {
+				const tokens = this._client.exportToken();
+				const expiresAt =
+					tokens.oauth2.expires_at ||
+					Date.now() + tokens.oauth2.expires_in * 1000;
+
+				await this._db.setProfileToken(
+					this._provider,
+					{
+						accessToken: tokens.oauth2.access_token,
+						refreshToken: tokens.oauth2.refresh_token,
+						expiresAt: Math.floor(expiresAt / 1000), // Convert to seconds
+						tokenType: tokens.oauth2.token_type,
+						tokenData: JSON.stringify(tokens),
+					},
+					username,
+				);
+				console.log(`${GarminClient.PROVIDER}: tokens saved to profile`);
+			} catch (saveError) {
+				console.error(
+					`${GarminClient.PROVIDER}: failed to save tokens to profile`,
+					saveError,
+				);
+				// Non-blocking - login was successful even if token save failed
+			}
+
 			console.log(`${GarminClient.PROVIDER}: client connected`);
 		} catch (error) {
 			this._signedIn = false;

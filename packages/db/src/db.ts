@@ -1314,6 +1314,7 @@ export class Db {
 				refreshToken: profiles.refreshToken,
 				expiresAt: profiles.expiresAt,
 				tokenType: profiles.tokenType,
+				tokenData: profiles.tokenData,
 			})
 			.from(profiles)
 			.where(where)
@@ -1329,6 +1330,7 @@ export class Db {
 			refreshToken: string;
 			expiresAt: number;
 			tokenType: string;
+			tokenData?: string;
 		},
 		externalId?: string,
 	) {
@@ -1353,6 +1355,7 @@ export class Db {
 					refreshToken: tokenData.refreshToken,
 					expiresAt: tokenData.expiresAt,
 					tokenType: tokenData.tokenType,
+					tokenData: tokenData.tokenData,
 				})
 				.where(eq(profiles.id, existing[0].id));
 		}
@@ -1365,6 +1368,7 @@ export class Db {
 			refreshToken: tokenData.refreshToken,
 			expiresAt: tokenData.expiresAt,
 			tokenType: tokenData.tokenType,
+			tokenData: tokenData.tokenData,
 		});
 	}
 }
