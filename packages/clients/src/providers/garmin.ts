@@ -128,12 +128,6 @@ export class GarminClient extends Base implements Client {
 
 	private _client: GarminConnect;
 
-	private _signedIn = false;
-
-	private _userId = "";
-
-	private _lastTokenRefreshed: Date | undefined;
-
 	public static PROVIDER = Providers.GARMIN;
 
 	public static EXTENSION: "tcx" = FileExtensions.TCX;
@@ -146,7 +140,6 @@ export class GarminClient extends Base implements Client {
 			username: "",
 			password: "",
 		});
-		this._signedIn = false;
 	}
 
 	async connect({ username, password }: LoginCredentials) {
@@ -167,8 +160,6 @@ export class GarminClient extends Base implements Client {
 
 						// Verify the token is valid by making a test request
 						await this._client.getUserProfile();
-						this._lastTokenRefreshed = new Date();
-						this._signedIn = true;
 						console.log(
 							`${GarminClient.PROVIDER}: session restored successfully from saved tokens`,
 						);
@@ -186,8 +177,6 @@ export class GarminClient extends Base implements Client {
 			// If no saved tokens or restoration failed, perform fresh login
 			console.log(`${GarminClient.PROVIDER}: performing fresh login`);
 			await this._client.login(username, password);
-			this._lastTokenRefreshed = new Date();
-			this._signedIn = true;
 
 			// Export and save the tokens to profile for future use
 			try {
@@ -201,7 +190,7 @@ export class GarminClient extends Base implements Client {
 					{
 						accessToken: tokens.oauth2.access_token,
 						refreshToken: tokens.oauth2.refresh_token,
-						expiresAt: Math.floor(expiresAt / 1000), // Convert to seconds
+						expiresAt: Math.floor(expiresAt), // in milliseconds
 						tokenType: tokens.oauth2.token_type,
 						tokenData: JSON.stringify(tokens),
 					},
@@ -218,7 +207,6 @@ export class GarminClient extends Base implements Client {
 
 			console.log(`${GarminClient.PROVIDER}: client connected`);
 		} catch (error) {
-			this._signedIn = false;
 			console.error(error);
 			throw error;
 		}
