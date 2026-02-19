@@ -2,6 +2,7 @@ import type { IDbGearWithDistance } from "@repo/types";
 import { cn } from "@repo/ui";
 import { Gauge } from "lucide-react";
 import { type FC, useState } from "react";
+import { Link } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import {
 	useDataClient,
@@ -17,6 +18,9 @@ import { EditableText } from "../../forms/EditableText.js";
 
 interface GearCardProps {
 	data: IDbGearWithDistance;
+	isEditable?: boolean;
+	titleLink?: string;
+	maxDistanceEditable?: boolean;
 }
 
 function getPercentageColor(percentage: number) {
@@ -26,7 +30,12 @@ function getPercentageColor(percentage: number) {
 	return "bg-green-500";
 }
 
-export const GearCard: FC<GearCardProps> = ({ data }) => {
+export const GearCard: FC<GearCardProps> = ({
+	data,
+	isEditable = true,
+	titleLink,
+	maxDistanceEditable,
+}) => {
 	const { isDarkMode } = useTheme();
 	const { setLocalLoading } = useLoading();
 	const { client } = useDataClient();
@@ -78,18 +87,42 @@ export const GearCard: FC<GearCardProps> = ({ data }) => {
 		handleEditGear(gearData.id, "code", code);
 	};
 	const handleMaxDistanceChange = (distance: number) => {
-		handleEditGear(gearData.id, "maximumDistance", distance);
+		handleEditGear(gearData.id, "maximumDistance", Math.round(distance * 1000));
 	};
+	const maxDistanceValue =
+		gearData.maximumDistance > 0 ? gearData.maximumDistance / 1000 : 0;
+	const allowMaxDistanceEdit = maxDistanceEditable ?? isEditable;
 
 	return (
 		<Box>
 			<div className="relative flex justify-between items-center mb-4">
-				<EditableText
-					value={gearData.name}
-					onSave={handleNameChange}
-					className="text-xl font-semibold"
-					placeholder="Enter gear name..."
-				/>
+				{isEditable ? (
+					<EditableText
+						value={gearData.name}
+						onSave={handleNameChange}
+						className="text-xl font-semibold"
+						placeholder="Enter gear name..."
+					/>
+				) : titleLink ? (
+					<Link
+						to={titleLink}
+						className={cn(
+							"text-xl font-semibold hover:underline",
+							isDarkMode ? "text-white" : "text-gray-900",
+						)}
+					>
+						{gearData.name}
+					</Link>
+				) : (
+					<span
+						className={cn(
+							"text-xl font-semibold",
+							isDarkMode ? "text-white" : "text-gray-900",
+						)}
+					>
+						{gearData.name}
+					</span>
+				)}
 				{isRetired && (
 					<div className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
 						Retired
@@ -108,7 +141,7 @@ export const GearCard: FC<GearCardProps> = ({ data }) => {
 						date={gearData.dateEnd}
 						onSave={handleEndDateChange}
 						label="End Date"
-						isEditable={!gearData.dateEnd}
+						isEditable={isEditable}
 					/>
 					<div className="flex items-center justify-between text-sm">
 						<span className="flex items-center gap-2">
@@ -135,12 +168,12 @@ export const GearCard: FC<GearCardProps> = ({ data }) => {
 						)}
 					>
 						<span>{formatDistance(gearData.distance)}</span>
-						{!gearData.dateEnd ? (
+						{!gearData.dateEnd && allowMaxDistanceEdit ? (
 							<EditableNumber
-								value={gearData.maximumDistance}
+								value={maxDistanceValue}
 								onSave={handleMaxDistanceChange}
 								className="text-right"
-								formatValue={formatDistance}
+								formatValue={(value) => formatDistance(value * 1000)}
 							/>
 						) : (
 							<span className="px-2 py-1 -mx-2 text-right">
@@ -154,7 +187,7 @@ export const GearCard: FC<GearCardProps> = ({ data }) => {
 			<SectionContainer>
 				<div className="flex items-center gap-2">
 					<span className="text-sm">Code:</span>
-					{!gearData.dateEnd ? (
+					{!gearData.dateEnd && isEditable ? (
 						<EditableText
 							value={gearData.code}
 							onSave={handleCodeChange}

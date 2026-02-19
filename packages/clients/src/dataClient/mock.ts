@@ -8,6 +8,7 @@ import type {
 	IActivityCreateInput,
 	IDailyOverviewData,
 	IDbGearWithDistance,
+	IGearCreateInput,
 	IInbodyCreateInput,
 	IInbodyData,
 	IInbodyUpdateInput,
@@ -23,6 +24,8 @@ import type {
 import type { Client } from "./Client.js";
 
 export class MockClient implements Client {
+	private gears: IDbGearWithDistance[] = [];
+
 	async getDataOverview({ limit: _limit }: { limit?: number }): Promise<
 		ProviderSuccessResponse<{
 			data: IOverviewData[];
@@ -159,9 +162,24 @@ export class MockClient implements Client {
 			data: GearsData;
 		}>
 	> {
+		const { cursor, limit = 20, offset = 0 } = _params ?? {};
+		let startIndex = offset;
+		if (cursor) {
+			const cursorIndex = this.gears.findIndex((gear) => gear.id === cursor);
+			startIndex = cursorIndex >= 0 ? cursorIndex + 1 : offset;
+		}
+		const data = this.gears.slice(startIndex, startIndex + limit);
+		const nextCursor =
+			data.length + startIndex < this.gears.length
+				? data[data.length - 1]?.id || ""
+				: "";
 		return {
 			success: true,
-			data: { data: [], count: 0, cursor: "" },
+			data: {
+				data,
+				count: this.gears.length,
+				cursor: nextCursor,
+			},
 		};
 	}
 
@@ -171,9 +189,10 @@ export class MockClient implements Client {
 		}>
 	> {
 		try {
+			const gear = this.gears.find((item) => item.id === gearId);
 			return {
 				success: true,
-				data: undefined,
+				data: gear,
 			};
 		} catch (err) {
 			return {
@@ -181,6 +200,29 @@ export class MockClient implements Client {
 				error: (err as Error).message,
 			};
 		}
+	}
+
+	async createGear(
+		data: IGearCreateInput,
+	): Promise<ProviderSuccessResponse<{ id: string }>> {
+		const id = crypto.randomUUID();
+		const newGear: IDbGearWithDistance = {
+			id,
+			name: data.name,
+			code: data.code,
+			brand: data.brand ?? "",
+			type: data.type,
+			dateBegin: data.dateBegin,
+			dateEnd: undefined,
+			maximumDistance: data.maximumDistance ?? 0,
+			distance: 0,
+			providerConnections: [],
+		};
+		this.gears = [newGear, ...this.gears];
+		return {
+			success: true,
+			id,
+		};
 	}
 
 	async deleteActivity(_activityId: string): Promise<ProviderSuccessResponse> {
@@ -211,6 +253,18 @@ export class MockClient implements Client {
 		},
 	): Promise<ProviderSuccessResponse> {
 		try {
+			this.gears = this.gears.map((gear) =>
+				gear.id === id
+					? {
+							...gear,
+							...data,
+							maximumDistance:
+								data.maximumDistance !== undefined
+									? Number(data.maximumDistance)
+									: gear.maximumDistance,
+						}
+					: gear,
+			);
 			return {
 				success: true,
 			};
@@ -244,6 +298,25 @@ export class MockClient implements Client {
 		return {
 			success: true,
 		};
+	}
+
+	async providerGearCreate(
+		provider: Providers,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		const providerId = crypto.randomUUID();
+		this.gears = this.gears.map((gear) =>
+			gear.id === gearId
+				? {
+						...gear,
+						providerConnections: [
+							...(gear.providerConnections ?? []),
+							{ provider, providerId },
+						],
+					}
+				: gear,
+		);
+		return { success: true };
 	}
 
 	async providerGearUnlink(

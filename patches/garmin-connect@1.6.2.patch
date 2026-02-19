@@ -144,10 +144,10 @@ deleted file mode 100644
 index 1943bb64881b6a4f0abaf5dc1984f5b812c45b61..0000000000000000000000000000000000000000
 diff --git a/dist/index.cjs b/dist/index.cjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..960fd95358eeade124b190184e2624677b52ca8e
+index 0000000000000000000000000000000000000000..1e47f6c3e743fdcdcf38ad745e3ce5d49782e3c4
 --- /dev/null
 +++ b/dist/index.cjs
-@@ -0,0 +1,1023 @@
+@@ -0,0 +1,1038 @@
 +"use strict";
 +var __create = Object.create;
 +var __defProp = Object.defineProperty;
@@ -554,6 +554,9 @@ index 0000000000000000000000000000000000000000..960fd95358eeade124b190184e262467
 +  get STAT_ACTIVITIES() {
 +    return `${this.GC_API}/fitnessstats-service/activity`;
 +  }
++  get CREATE_GEAR() {
++    return `${this.GC_API}/gear-service/gear`;
++  }
 +  get ACTIVITY_GEAR() {
 +    return `${this.GC_API}/gear-service/gear/filterGear`;
 +  }
@@ -872,6 +875,18 @@ index 0000000000000000000000000000000000000000..960fd95358eeade124b190184e262467
 +      }
 +    });
 +  }
++  createGear(payload) {
++    return this.client.post(this.url.CREATE_GEAR, {
++      createDate: payload.createDate.toISOString(),
++      customMakeModel: payload.customMakeModel,
++      dateBegin: payload.dateBegin.toISOString(),
++      displayName: payload.displayName,
++      gearMakeName: payload.gearMakeName,
++      gearModelName: payload.gearModelName,
++      gearStatusName: "active",
++      maximumMeters: payload.maximumMeters
++    });
++  }
 +  getGears(userProfilePk) {
 +    return this.client.get(this.url.ACTIVITY_GEAR, {
 +      params: {
@@ -1173,10 +1188,10 @@ index 0000000000000000000000000000000000000000..960fd95358eeade124b190184e262467
 +});
 diff --git a/dist/index.d.cts b/dist/index.d.cts
 new file mode 100644
-index 0000000000000000000000000000000000000000..5c74207d32541c3b008c4df982824a45b8f76974
+index 0000000000000000000000000000000000000000..1390408a1a2e1262ea4bfd58bb806b307169a8a6
 --- /dev/null
 +++ b/dist/index.d.cts
-@@ -0,0 +1,1310 @@
+@@ -0,0 +1,1320 @@
 +import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders, AxiosResponse } from 'axios';
 +import OAuth$1 from 'oauth-1.0a';
 +
@@ -2019,6 +2034,7 @@ index 0000000000000000000000000000000000000000..5c74207d32541c3b008c4df982824a45
 +    get ACTIVITIES(): string;
 +    get ACTIVITY(): string;
 +    get STAT_ACTIVITIES(): string;
++    get CREATE_GEAR(): string;
 +    get ACTIVITY_GEAR(): string;
 +    GEAR_DATA(gearId: GCGearUuid): string;
 +    ACTIVITY_GEAR_LINK(gearId: GCGearUuid, activityId: GCActivityId): string;
@@ -2439,6 +2455,15 @@ index 0000000000000000000000000000000000000000..5c74207d32541c3b008c4df982824a45
 +        activityId: GCActivityId;
 +    }): Promise<IActivityDetails>;
 +    countActivities(): Promise<ICountActivities>;
++    createGear(payload: {
++        createDate: Date;
++        customMakeModel: string;
++        dateBegin: Date;
++        displayName: string;
++        gearMakeName: string;
++        gearModelName: string;
++        maximumMeters: number;
++    }): Promise<Gear>;
 +    getGears(userProfilePk: string | number): Promise<Gear[]>;
 +    getActivityGear(activityId: string): Promise<Gear[]>;
 +    linkActivityGear(gearUuid: GCGearUuid, activityId: GCActivityId): Promise<Gear>;
@@ -2488,10 +2513,10 @@ index 0000000000000000000000000000000000000000..5c74207d32541c3b008c4df982824a45
 +
 +export { ActivitySubType, ActivityType, GarminConnect, type Gear, GearStatus, type IActivity, type IActivityDetails };
 diff --git a/dist/index.d.ts b/dist/index.d.ts
-index e38e9cc05dd81ea98991caad686af9341a3c87d3..5c74207d32541c3b008c4df982824a45b8f76974 100644
+index e38e9cc05dd81ea98991caad686af9341a3c87d3..1390408a1a2e1262ea4bfd58bb806b307169a8a6 100644
 --- a/dist/index.d.ts
 +++ b/dist/index.d.ts
-@@ -1 +1,1310 @@
+@@ -1 +1,1320 @@
 -export { default as GarminConnect } from './garmin/GarminConnect';
 +import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders, AxiosResponse } from 'axios';
 +import OAuth$1 from 'oauth-1.0a';
@@ -3335,6 +3360,7 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..5c74207d32541c3b008c4df982824a45
 +    get ACTIVITIES(): string;
 +    get ACTIVITY(): string;
 +    get STAT_ACTIVITIES(): string;
++    get CREATE_GEAR(): string;
 +    get ACTIVITY_GEAR(): string;
 +    GEAR_DATA(gearId: GCGearUuid): string;
 +    ACTIVITY_GEAR_LINK(gearId: GCGearUuid, activityId: GCActivityId): string;
@@ -3755,6 +3781,15 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..5c74207d32541c3b008c4df982824a45
 +        activityId: GCActivityId;
 +    }): Promise<IActivityDetails>;
 +    countActivities(): Promise<ICountActivities>;
++    createGear(payload: {
++        createDate: Date;
++        customMakeModel: string;
++        dateBegin: Date;
++        displayName: string;
++        gearMakeName: string;
++        gearModelName: string;
++        maximumMeters: number;
++    }): Promise<Gear>;
 +    getGears(userProfilePk: string | number): Promise<Gear[]>;
 +    getActivityGear(activityId: string): Promise<Gear[]>;
 +    linkActivityGear(gearUuid: GCGearUuid, activityId: GCActivityId): Promise<Gear>;
@@ -3811,10 +3846,10 @@ deleted file mode 100644
 index 527f7858a51fc6d7310c68185d5ef885e10ae2b8..0000000000000000000000000000000000000000
 diff --git a/dist/index.mjs b/dist/index.mjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..3ebdc18d30bae6cfe792f044baa606ddac7baddf
+index 0000000000000000000000000000000000000000..d25e732c48aa0f3d692e5801e76dfab14cad9888
 --- /dev/null
 +++ b/dist/index.mjs
-@@ -0,0 +1,985 @@
+@@ -0,0 +1,1000 @@
 +var __defProp = Object.defineProperty;
 +var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 +
@@ -4184,6 +4219,9 @@ index 0000000000000000000000000000000000000000..3ebdc18d30bae6cfe792f044baa606dd
 +  get STAT_ACTIVITIES() {
 +    return `${this.GC_API}/fitnessstats-service/activity`;
 +  }
++  get CREATE_GEAR() {
++    return `${this.GC_API}/gear-service/gear`;
++  }
 +  get ACTIVITY_GEAR() {
 +    return `${this.GC_API}/gear-service/gear/filterGear`;
 +  }
@@ -4500,6 +4538,18 @@ index 0000000000000000000000000000000000000000..3ebdc18d30bae6cfe792f044baa606dd
 +        endDate: DateTime2.now().toFormat("yyyy-MM-dd"),
 +        metric: "duration"
 +      }
++    });
++  }
++  createGear(payload) {
++    return this.client.post(this.url.CREATE_GEAR, {
++      createDate: payload.createDate.toISOString(),
++      customMakeModel: payload.customMakeModel,
++      dateBegin: payload.dateBegin.toISOString(),
++      displayName: payload.displayName,
++      gearMakeName: payload.gearMakeName,
++      gearModelName: payload.gearModelName,
++      gearStatusName: "active",
++      maximumMeters: payload.maximumMeters
 +    });
 +  }
 +  getGears(userProfilePk) {

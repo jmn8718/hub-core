@@ -12,6 +12,7 @@ import type {
 	IDbGearWithDistance,
 	IGear,
 	IGearConnection,
+	IGearCreateInput,
 	IInbodyCreateInput,
 	IInbodyData,
 	IInbodyUpdateInput,
@@ -713,6 +714,29 @@ export class Db {
 					) as IGearConnection[])
 				: [],
 		} as IDbGearWithDistance;
+	}
+
+	async createGear(data: IGearCreateInput) {
+		if (!data.name?.trim()) {
+			throw new Error("Missing gear name");
+		}
+		if (!data.code?.trim()) {
+			throw new Error("Missing gear code");
+		}
+		const id = uuidv7();
+		await this._client.insert(gears).values({
+			id,
+			name: data.name.trim(),
+			code: data.code.trim(),
+			brand: data.brand?.trim() ?? "",
+			type: data.type,
+			dateBegin: data.dateBegin,
+			maximumDistance:
+				data.maximumDistance !== undefined
+					? Math.max(0, Math.round(data.maximumDistance))
+					: 0,
+		});
+		return { id };
 	}
 
 	editGear(id: string, data: Record<string, string>) {

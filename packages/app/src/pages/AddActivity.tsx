@@ -1,6 +1,6 @@
 import { ActivityType, type IActivityCreateInput } from "@repo/types";
 import { cn } from "@repo/ui";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import { Box } from "../components/Box.js";
@@ -9,19 +9,23 @@ import { useDataClient, useTheme } from "../contexts/index.js";
 import { toDateTimeLocal } from "./inbodyFormConfig.js";
 
 const allowedActivityTypes: readonly ActivityType[] = [
-	ActivityType.SWIM,
 	ActivityType.GYM,
+	ActivityType.SWIM,
 	ActivityType.OTHER,
 ] as const;
+
+const formatActivityName = (type: ActivityType) =>
+	type.charAt(0).toUpperCase() + type.slice(1);
 
 export function AddActivity() {
 	const { client } = useDataClient();
 	const { isDarkMode } = useTheme();
 	const navigate = useNavigate();
-	const [name, setName] = useState("");
 	const [activityType, setActivityType] = useState<ActivityType>(
-		ActivityType.SWIM,
+		ActivityType.GYM,
 	);
+	const [name, setName] = useState(() => formatActivityName(ActivityType.GYM));
+	const [isNameDirty, setIsNameDirty] = useState(false);
 	const [timestamp, setTimestamp] = useState(
 		toDateTimeLocal(new Date().toISOString()),
 	);
@@ -39,6 +43,12 @@ export function AddActivity() {
 		() => Intl.DateTimeFormat().resolvedOptions().timeZone,
 		[],
 	);
+
+	useEffect(() => {
+		if (!isNameDirty) {
+			setName(formatActivityName(activityType));
+		}
+	}, [activityType, isNameDirty]);
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -178,7 +188,10 @@ export function AddActivity() {
 							<input
 								type="text"
 								value={name}
-								onChange={(event) => setName(event.target.value)}
+								onChange={(event) => {
+									setIsNameDirty(true);
+									setName(event.target.value);
+								}}
 								required
 								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 							/>

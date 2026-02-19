@@ -4,8 +4,10 @@ import {
 	type IDbGearWithDistance,
 } from "@repo/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import { GearCard, GearFilters, H2 } from "../components/index.js";
+import { Routes } from "../constants.js";
 import { useDataClient, useLoading } from "../contexts/index.js";
 
 export function Gears() {
@@ -96,6 +98,14 @@ export function Gears() {
 				showRetired={showRetired}
 				setShowRetired={setShowRetired}
 			/>
+			<div className="mt-4 flex justify-end">
+				<Link
+					to={Routes.GEAR_ADD}
+					className="rounded-full border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-600"
+				>
+					Add Gear
+				</Link>
+			</div>
 			{Object.entries(filteredGear).map(
 				([key, values]) =>
 					values.length > 0 && (
@@ -112,7 +122,13 @@ export function Gears() {
 							) : (
 								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 									{values.map((gear) => (
-										<GearCard key={gear.id} data={gear} />
+										<GearCard
+											key={gear.id}
+											data={gear}
+											isEditable={false}
+											titleLink={`${Routes.GEAR}/${gear.id}`}
+											maxDistanceEditable={gear.type === GearType.SHOES}
+										/>
 									))}
 								</div>
 							)}

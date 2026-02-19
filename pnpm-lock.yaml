@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   garmin-connect@1.6.2:
-    hash: rykuvr773mphvp7gtk5fyo6j7i
+    hash: st6bafo4l2jixj5iytbr7iwe3y
     path: patches/garmin-connect@1.6.2.patch
 
 importers:
@@ -392,7 +392,7 @@ importers:
         version: 0.1.4
       garmin-connect:
         specifier: 1.6.2
-        version: 1.6.2(patch_hash=rykuvr773mphvp7gtk5fyo6j7i)
+        version: 1.6.2(patch_hash=st6bafo4l2jixj5iytbr7iwe3y)
       p-map:
         specifier: 7.0.3
         version: 7.0.3
@@ -6852,7 +6852,7 @@ packages:
   /function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
-  /garmin-connect@1.6.2(patch_hash=rykuvr773mphvp7gtk5fyo6j7i):
+  /garmin-connect@1.6.2(patch_hash=st6bafo4l2jixj5iytbr7iwe3y):
     resolution: {integrity: sha512-8QGeB3ZQTfaG1UZe1hd3CEOsaAozC1quG+CjX8yV0P6x+AyyWz4jqgIJ3MEK2NhDsxlXsF4jBOdpjUQubzmdFQ==}
     dependencies:
       app-root-path: 3.1.0

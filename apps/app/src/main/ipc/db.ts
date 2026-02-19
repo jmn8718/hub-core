@@ -3,6 +3,7 @@ import {
 	type ActivityType,
 	Channels,
 	type IActivityCreateInput,
+	type IGearCreateInput,
 	type IInbodyCreateInput,
 	type IInbodyUpdateInput,
 	type InbodyType,
@@ -173,6 +174,13 @@ ipcMain.handle(
 ipcMain.handle(Channels.DB_GEAR, async (_event, gearId: string) => {
 	return db.getGear(gearId);
 });
+
+ipcMain.handle(
+	Channels.DB_GEAR_CREATE,
+	async (_event, params: IGearCreateInput) => {
+		return db.createGear(params);
+	},
+);
 
 ipcMain.handle(
 	Channels.DB_GEAR_EDIT,

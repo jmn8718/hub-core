@@ -1,6 +1,7 @@
 import type { CacheDb, Db, IInsertActivityPayload } from "@repo/db";
 import {
 	type ConnectCredentials,
+	type IDbGearWithDistance,
 	Providers,
 	type StravaClientOptions,
 } from "@repo/types";
@@ -19,6 +20,10 @@ type ProviderOptions =
 			provider: Providers.STRAVA;
 			options: StravaClientOptions;
 	  };
+
+type ProviderGearCreator = {
+	createGear?: (gear: IDbGearWithDistance) => Promise<string>;
+};
 
 function initializeProviderClient(
 	db: Db,
@@ -84,6 +89,33 @@ export class ProviderManager {
 				concurrency: 1,
 			});
 		});
+	}
+
+	public async createGearOnProvider({
+		provider,
+		gearId,
+	}: {
+		provider: Providers;
+		gearId: string;
+	}) {
+		const client = this._getProvider(provider) as Client & ProviderGearCreator;
+		if (!client.createGear) {
+			throw new Error(`${provider} does not support gear creation`);
+		}
+		const gear = await this._db.getGear(gearId);
+		if (!gear) {
+			throw new Error("Missing gear");
+		}
+		if (
+			gear.providerConnections?.some(
+				(connection) => connection.provider === provider,
+			)
+		) {
+			throw new Error("Gear already connected to provider");
+		}
+		const providerGearId = await client.createGear(gear);
+		await this.syncGears(provider);
+		return providerGearId;
 	}
 
 	private insertInDatabase(payload: IInsertActivityPayload) {

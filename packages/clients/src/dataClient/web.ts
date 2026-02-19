@@ -9,6 +9,7 @@ import type {
 	IActivityCreateInput,
 	IDailyOverviewData,
 	IDbGearWithDistance,
+	IGearCreateInput,
 	IInbodyCreateInput,
 	IInbodyData,
 	IInbodyUpdateInput,
@@ -183,6 +184,12 @@ export class WebClient implements Client {
 		});
 	}
 
+	async createGear(
+		data: IGearCreateInput,
+	): Promise<ProviderSuccessResponse<{ id: string }>> {
+		return this._execute<{ id: string }>("createGear", { data });
+	}
+
 	async editGear(
 		id: string,
 		data: {
@@ -209,6 +216,13 @@ export class WebClient implements Client {
 		gearId: string,
 	): Promise<ProviderSuccessResponse> {
 		return this._execute("providerGearLink", { activityId, gearId });
+	}
+
+	async providerGearCreate(
+		provider: Providers,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		return this._execute("providerGearCreate", { provider, gearId });
 	}
 
 	async providerGearUnlink(

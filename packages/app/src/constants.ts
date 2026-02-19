@@ -6,6 +6,7 @@ export const Routes = {
 	TABLE: "/table",
 	PROVIDERS: "/providers",
 	GEAR: "/gear",
+	GEAR_ADD: "/gear/add",
 	INBODY: "/inbody",
 	INBODY_ADD: "/inbody/add",
 	INBODY_EDIT: "/inbody/:id/edit",

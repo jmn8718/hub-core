@@ -4,6 +4,8 @@ export { Settings as SettingsPage } from "./Settings.js";
 export { DataList as DataListPage } from "./DataList.js";
 export { Debug as DebugPage } from "./Debug.js";
 export { Gears as GearsPage } from "./Gears.js";
+export { GearDetails as GearDetailsPage } from "./GearDetails.js";
+export { AddGear as AddGearPage } from "./AddGear.js";
 export { Inbody as InbodyPage } from "./Inbody.js";
 export { InbodyAdd as InbodyAddPage } from "./InbodyAdd.js";
 export { InbodyEdit as InbodyEditPage } from "./InbodyEdit.js";

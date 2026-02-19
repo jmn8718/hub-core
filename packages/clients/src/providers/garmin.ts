@@ -13,6 +13,7 @@ import {
 	FileExtensions,
 	GearType,
 	type IDbActivity,
+	type IDbGearWithDistance,
 	type LoginCredentials,
 	Providers,
 } from "@repo/types";
@@ -496,6 +497,26 @@ export class GarminClient extends Base implements Client {
 			activityId,
 			GarminClient.EXTENSION as FileExtensions,
 		);
+	}
+
+	async createGear(gear: IDbGearWithDistance): Promise<string> {
+		const now = new Date();
+		const startDate = gear.dateBegin ? new Date(gear.dateBegin) : now;
+		const payload = {
+			createDate: now,
+			customMakeModel: gear.code || gear.name,
+			dateBegin: Number.isNaN(startDate.getTime()) ? now : startDate,
+			displayName: gear.name,
+			gearMakeName: gear.brand || gear.name.split(" ")[0] || gear.name,
+			gearModelName: gear.name,
+			maximumMeters: gear.maximumDistance ?? 0,
+		};
+		const created = await this._client.createGear(payload);
+		const id = created.uuid?.toString() ?? created.gearPk?.toString();
+		if (!id) {
+			throw new Error("Garmin gear creation returned no id");
+		}
+		return id;
 	}
 
 	async gearStatusUpdate(params: {

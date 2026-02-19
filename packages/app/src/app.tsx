@@ -41,6 +41,14 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 									<Route path={AppRoutes.DEBUG} element={<Pages.DebugPage />} />
 									<Route path={AppRoutes.GEAR} element={<Pages.GearsPage />} />
 									<Route
+										path={AppRoutes.GEAR_ADD}
+										element={<Pages.AddGearPage />}
+									/>
+									<Route
+										path={`${AppRoutes.GEAR}/:gearId`}
+										element={<Pages.GearDetailsPage />}
+									/>
+									<Route
 										path={AppRoutes.INBODY}
 										element={<Pages.InbodyPage />}
 									/>

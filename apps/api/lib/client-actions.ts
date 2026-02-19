@@ -4,6 +4,7 @@ import {
 	type ActivityType,
 	type ConnectCredentials,
 	type IActivityCreateInput,
+	type IGearCreateInput,
 	type IInbodyCreateInput,
 	type IInbodyUpdateInput,
 	type InbodyType,
@@ -255,6 +256,14 @@ export async function handleClientAction(
 			const id = ensureString(gearId, "gear id");
 			return withData(() => db.getGear(id));
 		}
+		case "createGear": {
+			const { data } = payload as { data?: IGearCreateInput };
+			if (!data || typeof data !== "object") {
+				throw new Error("Missing gear payload");
+			}
+			const result = await db.createGear(data);
+			return { success: true, ...result };
+		}
 		case "editGear": {
 			const { id, data } = payload as {
 				id?: string;
@@ -277,6 +286,21 @@ export async function handleClientAction(
 			return withVoid(async () => {
 				const manager = await getProviderManager();
 				return manager.linkGear({ activityId: id, gearId: targetGearId });
+			});
+		}
+		case "providerGearCreate": {
+			const { provider, gearId } = payload as {
+				provider?: Providers;
+				gearId?: string;
+			};
+			const providerEnum = ensureProvider(provider);
+			const targetGearId = ensureString(gearId, "gear id");
+			return withVoid(async () => {
+				const manager = await getProviderManager();
+				await manager.createGearOnProvider({
+					provider: providerEnum,
+					gearId: targetGearId,
+				});
 			});
 		}
 		case "providerGearUnlink": {

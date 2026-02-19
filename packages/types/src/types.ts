@@ -84,6 +84,15 @@ export interface IActivityCreateInput {
 	isEvent?: boolean;
 }
 
+export interface IGearCreateInput {
+	name: string;
+	code: string;
+	type: GearType;
+	brand?: string;
+	dateBegin?: string;
+	maximumDistance?: number;
+}
+
 export interface IGear {
 	id: string;
 	type: GearType;

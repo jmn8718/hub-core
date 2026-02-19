@@ -10,6 +10,7 @@ import {
 	type IActivityCreateInput,
 	type IDailyOverviewData,
 	type IDbGearWithDistance,
+	type IGearCreateInput,
 	type IInbodyCreateInput,
 	type IInbodyData,
 	type IInbodyUpdateInput,
@@ -311,6 +312,26 @@ export class AppClient implements Client {
 		}
 	}
 
+	async createGear(
+		data: IGearCreateInput,
+	): Promise<ProviderSuccessResponse<{ id: string }>> {
+		try {
+			const result = (await window.electron.ipcRenderer.invoke(
+				Channels.DB_GEAR_CREATE,
+				data,
+			)) as Awaited<Promise<{ id: string }>>;
+			return {
+				success: true,
+				...result,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async editGear(
 		id: string,
 		data: {
@@ -375,6 +396,26 @@ export class AppClient implements Client {
 		try {
 			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_GEAR_LINK, {
 				activityId,
+				gearId,
+			});
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async providerGearCreate(
+		provider: Providers,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_GEAR_CREATE, {
+				provider,
 				gearId,
 			});
 			return {

@@ -28,6 +28,10 @@ export class ProviderManager {
 		throw new Error("Provider integrations are not available in the browser.");
 	}
 
+	createGearOnProvider(_params: { provider: Providers; gearId: string }) {
+		throw new Error("Provider integrations are not available in the browser.");
+	}
+
 	sync(_provider: Providers, _force?: boolean) {
 		throw new Error("Provider integrations are not available in the browser.");
 	}

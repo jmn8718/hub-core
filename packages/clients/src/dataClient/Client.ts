@@ -8,6 +8,7 @@ import type {
 	IActivityCreateInput,
 	IDailyOverviewData,
 	IDbGearWithDistance,
+	IGearCreateInput,
 	IInbodyCreateInput,
 	IInbodyData,
 	IInbodyUpdateInput,
@@ -119,6 +120,9 @@ export abstract class Client {
 			data?: IDbGearWithDistance;
 		}>
 	>;
+	abstract createGear(
+		data: IGearCreateInput,
+	): Promise<ProviderSuccessResponse<{ id: string }>>;
 
 	abstract editGear(
 		id: string,
@@ -142,6 +146,10 @@ export abstract class Client {
 	): Promise<ProviderSuccessResponse>;
 	abstract providerGearUnlink(
 		activityId: string,
+		gearId: string,
+	): Promise<ProviderSuccessResponse>;
+	abstract providerGearCreate(
+		provider: Providers,
 		gearId: string,
 	): Promise<ProviderSuccessResponse>;
 

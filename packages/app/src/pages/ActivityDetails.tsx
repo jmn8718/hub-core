@@ -18,30 +18,49 @@ export function ActivityDetails() {
 	const [gears, setGears] = useState<IDbGearWithDistance[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
-	const loadActivity = useCallback(() => {
+	const MAX_RETRIES = 3;
+	const RETRY_DELAY_MS = 1000;
+
+	const loadActivity = useCallback(async () => {
 		if (!activityId) {
 			toast.error("Missing activity id", { transition: Bounce });
 			setIsLoading(false);
-			return Promise.resolve();
+			return;
 		}
 		setIsLoading(true);
-		return Promise.all([
-			client.getActivity(activityId),
-			client.getGears({ limit: 100 }),
-		])
-			.then(([activityResult, gearsResult]) => {
-				if (!activityResult.success || !activityResult.data) {
-					throw new Error("Activity not found");
+
+		for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+			try {
+				const [activityResult, gearsResult] = await Promise.all([
+					client.getActivity(activityId),
+					client.getGears({ limit: 100 }),
+				]);
+
+				if (activityResult.success && activityResult.data) {
+					setActivity(activityResult.data);
+					if (gearsResult.success) {
+						setGears(gearsResult.data.data);
+					}
+					setIsLoading(false);
+					return;
 				}
-				setActivity(activityResult.data);
-				if (gearsResult.success) {
-					setGears(gearsResult.data.data);
+
+				if (attempt < MAX_RETRIES) {
+					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+					continue;
 				}
-			})
-			.catch((err) => {
+
+				throw new Error("Activity not found");
+			} catch (err) {
+				if (attempt < MAX_RETRIES) {
+					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+					continue;
+				}
 				toast.error((err as Error).message, { transition: Bounce });
-			})
-			.finally(() => setIsLoading(false));
+				setIsLoading(false);
+				return;
+			}
+		}
 	}, [activityId, client]);
 
 	useEffect(() => {

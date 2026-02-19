@@ -118,6 +118,22 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
+	Channels.PROVIDERS_GEAR_CREATE,
+	async (
+		_event,
+		{
+			provider,
+			gearId,
+		}: {
+			provider: Providers;
+			gearId: string;
+		},
+	) => {
+		await manager.createGearOnProvider({ provider, gearId });
+	},
+);
+
+ipcMain.handle(
 	Channels.PROVIDERS_GEAR_LINK,
 	async (
 		_event,
