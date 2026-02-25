@@ -127,6 +127,7 @@ ipcMain.handle(
 					notes: params.data.notes ?? null,
 				});
 			}
+			return undefined;
 		});
 	},
 );

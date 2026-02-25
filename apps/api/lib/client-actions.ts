@@ -187,7 +187,8 @@ export async function handleClientAction(
 			if (!data || typeof data !== "object") {
 				throw new Error("Missing activity payload");
 			}
-			return withData(() => db.createActivity(data));
+			const result = await db.createActivity(data);
+			return { success: true, ...result };
 		}
 		case "editActivity": {
 			const { id, data } = payload as {

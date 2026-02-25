@@ -176,7 +176,7 @@ export class AppClient implements Client {
 			)) as Awaited<Promise<{ id: string }>>;
 			return {
 				success: true,
-				data: result,
+				id: result.id,
 			};
 		} catch (err) {
 			return {
