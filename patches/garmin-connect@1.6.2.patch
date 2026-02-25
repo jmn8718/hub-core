@@ -144,10 +144,10 @@ deleted file mode 100644
 index 1943bb64881b6a4f0abaf5dc1984f5b812c45b61..0000000000000000000000000000000000000000
 diff --git a/dist/index.cjs b/dist/index.cjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..1e47f6c3e743fdcdcf38ad745e3ce5d49782e3c4
+index 0000000000000000000000000000000000000000..622fb29e12c77d879ae167572461f1a0501dc3c8
 --- /dev/null
 +++ b/dist/index.cjs
-@@ -0,0 +1,1038 @@
+@@ -0,0 +1,1060 @@
 +"use strict";
 +var __create = Object.create;
 +var __defProp = Object.defineProperty;
@@ -550,6 +550,9 @@ index 0000000000000000000000000000000000000000..1e47f6c3e743fdcdcf38ad745e3ce5d4
 +  }
 +  get ACTIVITY() {
 +    return `${this.GC_API}/activity-service/activity/`;
++  }
++  ACTIVITY_BY_ID(activityId) {
++    return `${this.GC_API}/activity-service/activity/${activityId}`;
 +  }
 +  get STAT_ACTIVITIES() {
 +    return `${this.GC_API}/fitnessstats-service/activity`;
@@ -959,6 +962,18 @@ index 0000000000000000000000000000000000000000..1e47f6c3e743fdcdcf38ad745e3ce5d4
 +      }
 +    });
 +  }
++  uploadActivityReadable(readable, format = "fit") {
++    if (!import_lodash2.default.includes(UploadFileType, format)) {
++      throw new Error(`uploadActivityReadable - Invalid format: ${format}`);
++    }
++    const form = new import_form_data2.default();
++    form.append("userfile", readable, { filename: `activity.${format}` });
++    return this.client.post(this.url.UPLOAD(format), form, {
++      headers: {
++        "Content-Type": form.getHeaders()["content-type"]
++      }
++    });
++  }
 +  getUploadActivityDetails(uploadCreationDate, activityId) {
 +    const creationDate = new Date(uploadCreationDate);
 +    return this.client.get(this.url.UPLOAD_ACTIVITY_STATUS(creationDate.getTime(), activityId));
@@ -966,6 +981,13 @@ index 0000000000000000000000000000000000000000..1e47f6c3e743fdcdcf38ad745e3ce5d4
 +  deleteActivity(activity) {
 +    if (!activity.activityId) throw new Error("Missing activityId");
 +    return this.client.delete(this.url.ACTIVITY + activity.activityId);
++  }
++  renameActivity(activityId, activityName) {
++    if (!activityId) throw new Error("Missing activityId");
++    if (!activityName) throw new Error("Missing activityName");
++    return this.client.put(this.url.ACTIVITY_BY_ID(activityId), {
++      activityName
++    });
 +  }
 +  getWorkouts(start, limit) {
 +    return this.client.get(this.url.WORKOUTS, {
@@ -1188,10 +1210,11 @@ index 0000000000000000000000000000000000000000..1e47f6c3e743fdcdcf38ad745e3ce5d4
 +});
 diff --git a/dist/index.d.cts b/dist/index.d.cts
 new file mode 100644
-index 0000000000000000000000000000000000000000..1390408a1a2e1262ea4bfd58bb806b307169a8a6
+index 0000000000000000000000000000000000000000..1b3acd4d48bb95639175b141db49715656e81b3c
 --- /dev/null
 +++ b/dist/index.d.cts
-@@ -0,0 +1,1320 @@
+@@ -0,0 +1,1324 @@
++import { Readable } from 'node:stream';
 +import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders, AxiosResponse } from 'axios';
 +import OAuth$1 from 'oauth-1.0a';
 +
@@ -2033,6 +2056,7 @@ index 0000000000000000000000000000000000000000..1390408a1a2e1262ea4bfd58bb806b30
 +    get USER_PROFILE(): string;
 +    get ACTIVITIES(): string;
 +    get ACTIVITY(): string;
++    ACTIVITY_BY_ID(activityId: GCActivityId): string;
 +    get STAT_ACTIVITIES(): string;
 +    get CREATE_GEAR(): string;
 +    get ACTIVITY_GEAR(): string;
@@ -2478,10 +2502,12 @@ index 0000000000000000000000000000000000000000..1390408a1a2e1262ea4bfd58bb806b30
 +        activityId: GCActivityId;
 +    }, dir: string, type?: ExportFileTypeValue): Promise<void>;
 +    uploadActivity(file: string, format?: UploadFileTypeTypeValue): Promise<IActivityUploadDetails>;
++    uploadActivityReadable(readable: Readable, format?: UploadFileTypeTypeValue): Promise<IActivityUploadDetails>;
 +    getUploadActivityDetails(uploadCreationDate: string, activityId: string): Promise<IActivityUploadDetails>;
 +    deleteActivity(activity: {
 +        activityId: GCActivityId;
 +    }): Promise<void>;
++    renameActivity(activityId: GCActivityId, activityName: string): Promise<void>;
 +    getWorkouts(start: number, limit: number): Promise<IWorkout[]>;
 +    getWorkoutDetail(workout: {
 +        workoutId: string;
@@ -2513,11 +2539,12 @@ index 0000000000000000000000000000000000000000..1390408a1a2e1262ea4bfd58bb806b30
 +
 +export { ActivitySubType, ActivityType, GarminConnect, type Gear, GearStatus, type IActivity, type IActivityDetails };
 diff --git a/dist/index.d.ts b/dist/index.d.ts
-index e38e9cc05dd81ea98991caad686af9341a3c87d3..1390408a1a2e1262ea4bfd58bb806b307169a8a6 100644
+index e38e9cc05dd81ea98991caad686af9341a3c87d3..1b3acd4d48bb95639175b141db49715656e81b3c 100644
 --- a/dist/index.d.ts
 +++ b/dist/index.d.ts
-@@ -1 +1,1320 @@
+@@ -1 +1,1324 @@
 -export { default as GarminConnect } from './garmin/GarminConnect';
++import { Readable } from 'node:stream';
 +import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders, AxiosResponse } from 'axios';
 +import OAuth$1 from 'oauth-1.0a';
 +
@@ -3359,6 +3386,7 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..1390408a1a2e1262ea4bfd58bb806b30
 +    get USER_PROFILE(): string;
 +    get ACTIVITIES(): string;
 +    get ACTIVITY(): string;
++    ACTIVITY_BY_ID(activityId: GCActivityId): string;
 +    get STAT_ACTIVITIES(): string;
 +    get CREATE_GEAR(): string;
 +    get ACTIVITY_GEAR(): string;
@@ -3804,10 +3832,12 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..1390408a1a2e1262ea4bfd58bb806b30
 +        activityId: GCActivityId;
 +    }, dir: string, type?: ExportFileTypeValue): Promise<void>;
 +    uploadActivity(file: string, format?: UploadFileTypeTypeValue): Promise<IActivityUploadDetails>;
++    uploadActivityReadable(readable: Readable, format?: UploadFileTypeTypeValue): Promise<IActivityUploadDetails>;
 +    getUploadActivityDetails(uploadCreationDate: string, activityId: string): Promise<IActivityUploadDetails>;
 +    deleteActivity(activity: {
 +        activityId: GCActivityId;
 +    }): Promise<void>;
++    renameActivity(activityId: GCActivityId, activityName: string): Promise<void>;
 +    getWorkouts(start: number, limit: number): Promise<IWorkout[]>;
 +    getWorkoutDetail(workout: {
 +        workoutId: string;
@@ -3846,10 +3876,10 @@ deleted file mode 100644
 index 527f7858a51fc6d7310c68185d5ef885e10ae2b8..0000000000000000000000000000000000000000
 diff --git a/dist/index.mjs b/dist/index.mjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..d25e732c48aa0f3d692e5801e76dfab14cad9888
+index 0000000000000000000000000000000000000000..1485cb1e6d21314e4bdddf6d6717802719edf278
 --- /dev/null
 +++ b/dist/index.mjs
-@@ -0,0 +1,1000 @@
+@@ -0,0 +1,1022 @@
 +var __defProp = Object.defineProperty;
 +var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 +
@@ -4215,6 +4245,9 @@ index 0000000000000000000000000000000000000000..d25e732c48aa0f3d692e5801e76dfab1
 +  }
 +  get ACTIVITY() {
 +    return `${this.GC_API}/activity-service/activity/`;
++  }
++  ACTIVITY_BY_ID(activityId) {
++    return `${this.GC_API}/activity-service/activity/${activityId}`;
 +  }
 +  get STAT_ACTIVITIES() {
 +    return `${this.GC_API}/fitnessstats-service/activity`;
@@ -4624,6 +4657,18 @@ index 0000000000000000000000000000000000000000..d25e732c48aa0f3d692e5801e76dfab1
 +      }
 +    });
 +  }
++  uploadActivityReadable(readable, format = "fit") {
++    if (!_2.includes(UploadFileType, format)) {
++      throw new Error(`uploadActivityReadable - Invalid format: ${format}`);
++    }
++    const form = new FormData2();
++    form.append("userfile", readable, { filename: `activity.${format}` });
++    return this.client.post(this.url.UPLOAD(format), form, {
++      headers: {
++        "Content-Type": form.getHeaders()["content-type"]
++      }
++    });
++  }
 +  getUploadActivityDetails(uploadCreationDate, activityId) {
 +    const creationDate = new Date(uploadCreationDate);
 +    return this.client.get(this.url.UPLOAD_ACTIVITY_STATUS(creationDate.getTime(), activityId));
@@ -4631,6 +4676,13 @@ index 0000000000000000000000000000000000000000..d25e732c48aa0f3d692e5801e76dfab1
 +  deleteActivity(activity) {
 +    if (!activity.activityId) throw new Error("Missing activityId");
 +    return this.client.delete(this.url.ACTIVITY + activity.activityId);
++  }
++  renameActivity(activityId, activityName) {
++    if (!activityId) throw new Error("Missing activityId");
++    if (!activityName) throw new Error("Missing activityName");
++    return this.client.put(this.url.ACTIVITY_BY_ID(activityId), {
++      activityName
++    });
 +  }
 +  getWorkouts(start, limit) {
 +    return this.client.get(this.url.WORKOUTS, {
