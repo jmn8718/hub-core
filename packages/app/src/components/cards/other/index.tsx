@@ -24,6 +24,7 @@ interface OtherActivityCardProps {
 }
 
 const subtypeOptions = ["", ...Object.values(ActivitySubType)];
+const supportsSubtype = (type: ActivityType) => type !== ActivityType.GYM;
 
 export function OtherActivityCard({
 	activity,
@@ -72,9 +73,15 @@ function OtherActivityBody({
 
 	const hasChanges = useMemo(() => {
 		const currentSubtype = context.activityData.subtype || "";
+		const nextSubtype = supportsSubtype(classification.type)
+			? classification.subtype
+			: "";
+		const baseSubtype = supportsSubtype(context.activityData.type)
+			? currentSubtype
+			: "";
 		return (
 			classification.type !== context.activityData.type ||
-			classification.subtype !== currentSubtype
+			nextSubtype !== baseSubtype
 		);
 	}, [classification, context.activityData]);
 
@@ -88,7 +95,7 @@ function OtherActivityBody({
 			} = {
 				type: classification.type,
 			};
-			if (classification.subtype) {
+			if (supportsSubtype(classification.type) && classification.subtype) {
 				payload.subtype = classification.subtype;
 			}
 			const result = await client.editActivity(
@@ -144,10 +151,14 @@ function OtherActivityBody({
 							className="mt-1 w-full rounded border border-gray-300 bg-transparent px-3 py-2 text-sm"
 							value={classification.type}
 							onChange={(event) =>
-								setClassification((prev) => ({
-									...prev,
-									type: event.target.value as ActivityType,
-								}))
+								setClassification((prev) => {
+									const nextType = event.target.value as ActivityType;
+									return {
+										...prev,
+										type: nextType,
+										subtype: supportsSubtype(nextType) ? prev.subtype : "",
+									};
+								})
 							}
 						>
 							{Object.values(ActivityType).map((value) => (
@@ -157,25 +168,27 @@ function OtherActivityBody({
 							))}
 						</select>
 					</label>
-					<label className="text-sm font-medium">
-						Subtype
-						<select
-							className="mt-1 w-full rounded border border-gray-300 bg-transparent px-3 py-2 text-sm"
-							value={classification.subtype}
-							onChange={(event) =>
-								setClassification((prev) => ({
-									...prev,
-									subtype: event.target.value as ActivitySubType | "",
-								}))
-							}
-						>
-							{subtypeOptions.map((value) => (
-								<option key={value || "none"} value={value}>
-									{value || "None"}
-								</option>
-							))}
-						</select>
-					</label>
+					{supportsSubtype(classification.type) && (
+						<label className="text-sm font-medium">
+							Subtype
+							<select
+								className="mt-1 w-full rounded border border-gray-300 bg-transparent px-3 py-2 text-sm"
+								value={classification.subtype}
+								onChange={(event) =>
+									setClassification((prev) => ({
+										...prev,
+										subtype: event.target.value as ActivitySubType | "",
+									}))
+								}
+							>
+								{subtypeOptions.map((value) => (
+									<option key={value || "none"} value={value}>
+										{value || "None"}
+									</option>
+								))}
+							</select>
+						</label>
+					)}
 				</div>
 				<Button onClick={handleClassificationUpdate} disabled={!hasChanges}>
 					Apply classification
