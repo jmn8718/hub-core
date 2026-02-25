@@ -25,7 +25,7 @@
     "@repo/db": "workspace:*",
     "@repo/types": "workspace:*",
     "@supabase/supabase-js": "2.48.1",
-    "coros-connect": "0.1.4",
+    "coros-connect": "0.1.5",
     "garmin-connect": "1.6.2",
     "p-map": "7.0.3",
     "p-queue": "8.1.0",
