@@ -85,6 +85,13 @@ export class ProviderManager {
 		throw new Error("Provider integrations are not available in the browser.");
 	}
 
+	updateActivityName(_params: {
+		activityId: string;
+		name?: string | null;
+	}) {
+		throw new Error("Provider integrations are not available in the browser.");
+	}
+
 	linkActivityGear(_activityId: string, _providerGearId: string) {
 		throw new Error("Provider integrations are not available in the browser.");
 	}

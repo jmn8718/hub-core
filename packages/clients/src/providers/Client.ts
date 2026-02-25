@@ -60,4 +60,9 @@ export abstract class Client {
 		activityId: string,
 		notes?: string | null,
 	): Promise<void>;
+
+	abstract updateActivityName(
+		activityId: string,
+		name?: string | null,
+	): Promise<void>;
 }

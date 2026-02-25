@@ -213,6 +213,17 @@ export async function handleClientAction(
 						console.error(error);
 					}
 				}
+				if (Object.hasOwn(activityData, "name")) {
+					try {
+						const manager = await getProviderManager();
+						await manager.updateActivityName({
+							activityId,
+							name: (activityData.name as string | null | undefined) ?? null,
+						});
+					} catch (error) {
+						console.error(error);
+					}
+				}
 			});
 		}
 		case "deleteActivity": {

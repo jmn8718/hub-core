@@ -372,9 +372,9 @@ export class StravaClient extends Base implements Client {
 		this._notImplemented();
 	}
 
-	updateActivityNotes(
+	private updateActivity(
 		activityId: string,
-		notes?: string | null,
+		body: { description?: string; name?: string },
 	): Promise<void> {
 		return this._request<StravaActivity>(`/activities/${activityId}`, {
 			method: "PUT",
@@ -382,9 +382,22 @@ export class StravaClient extends Base implements Client {
 				"Content-Type": "application/json",
 			},
 			// https://developers.strava.com/docs/reference/#api-models-UpdatableActivity
-			body: JSON.stringify({
-				description: notes ?? "",
-			}),
+			body: JSON.stringify(body),
 		}).then(() => undefined);
+	}
+
+	updateActivityNotes(
+		activityId: string,
+		notes?: string | null,
+	): Promise<void> {
+		return this.updateActivity(activityId, {
+			description: notes ?? "",
+		});
+	}
+
+	updateActivityName(activityId: string, name?: string | null): Promise<void> {
+		return this.updateActivity(activityId, {
+			name: name ?? "",
+		});
 	}
 }

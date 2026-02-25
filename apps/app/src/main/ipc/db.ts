@@ -121,13 +121,25 @@ ipcMain.handle(
 		},
 	) => {
 		return db.editActivity(params.activityId, params.data).then(() => {
+			const updates: Promise<void>[] = [];
 			if (typeof params.data.notes !== "undefined") {
-				return manager.updateActivityNotes({
-					activityId: params.activityId,
-					notes: params.data.notes ?? null,
-				});
+				updates.push(
+					manager.updateActivityNotes({
+						activityId: params.activityId,
+						notes: params.data.notes ?? null,
+					}),
+				);
 			}
-			return undefined;
+			if (typeof params.data.name !== "undefined") {
+				updates.push(
+					manager.updateActivityName({
+						activityId: params.activityId,
+						name: params.data.name ?? null,
+					}),
+				);
+			}
+			if (updates.length === 0) return undefined;
+			return Promise.all(updates).then(() => undefined);
 		});
 	},
 );

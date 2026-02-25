@@ -544,4 +544,8 @@ export class GarminClient extends Base implements Client {
 		// TODO implement when garmin-connect supports it
 		return;
 	}
+
+	async updateActivityName(activityId: string, name?: string | null) {
+		await this._client.renameActivity(Number(activityId), name ?? "");
+	}
 }

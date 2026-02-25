@@ -300,29 +300,53 @@ export class ProviderManager {
 		return client.gearStatusUpdate(params);
 	}
 
-	public updateActivityNotes(params: {
+	public async updateActivityNotes(params: {
 		activityId: string;
 		notes?: string | null;
 	}) {
-		return this._db.getActivity(params.activityId).then((activity) => {
-			if (!activity?.connections?.length) return;
-			return pMap(
-				activity.connections,
-				async ({ provider, id }) => {
-					if (!provider || !this._clients[provider]) return;
-					const client = this._clients[provider];
-					if (!client) return;
-					try {
-						await client.updateActivityNotes(id, params.notes ?? undefined);
-					} catch (error) {
-						console.error(error);
-					}
-				},
-				{
-					concurrency: 1,
-					stopOnError: false,
-				},
-			);
-		});
+		const activity = await this._db.getActivity(params.activityId);
+		if (!activity?.connections?.length) return;
+		await pMap(
+			activity.connections,
+			async ({ provider, id }) => {
+				if (!provider || !this._clients[provider]) return;
+				const client = this._clients[provider];
+				if (!client) return;
+				try {
+					await client.updateActivityNotes(id, params.notes ?? undefined);
+				} catch (error) {
+					console.error(error);
+				}
+			},
+			{
+				concurrency: 1,
+				stopOnError: false,
+			},
+		);
+	}
+
+	public async updateActivityName(params: {
+		activityId: string;
+		name?: string | null;
+	}) {
+		const activity = await this._db.getActivity(params.activityId);
+		if (!activity?.connections?.length) return;
+		await pMap(
+			activity.connections,
+			async ({ provider, id }) => {
+				if (!provider || !this._clients[provider]) return;
+				const client = this._clients[provider];
+				if (!client) return;
+				try {
+					await client.updateActivityName(id, params.name ?? undefined);
+				} catch (error) {
+					console.error(error);
+				}
+			},
+			{
+				concurrency: 1,
+				stopOnError: false,
+			},
+		);
 	}
 }

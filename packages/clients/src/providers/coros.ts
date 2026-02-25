@@ -277,4 +277,11 @@ export class CorosClient extends Base implements Client {
 		// TODO implement when coros-connect supports it
 		return;
 	}
+
+	async updateActivityName(activityId: string, name?: string | null) {
+		await this._client.updateActivityName({
+			labelId: activityId,
+			name: name ?? "",
+		});
+	}
 }
