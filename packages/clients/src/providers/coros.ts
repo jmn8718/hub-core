@@ -19,7 +19,15 @@ import pQueue from "p-queue";
 import { type Client, generateActivityFilePath } from "./Client.js";
 import { Base } from "./base.js";
 
-function mapActivityDetails(activity: ActivityData, id: string): IDbActivity {
+type CorosActivityDetails = Omit<
+	ActivityData,
+	"frequencyList" | "graphList" | "gpsLightDuration" | "pauseList"
+>;
+
+function mapActivityDetails(
+	activity: CorosActivityDetails,
+	id: string,
+): IDbActivity {
 	return {
 		id,
 		timestamp: new Date(
@@ -158,14 +166,24 @@ export class CorosClient extends Base implements Client {
 		});
 	}
 
-	async getActivity(id: string) {
-		const cacheValue = await this._cache.get<
-			Awaited<ReturnType<typeof this._client.getActivityDetails>>
-		>(this._provider, "activity", id);
-		if (cacheValue) return cacheValue;
-		const data = await this._client.getActivityDetails(id);
+	async getActivity(id: string, options?: { force?: boolean }) {
+		if (!options?.force) {
+			const cacheValue = await this._cache.get<CorosActivityDetails>(
+				this._provider,
+				"activity",
+				id,
+			);
+			if (cacheValue) return cacheValue;
+		}
+		const { frequencyList, graphList, gpsLightDuration, pauseList, ...data } =
+			await this._client.getActivityDetails(id);
 		if (data) {
-			this._cache.set<ActivityData>(this._provider, "activity", id, data);
+			this._cache.set<CorosActivityDetails>(
+				this._provider,
+				"activity",
+				id,
+				data,
+			);
 		}
 		return data;
 	}
