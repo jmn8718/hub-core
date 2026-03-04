@@ -150,6 +150,7 @@ export class GarminClient extends Base implements Client {
 			username: "",
 			password: "",
 		});
+		// this._client.setLogLevel('debug');
 	}
 
 	async connect({ username, password }: LoginCredentials) {

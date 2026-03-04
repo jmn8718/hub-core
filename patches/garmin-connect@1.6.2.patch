@@ -144,10 +144,10 @@ deleted file mode 100644
 index 1943bb64881b6a4f0abaf5dc1984f5b812c45b61..0000000000000000000000000000000000000000
 diff --git a/dist/index.cjs b/dist/index.cjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..81f909dec359fea8f299ae5f613faad23ae5ec48
+index 0000000000000000000000000000000000000000..e5e0ff3d6bb7ff07512baff2ce46fba5dfeceb77
 --- /dev/null
 +++ b/dist/index.cjs
-@@ -0,0 +1,1252 @@
+@@ -0,0 +1,1313 @@
 +"use strict";
 +var __create = Object.create;
 +var __defProp = Object.defineProperty;
@@ -219,6 +219,7 @@ index 0000000000000000000000000000000000000000..81f909dec359fea8f299ae5f613faad2
 +  }
 +  constructor(url) {
 +    this.url = url;
++    this.logLevel = "silent";
 +    this.client = import_axios.default.create();
 +    this.client.interceptors.response.use(
 +      (response) => response,
@@ -253,10 +254,7 @@ index 0000000000000000000000000000000000000000..81f909dec359fea8f299ae5f613faad2
 +          originalRequest.headers.Authorization = `Bearer ${this.oauth2Token.access_token}`;
 +          return this.client(originalRequest);
 +        }
-+        if (import_axios.default.isAxiosError(error)) {
-+          if (error?.response) this.handleError(error?.response);
-+        }
-+        throw error;
++        return Promise.reject(error);
 +      }
 +    );
 +    this.client.interceptors.request.use(async (config2) => {
@@ -281,45 +279,103 @@ index 0000000000000000000000000000000000000000..81f909dec359fea8f299ae5f613faad2
 +      }
 +    }
 +  }
++  setLogLevel(level) {
++    this.logLevel = level;
++  }
++  getLogLevel() {
++    return this.logLevel;
++  }
++  shouldLog(level) {
++    if (this.logLevel === "debug") return level === "debug";
++    if (this.logLevel === "error") return level === "error" || level === "debug";
++    return false;
++  }
++  getRequestPath(url) {
++    if (/^https?:\/\//.test(url)) {
++      const parsedUrl = new URL(url);
++      return `${parsedUrl.pathname}${parsedUrl.search}`;
++    }
++    return url;
++  }
++  // biome-ignore lint/suspicious/noExplicitAny: request/response bodies are dynamic
++  serializeBody(data) {
++    if (data === void 0) return null;
++    if (data === null) return null;
++    if (data instanceof import_form_data.default) return "[FormData]";
++    if (Buffer.isBuffer(data)) return "[Buffer]";
++    return data;
++  }
++  // biome-ignore lint/suspicious/noExplicitAny: axios request body is dynamic
++  logRequest(method, url, data) {
++    if (!this.shouldLog("debug")) return;
++    console.debug(`[garmin-connect] ${url}`);
++    console.debug(`[garmin-connect] ${method.toUpperCase()} ${this.getRequestPath(url)}`, {
++      body: this.serializeBody(data)
++    });
++  }
++  logError(method, url, error) {
++    if (!this.shouldLog("error")) return;
++    if (import_axios.default.isAxiosError(error)) {
++      console.error(`[garmin-connect] ${method.toUpperCase()} ${this.getRequestPath(url)} failed`, {
++        response: error.response ? {
++          status: error.response.status,
++          statusText: error.response.statusText,
++          data: error.response.data
++        } : null,
++        message: error.message
++      });
++      return;
++    }
++    console.error(`[garmin-connect] ${method.toUpperCase()} ${this.getRequestPath(url)} failed`, error);
++  }
++  async request(method, url, data, config2, transportMethod) {
++    const effectiveMethod = transportMethod ?? method.toLowerCase();
++    this.logRequest(method, url, data);
++    try {
++      const response = await this.client.request({
++        ...config2,
++        url,
++        data,
++        method: effectiveMethod
++      });
++      return response.data;
++    } catch (error) {
++      this.logError(method, url, error);
++      throw error;
++    }
++  }
 +  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async get(url, config2) {
-+    const response = await this.client.get(url, config2);
-+    return response?.data;
++    return this.request("GET", url, void 0, config2, "get");
 +  }
 +  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async post(url, data, config2) {
-+    const response = await this.client.post(url, data, config2);
-+    return response?.data;
++    return this.request("POST", url, data, config2, "post");
 +  }
 +  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async put(url, data, config2) {
-+    const response = await this.client.put(url, data, config2);
-+    return response?.data;
++    return this.request("PUT", url, data, config2, "put");
 +  }
 +  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async delete(url, config2) {
-+    const response = await this.client.post(url, null, {
-+      ...config2,
-+      headers: {
-+        ...config2?.headers,
-+        "X-Http-Method-Override": "DELETE"
-+      }
-+    });
-+    return response?.data;
++    return this.request(
++      "DELETE",
++      url,
++      null,
++      {
++        ...config2,
++        headers: {
++          ...config2?.headers,
++          "X-Http-Method-Override": "DELETE"
++        }
++      },
++      "post"
++    );
 +  }
 +  setCommonHeader(headers) {
 +    import_lodash.default.each(headers, (headerValue, key) => {
 +      this.client.defaults.headers.common[key] = headerValue;
 +    });
-+  }
-+  handleError(response) {
-+    this.handleHttpError(response);
-+  }
-+  handleHttpError(response) {
-+    const { status, statusText, data } = response;
-+    const msg = `ERROR: (${status}), ${statusText}, ${JSON.stringify(data)}`;
-+    console.error(msg);
-+    throw new Error(msg);
 +  }
 +  /**
 +   * Login to Garmin Connect
@@ -844,8 +900,6 @@ index 0000000000000000000000000000000000000000..81f909dec359fea8f299ae5f613faad2
 +    this.credentials = credentials;
 +    this.url = new UrlClass(domain);
 +    this.client = new HttpClient(this.url);
-+    this._userHash = void 0;
-+    this.listeners = {};
 +  }
 +  async login(username, password) {
 +    if (username && password) {
@@ -854,6 +908,13 @@ index 0000000000000000000000000000000000000000..81f909dec359fea8f299ae5f613faad2
 +    }
 +    await this.client.login(this.credentials.username, this.credentials.password);
 +    return this;
++  }
++  setLogLevel(level) {
++    this.client.setLogLevel(level);
++    return this;
++  }
++  getLogLevel() {
++    return this.client.getLogLevel();
 +  }
 +  exportTokenToFile(dirPath) {
 +    if (!checkIsDirectory(dirPath)) {
@@ -1027,7 +1088,7 @@ index 0000000000000000000000000000000000000000..81f909dec359fea8f299ae5f613faad2
 +  }
 +  updateActivityDescription(activityId, description) {
 +    if (!activityId) throw new Error("Missing activityId");
-+    return this.client.post(this.url.ACTIVITY_BY_ID(activityId), {
++    return this.client.put(this.url.ACTIVITY_BY_ID(activityId), {
 +      activityId,
 +      description
 +    });
@@ -1402,12 +1463,12 @@ index 0000000000000000000000000000000000000000..81f909dec359fea8f299ae5f613faad2
 +});
 diff --git a/dist/index.d.cts b/dist/index.d.cts
 new file mode 100644
-index 0000000000000000000000000000000000000000..b0dde278c028ccfbb17bd2f4533469858f7407a1
+index 0000000000000000000000000000000000000000..05b4e7618e7747110c03698bc831490f151b5ddb
 --- /dev/null
 +++ b/dist/index.d.cts
-@@ -0,0 +1,1379 @@
+@@ -0,0 +1,1387 @@
 +import { Readable } from 'node:stream';
-+import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders, AxiosResponse } from 'axios';
++import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
 +import OAuth$1 from 'oauth-1.0a';
 +
 +type GCUserProfileId = number;
@@ -2288,22 +2349,30 @@ index 0000000000000000000000000000000000000000..b0dde278c028ccfbb17bd2f453346985
 +    get WORKOUTS(): string;
 +}
 +
++type HttpClientLogLevel = 'silent' | 'error' | 'debug';
 +declare class HttpClient {
 +    client: AxiosInstance;
 +    url: UrlClass;
 +    oauth1Token: IOauth1Token | undefined;
 +    oauth2Token: IOauth2Token | undefined;
 +    OAUTH_CONSUMER: IOauth1Consumer | undefined;
++    private logLevel;
 +    constructor(url: UrlClass);
 +    fetchOauthConsumer(): Promise<void>;
 +    checkTokenVaild(): Promise<void>;
++    setLogLevel(level: HttpClientLogLevel): void;
++    getLogLevel(): HttpClientLogLevel;
++    private shouldLog;
++    private getRequestPath;
++    private serializeBody;
++    private logRequest;
++    private logError;
++    private request;
 +    get<T>(url: string, config?: AxiosRequestConfig<any>): Promise<T>;
 +    post<T>(url: string, data: any, config?: AxiosRequestConfig<any>): Promise<T>;
 +    put<T>(url: string, data: any, config?: AxiosRequestConfig<any>): Promise<T>;
 +    delete<T>(url: string, config?: AxiosRequestConfig<any>): Promise<T>;
 +    setCommonHeader(headers: RawAxiosRequestHeaders): void;
-+    handleError(response: AxiosResponse): void;
-+    handleHttpError(response: AxiosResponse): void;
 +    /**
 +     * Login to Garmin Connect
 +     * @param username
@@ -2691,12 +2760,12 @@ index 0000000000000000000000000000000000000000..b0dde278c028ccfbb17bd2f453346985
 +}
 +declare class GarminConnect {
 +    client: HttpClient;
-+    private _userHash;
 +    private credentials;
-+    private listeners;
 +    private url;
 +    constructor(credentials?: GCCredentials | undefined, domain?: GarminDomain);
 +    login(username?: string, password?: string): Promise<GarminConnect>;
++    setLogLevel(level: HttpClientLogLevel): GarminConnect;
++    getLogLevel(): HttpClientLogLevel;
 +    exportTokenToFile(dirPath: string): void;
 +    loadTokenByFile(dirPath: string): void;
 +    exportToken(): IGarminTokens;
@@ -2784,15 +2853,15 @@ index 0000000000000000000000000000000000000000..b0dde278c028ccfbb17bd2f453346985
 +    put<T>(url: string, data: any): Promise<T>;
 +}
 +
-+export { ActivitySubType, ActivityType, GarminConnect, type Gear, GearStatus, type IActivity, type IActivityDetails };
++export { ActivitySubType, ActivityType, GarminConnect, type Gear, GearStatus, type HttpClientLogLevel, type IActivity, type IActivityDetails };
 diff --git a/dist/index.d.ts b/dist/index.d.ts
-index e38e9cc05dd81ea98991caad686af9341a3c87d3..b0dde278c028ccfbb17bd2f4533469858f7407a1 100644
+index e38e9cc05dd81ea98991caad686af9341a3c87d3..05b4e7618e7747110c03698bc831490f151b5ddb 100644
 --- a/dist/index.d.ts
 +++ b/dist/index.d.ts
-@@ -1 +1,1379 @@
+@@ -1 +1,1387 @@
 -export { default as GarminConnect } from './garmin/GarminConnect';
 +import { Readable } from 'node:stream';
-+import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders, AxiosResponse } from 'axios';
++import { AxiosInstance, AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
 +import OAuth$1 from 'oauth-1.0a';
 +
 +type GCUserProfileId = number;
@@ -3673,22 +3742,30 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..b0dde278c028ccfbb17bd2f453346985
 +    get WORKOUTS(): string;
 +}
 +
++type HttpClientLogLevel = 'silent' | 'error' | 'debug';
 +declare class HttpClient {
 +    client: AxiosInstance;
 +    url: UrlClass;
 +    oauth1Token: IOauth1Token | undefined;
 +    oauth2Token: IOauth2Token | undefined;
 +    OAUTH_CONSUMER: IOauth1Consumer | undefined;
++    private logLevel;
 +    constructor(url: UrlClass);
 +    fetchOauthConsumer(): Promise<void>;
 +    checkTokenVaild(): Promise<void>;
++    setLogLevel(level: HttpClientLogLevel): void;
++    getLogLevel(): HttpClientLogLevel;
++    private shouldLog;
++    private getRequestPath;
++    private serializeBody;
++    private logRequest;
++    private logError;
++    private request;
 +    get<T>(url: string, config?: AxiosRequestConfig<any>): Promise<T>;
 +    post<T>(url: string, data: any, config?: AxiosRequestConfig<any>): Promise<T>;
 +    put<T>(url: string, data: any, config?: AxiosRequestConfig<any>): Promise<T>;
 +    delete<T>(url: string, config?: AxiosRequestConfig<any>): Promise<T>;
 +    setCommonHeader(headers: RawAxiosRequestHeaders): void;
-+    handleError(response: AxiosResponse): void;
-+    handleHttpError(response: AxiosResponse): void;
 +    /**
 +     * Login to Garmin Connect
 +     * @param username
@@ -4076,12 +4153,12 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..b0dde278c028ccfbb17bd2f453346985
 +}
 +declare class GarminConnect {
 +    client: HttpClient;
-+    private _userHash;
 +    private credentials;
-+    private listeners;
 +    private url;
 +    constructor(credentials?: GCCredentials | undefined, domain?: GarminDomain);
 +    login(username?: string, password?: string): Promise<GarminConnect>;
++    setLogLevel(level: HttpClientLogLevel): GarminConnect;
++    getLogLevel(): HttpClientLogLevel;
 +    exportTokenToFile(dirPath: string): void;
 +    loadTokenByFile(dirPath: string): void;
 +    exportToken(): IGarminTokens;
@@ -4169,7 +4246,7 @@ index e38e9cc05dd81ea98991caad686af9341a3c87d3..b0dde278c028ccfbb17bd2f453346985
 +    put<T>(url: string, data: any): Promise<T>;
 +}
 +
-+export { ActivitySubType, ActivityType, GarminConnect, type Gear, GearStatus, type IActivity, type IActivityDetails };
++export { ActivitySubType, ActivityType, GarminConnect, type Gear, GearStatus, type HttpClientLogLevel, type IActivity, type IActivityDetails };
 diff --git a/dist/index.js b/dist/index.js
 deleted file mode 100644
 index cb15496cdef986deb117e5157aaafc230e30cd99..0000000000000000000000000000000000000000
@@ -4178,10 +4255,10 @@ deleted file mode 100644
 index 527f7858a51fc6d7310c68185d5ef885e10ae2b8..0000000000000000000000000000000000000000
 diff --git a/dist/index.mjs b/dist/index.mjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..4f1965aedfe2da5ef362b693db80b8a46b22b5e5
+index 0000000000000000000000000000000000000000..a4d7cf16adb2589201f1f1099594744f9ee287d0
 --- /dev/null
 +++ b/dist/index.mjs
-@@ -0,0 +1,1214 @@
+@@ -0,0 +1,1275 @@
 +var __defProp = Object.defineProperty;
 +var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 +
@@ -4216,6 +4293,7 @@ index 0000000000000000000000000000000000000000..4f1965aedfe2da5ef362b693db80b8a4
 +  }
 +  constructor(url) {
 +    this.url = url;
++    this.logLevel = "silent";
 +    this.client = axios.create();
 +    this.client.interceptors.response.use(
 +      (response) => response,
@@ -4250,10 +4328,7 @@ index 0000000000000000000000000000000000000000..4f1965aedfe2da5ef362b693db80b8a4
 +          originalRequest.headers.Authorization = `Bearer ${this.oauth2Token.access_token}`;
 +          return this.client(originalRequest);
 +        }
-+        if (axios.isAxiosError(error)) {
-+          if (error?.response) this.handleError(error?.response);
-+        }
-+        throw error;
++        return Promise.reject(error);
 +      }
 +    );
 +    this.client.interceptors.request.use(async (config2) => {
@@ -4278,45 +4353,103 @@ index 0000000000000000000000000000000000000000..4f1965aedfe2da5ef362b693db80b8a4
 +      }
 +    }
 +  }
++  setLogLevel(level) {
++    this.logLevel = level;
++  }
++  getLogLevel() {
++    return this.logLevel;
++  }
++  shouldLog(level) {
++    if (this.logLevel === "debug") return level === "debug";
++    if (this.logLevel === "error") return level === "error" || level === "debug";
++    return false;
++  }
++  getRequestPath(url) {
++    if (/^https?:\/\//.test(url)) {
++      const parsedUrl = new URL(url);
++      return `${parsedUrl.pathname}${parsedUrl.search}`;
++    }
++    return url;
++  }
++  // biome-ignore lint/suspicious/noExplicitAny: request/response bodies are dynamic
++  serializeBody(data) {
++    if (data === void 0) return null;
++    if (data === null) return null;
++    if (data instanceof FormData) return "[FormData]";
++    if (Buffer.isBuffer(data)) return "[Buffer]";
++    return data;
++  }
++  // biome-ignore lint/suspicious/noExplicitAny: axios request body is dynamic
++  logRequest(method, url, data) {
++    if (!this.shouldLog("debug")) return;
++    console.debug(`[garmin-connect] ${url}`);
++    console.debug(`[garmin-connect] ${method.toUpperCase()} ${this.getRequestPath(url)}`, {
++      body: this.serializeBody(data)
++    });
++  }
++  logError(method, url, error) {
++    if (!this.shouldLog("error")) return;
++    if (axios.isAxiosError(error)) {
++      console.error(`[garmin-connect] ${method.toUpperCase()} ${this.getRequestPath(url)} failed`, {
++        response: error.response ? {
++          status: error.response.status,
++          statusText: error.response.statusText,
++          data: error.response.data
++        } : null,
++        message: error.message
++      });
++      return;
++    }
++    console.error(`[garmin-connect] ${method.toUpperCase()} ${this.getRequestPath(url)} failed`, error);
++  }
++  async request(method, url, data, config2, transportMethod) {
++    const effectiveMethod = transportMethod ?? method.toLowerCase();
++    this.logRequest(method, url, data);
++    try {
++      const response = await this.client.request({
++        ...config2,
++        url,
++        data,
++        method: effectiveMethod
++      });
++      return response.data;
++    } catch (error) {
++      this.logError(method, url, error);
++      throw error;
++    }
++  }
 +  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async get(url, config2) {
-+    const response = await this.client.get(url, config2);
-+    return response?.data;
++    return this.request("GET", url, void 0, config2, "get");
 +  }
 +  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async post(url, data, config2) {
-+    const response = await this.client.post(url, data, config2);
-+    return response?.data;
++    return this.request("POST", url, data, config2, "post");
 +  }
 +  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async put(url, data, config2) {
-+    const response = await this.client.put(url, data, config2);
-+    return response?.data;
++    return this.request("PUT", url, data, config2, "put");
 +  }
 +  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 +  async delete(url, config2) {
-+    const response = await this.client.post(url, null, {
-+      ...config2,
-+      headers: {
-+        ...config2?.headers,
-+        "X-Http-Method-Override": "DELETE"
-+      }
-+    });
-+    return response?.data;
++    return this.request(
++      "DELETE",
++      url,
++      null,
++      {
++        ...config2,
++        headers: {
++          ...config2?.headers,
++          "X-Http-Method-Override": "DELETE"
++        }
++      },
++      "post"
++    );
 +  }
 +  setCommonHeader(headers) {
 +    _.each(headers, (headerValue, key) => {
 +      this.client.defaults.headers.common[key] = headerValue;
 +    });
-+  }
-+  handleError(response) {
-+    this.handleHttpError(response);
-+  }
-+  handleHttpError(response) {
-+    const { status, statusText, data } = response;
-+    const msg = `ERROR: (${status}), ${statusText}, ${JSON.stringify(data)}`;
-+    console.error(msg);
-+    throw new Error(msg);
 +  }
 +  /**
 +   * Login to Garmin Connect
@@ -4841,8 +4974,6 @@ index 0000000000000000000000000000000000000000..4f1965aedfe2da5ef362b693db80b8a4
 +    this.credentials = credentials;
 +    this.url = new UrlClass(domain);
 +    this.client = new HttpClient(this.url);
-+    this._userHash = void 0;
-+    this.listeners = {};
 +  }
 +  async login(username, password) {
 +    if (username && password) {
@@ -4851,6 +4982,13 @@ index 0000000000000000000000000000000000000000..4f1965aedfe2da5ef362b693db80b8a4
 +    }
 +    await this.client.login(this.credentials.username, this.credentials.password);
 +    return this;
++  }
++  setLogLevel(level) {
++    this.client.setLogLevel(level);
++    return this;
++  }
++  getLogLevel() {
++    return this.client.getLogLevel();
 +  }
 +  exportTokenToFile(dirPath) {
 +    if (!checkIsDirectory(dirPath)) {
@@ -5024,7 +5162,7 @@ index 0000000000000000000000000000000000000000..4f1965aedfe2da5ef362b693db80b8a4
 +  }
 +  updateActivityDescription(activityId, description) {
 +    if (!activityId) throw new Error("Missing activityId");
-+    return this.client.post(this.url.ACTIVITY_BY_ID(activityId), {
++    return this.client.put(this.url.ACTIVITY_BY_ID(activityId), {
 +      activityId,
 +      description
 +    });
