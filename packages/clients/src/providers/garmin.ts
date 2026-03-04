@@ -541,8 +541,18 @@ export class GarminClient extends Base implements Client {
 	}
 
 	async updateActivityNotes(_activityId: string, _notes?: string | null) {
-		// TODO implement when garmin-connect supports it
-		return;
+		const activityId = Number(_activityId);
+		if (!activityId) {
+			throw new Error("Missing activityId");
+		}
+		const activity = await this.getActivity(_activityId, {
+			force: true,
+		});
+		await this._client.updateActivityDescription(activityId, _notes ?? "");
+		await this._cache.set<IActivityDetails>(this._provider, "activity", _activityId, {
+			...activity,
+			description: _notes ?? "",
+		});
 	}
 
 	async updateActivityName(activityId: string, name?: string | null) {
