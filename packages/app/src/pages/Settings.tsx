@@ -33,6 +33,17 @@ export function Settings() {
 						/>
 					</SectionContainer>
 				)}
+				{type === AppType.DESKTOP && (
+					<SectionContainer title="Cache" hasBorder>
+						<FolderPathSection
+							id="cache-path"
+							storeKey={StorageKeys.CACHE_FOLDER}
+							text="Optional folder to persist activity API cache as JSON files"
+							popupTitle="Select folder to save activity cache files"
+							placeholder="Enter cache folder path"
+						/>
+					</SectionContainer>
+				)}
 				{type === AppType.DESKTOP && !store[StorageKeys.OBSIDIAN_DISABLED] && (
 					<SectionContainer title="Obsidian">
 						<FolderPathSection

@@ -4,13 +4,22 @@ import { uuidv7 } from "uuidv7";
 import type { DbClient } from "./client";
 import { cacheRecords } from "./schemas";
 
-type ResourceType = "activity" | "gear";
+export type ResourceType = "activity" | "gear";
+
+type CacheSetHook = <T>(params: {
+	provider: Providers;
+	resource: ResourceType;
+	resourceId: string;
+	value: T;
+}) => void | Promise<void>;
 
 export class CacheDb {
 	private _client: DbClient;
+	private _onSet?: CacheSetHook;
 
-	constructor(client: DbClient) {
+	constructor(client: DbClient, options?: { onSet?: CacheSetHook }) {
 		this._client = client;
+		this._onSet = options?.onSet;
 	}
 
 	get<T>(provider: Providers, resource: ResourceType, resourceId: string) {
@@ -60,6 +69,19 @@ export class CacheDb {
 						value: JSON.stringify(value),
 					})
 					.execute(),
-			);
+			)
+			.then(async () => {
+				if (!this._onSet) return;
+				try {
+					await this._onSet({
+						provider,
+						resource,
+						resourceId,
+						value,
+					});
+				} catch (error) {
+					console.error("Failed to persist cache hook", error);
+				}
+			});
 	}
 }

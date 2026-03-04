@@ -469,6 +469,26 @@ export class AppClient implements Client {
 		}
 	}
 
+	async providerPersistActivityCache(params: {
+		provider: Providers;
+		providerActivityId: string;
+	}): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(
+				Channels.PROVIDERS_ACTIVITY_CACHE_PERSIST,
+				params,
+			);
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async providerConnect(
 		provider: Providers,
 		credentials: ConnectCredentials,

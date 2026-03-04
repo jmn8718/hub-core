@@ -153,6 +153,23 @@ export class ProviderManager {
 			.then(this.insertInDatabase.bind(this));
 	}
 
+	public async persistActivityCache(params: {
+		provider: Providers;
+		providerActivityId: string;
+	}) {
+		const client = this._getProvider(params.provider);
+		const details = await client.getActivity(params.providerActivityId, {
+			force: true,
+		});
+		await this._cache.set(
+			params.provider,
+			"activity",
+			params.providerActivityId,
+			details,
+		);
+		return details;
+	}
+
 	public linkGear({
 		gearId,
 		activityId,

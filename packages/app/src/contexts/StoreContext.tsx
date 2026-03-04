@@ -26,6 +26,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 		[StorageKeys.OBSIDIAN_DISABLED]: "",
 		[StorageKeys.OBSIDIAN_FOLDER]: "",
 		[StorageKeys.DOWNLOAD_FOLDER]: "",
+		[StorageKeys.CACHE_FOLDER]: "",
 	});
 
 	const setValue = useCallback(
@@ -66,6 +67,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 		getFromStore(StorageKeys.DOWNLOAD_FOLDER, true);
 		getFromStore(StorageKeys.OBSIDIAN_FOLDER, true);
 		getFromStore(StorageKeys.OBSIDIAN_DISABLED, true);
+		getFromStore(StorageKeys.CACHE_FOLDER, true);
 	}, [getFromStore]);
 
 	return (

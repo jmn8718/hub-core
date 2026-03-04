@@ -78,7 +78,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	const handleManualUpload = async () => {
 		// if it is coros or we have the activity, we do nothing
 		if (provider === Providers.COROS || connectionId) return;
-		if (provider !== Providers.GARMIN) return;
+		if (provider !== Providers.GARMIN && provider !== Providers.STRAVA) return;
 		setLocalLoading(true);
 		setLoading(true);
 
@@ -194,14 +194,15 @@ const ProviderRow: FC<ProviderRowProps> = ({
 						disabled={!hasDownloadFile || loading}
 					/>
 				)}
-				{!hasConnection && provider === Providers.GARMIN && (
-					<IconButton
-						icon={<UserPen size={16} />}
-						label="Manual upload"
-						onClick={handleManualUpload}
-						disabled={loading}
-					/>
-				)}
+				{!hasConnection &&
+					(provider === Providers.GARMIN || provider === Providers.STRAVA) && (
+						<IconButton
+							icon={<UserPen size={16} />}
+							label="Manual upload"
+							onClick={handleManualUpload}
+							disabled={loading}
+						/>
+					)}
 			</div>
 		</div>
 	);

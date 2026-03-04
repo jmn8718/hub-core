@@ -8,6 +8,7 @@ import {
 } from "@repo/types";
 import { ipcMain } from "electron";
 import { manager } from "../client.js";
+import { persistActivityCacheToDisk } from "../db.js";
 
 function isLoginCredentials(
 	credentials: ConnectCredentials,
@@ -114,6 +115,30 @@ ipcMain.handle(
 		},
 	) => {
 		await manager.syncGears(provider);
+	},
+);
+
+ipcMain.handle(
+	Channels.PROVIDERS_ACTIVITY_CACHE_PERSIST,
+	async (
+		_event,
+		{
+			provider,
+			providerActivityId,
+		}: {
+			provider: Providers;
+			providerActivityId: string;
+		},
+	) => {
+		const details = await manager.persistActivityCache({
+			provider,
+			providerActivityId,
+		});
+		await persistActivityCacheToDisk({
+			provider,
+			resourceId: providerActivityId,
+			value: details,
+		});
 	},
 );
 

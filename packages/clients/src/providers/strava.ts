@@ -47,10 +47,30 @@ function mapActivityType(type: string, title: string): ActivityType {
 			return ActivityType.BIKE;
 		case "hike":
 			return ActivityType.HIKE;
+		case "swim":
+			return ActivityType.SWIM;
 		case "workout":
-			return ActivityType.CARDIO;
+			return ActivityType.GYM;
 		default:
 			return defaultType;
+	}
+}
+
+function mapManualActivityType(type: ActivityType): string {
+	switch (type) {
+		case ActivityType.RUN:
+			return "Run";
+		case ActivityType.BIKE:
+			return "Ride";
+		case ActivityType.HIKE:
+			return "Hike";
+		case ActivityType.SWIM:
+			return "Swim";
+		case ActivityType.GYM:
+		case ActivityType.CARDIO:
+			return "Workout";
+		default:
+			throw new Error(`Activity type: ${type} not supported for manual upload`);
 	}
 }
 
@@ -325,13 +345,15 @@ export class StravaClient extends Base implements Client {
 		this._notImplemented();
 	}
 
-	async getActivity(id: string) {
-		const cacheValue = await this._cache.get<StravaActivity>(
-			this._provider,
-			"activity",
-			id,
-		);
-		if (cacheValue) return cacheValue;
+	async getActivity(id: string, options?: { force?: boolean }) {
+		if (!options?.force) {
+			const cacheValue = await this._cache.get<StravaActivity>(
+				this._provider,
+				"activity",
+				id,
+			);
+			if (cacheValue) return cacheValue;
+		}
 
 		const data = await this._request<StravaActivity>(`/activities/${id}`);
 		if (data) {
@@ -340,8 +362,28 @@ export class StravaClient extends Base implements Client {
 		return data;
 	}
 
-	async createManualActivity(_data: DbActivityPopulated): Promise<string> {
-		this._notImplemented();
+	async createManualActivity(data: DbActivityPopulated): Promise<string> {
+		const activityType = mapManualActivityType(data.type);
+		const payload = new URLSearchParams({
+			name: data.name || "Manual activity",
+			type: activityType,
+			start_date_local: new Date(data.timestamp).toISOString(),
+			elapsed_time: Math.max(1, Math.round(data.duration)).toString(),
+			description: data.notes || "",
+		});
+
+		if (data.distance > 0) {
+			payload.set("distance", Math.round(data.distance).toString());
+		}
+
+		const created = await this._request<StravaActivity>("/activities", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/x-www-form-urlencoded",
+			},
+			body: payload.toString(),
+		});
+		return created.id.toString();
 	}
 
 	async downloadActivity(

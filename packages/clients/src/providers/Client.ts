@@ -37,7 +37,10 @@ export abstract class Client {
 		gearId: string,
 	): Promise<void>;
 
-	abstract getActivity(id: string): Promise<unknown>;
+	abstract getActivity(
+		id: string,
+		options?: { force?: boolean },
+	): Promise<unknown>;
 
 	abstract createManualActivity(data: DbActivityPopulated): Promise<string>;
 	abstract downloadActivity(

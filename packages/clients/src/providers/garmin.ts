@@ -33,6 +33,8 @@ import { Base } from "./base.js";
 function mapActivityType(type: ActivityType) {
 	if (type === ActivityType.RUN) return "running";
 	if (type === ActivityType.SWIM) return "lap_swimming";
+	if (type === ActivityType.BIKE) return "cycling";
+	if (type === ActivityType.GYM) return "workout";
 	throw new Error(`Activity type: ${type} not supported for manual upload`);
 }
 
@@ -41,6 +43,13 @@ function mapProviderActivityType(type: string): ActivityType {
 		case GarminActivityType.Running:
 		case "indoor_running":
 			return ActivityType.RUN;
+		case GarminActivityType.Cycling:
+		case "indoor_cycling":
+			return ActivityType.BIKE;
+		case "lap_swimming":
+			return ActivityType.SWIM;
+		case "workout":
+			return ActivityType.GYM;
 		default:
 			return ActivityType.OTHER;
 	}
@@ -286,11 +295,13 @@ export class GarminClient extends Base implements Client {
 		return data;
 	}
 
-	async getActivity(id: string) {
-		const cacheValue = await this._cache.get<
-			Awaited<ReturnType<typeof this._client.getActivity>>
-		>(this._provider, "activity", id);
-		if (cacheValue) return cacheValue;
+	async getActivity(id: string, options?: { force?: boolean }) {
+		if (!options?.force) {
+			const cacheValue = await this._cache.get<
+				Awaited<ReturnType<typeof this._client.getActivity>>
+			>(this._provider, "activity", id);
+			if (cacheValue) return cacheValue;
+		}
 		const data = await this._client.getActivity({
 			activityId: Number(id),
 		});

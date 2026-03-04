@@ -14,7 +14,10 @@ export function FolderPathSection({
 	popupTitle,
 }: {
 	id: string;
-	storeKey: StorageKeys.OBSIDIAN_FOLDER | StorageKeys.DOWNLOAD_FOLDER;
+	storeKey:
+		| StorageKeys.OBSIDIAN_FOLDER
+		| StorageKeys.DOWNLOAD_FOLDER
+		| StorageKeys.CACHE_FOLDER;
 	text: string;
 	placeholder: string;
 	popupTitle: string;

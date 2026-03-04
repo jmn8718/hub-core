@@ -334,6 +334,15 @@ export class MockClient implements Client {
 		};
 	}
 
+	async providerPersistActivityCache(_params: {
+		provider: Providers;
+		providerActivityId: string;
+	}): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
+
 	async providerConnect(
 		provider: Providers,
 		credentials: ConnectCredentials,

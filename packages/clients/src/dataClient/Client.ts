@@ -157,6 +157,10 @@ export abstract class Client {
 		provider: Providers,
 		force?: boolean,
 	): Promise<ProviderSuccessResponse>;
+	abstract providerPersistActivityCache(params: {
+		provider: Providers;
+		providerActivityId: string;
+	}): Promise<ProviderSuccessResponse>;
 	abstract providerConnect(
 		provider: Providers,
 		credentials: ConnectCredentials,

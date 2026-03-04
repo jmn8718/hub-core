@@ -1,5 +1,11 @@
 import type { DbActivityPopulated, IDbGearWithDistance } from "@repo/types";
-import { ActivitySubType, ActivityType, Providers } from "@repo/types";
+import {
+	ActivitySubType,
+	ActivityType,
+	AppType,
+	Providers,
+	StorageKeys,
+} from "@repo/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
@@ -9,6 +15,7 @@ import { GearConnectionsSection } from "../components/cards/GearConnectionsSecti
 import { ActivityCard } from "../components/index.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useLoading } from "../contexts/LoadingContext.js";
+import { useStore } from "../contexts/StoreContext.js";
 
 export function ActivityDetails() {
 	const { client } = useDataClient();
@@ -121,11 +128,14 @@ function ActivityConnectionsPanel({
 	activity: DbActivityPopulated;
 	reload: () => Promise<void> | void;
 }) {
-	const { client } = useDataClient();
+	const { client, type } = useDataClient();
 	const { setLocalLoading } = useLoading();
+	const { store } = useStore();
 	const [pendingProvider, setPendingProvider] = useState<Providers | null>(
 		null,
 	);
+	const [pendingPersistProvider, setPendingPersistProvider] =
+		useState<Providers | null>(null);
 	const [inputValues, setInputValues] = useState<Record<Providers, string>>({
 		[Providers.GARMIN]: "",
 		[Providers.COROS]: "",
@@ -204,6 +214,37 @@ function ActivityConnectionsPanel({
 		}
 	};
 
+	const handlePersistCache = async (provider: Providers) => {
+		const providerActivityId = connectionMap.get(provider);
+		if (!providerActivityId) return;
+		const cacheFolder = store[StorageKeys.CACHE_FOLDER];
+		if (!cacheFolder) {
+			toast.error("Set cache path first", { transition: Bounce });
+			return;
+		}
+		setPendingPersistProvider(provider);
+		setLocalLoading(true);
+		try {
+			const result = await client.providerPersistActivityCache({
+				provider,
+				providerActivityId,
+			});
+			if (!result.success) throw new Error(result.error);
+			toast.success(`${provider} activity downloaded to cache path`, {
+				transition: Bounce,
+			});
+		} catch (err) {
+			toast.error((err as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		} finally {
+			setPendingPersistProvider(null);
+			setTimeout(() => setLocalLoading(false), 200);
+		}
+	};
+
 	const providersList = [Providers.GARMIN, Providers.COROS, Providers.STRAVA];
 
 	return (
@@ -233,14 +274,29 @@ function ActivityConnectionsPanel({
 								/>
 							</div>
 							{connectionId ? (
-								<button
-									type="button"
-									onClick={() => handleUnlink(provider)}
-									disabled={isProcessing}
-									className="rounded border border-red-500 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400"
-								>
-									{isProcessing ? "Removing..." : "Disconnect"}
-								</button>
+								<div className="flex items-center gap-2">
+									{type === AppType.DESKTOP &&
+										!!store[StorageKeys.CACHE_FOLDER] && (
+											<button
+												type="button"
+												onClick={() => handlePersistCache(provider)}
+												disabled={pendingPersistProvider === provider}
+												className="rounded border border-green-500 px-3 py-1 text-sm font-medium text-green-600 hover:bg-green-50 disabled:border-gray-300 disabled:text-gray-400"
+											>
+												{pendingPersistProvider === provider
+													? "Saving..."
+													: "Download"}
+											</button>
+										)}
+									<button
+										type="button"
+										onClick={() => handleUnlink(provider)}
+										disabled={isProcessing}
+										className="rounded border border-red-500 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400"
+									>
+										{isProcessing ? "Removing..." : "Disconnect"}
+									</button>
+								</div>
 							) : (
 								<div className="flex flex-col gap-2 md:flex-row">
 									<input
