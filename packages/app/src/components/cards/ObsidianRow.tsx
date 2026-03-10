@@ -20,14 +20,39 @@ interface ObsidianRowProps {
 	gears: IDbGear[];
 }
 
+type ObsidianDefaults = {
+	defaultCity?: string;
+	defaultCountry?: string;
+};
+
+const resolveLocationTag = (
+	locationValue: string | undefined,
+	fallbackValue?: string,
+) => {
+	const preferred = locationValue?.trim();
+	if (preferred) return preferred.toLowerCase();
+	const fallback = fallbackValue?.trim();
+	if (fallback) return fallback.toLowerCase();
+	return "";
+};
+
 const prepareObsidianRunningFile = (
 	data: DbActivityPopulated,
 	gears: IDbGear[],
+	defaults: ObsidianDefaults,
 ) => {
 	const shoeGear = data.gears.find((gear) => gear.type === GearType.SHOES);
 	const insoleGear = data.gears.find((gear) => gear.type === GearType.INSOLE);
 	const insole = gears.find(({ id }) => id === insoleGear?.id);
 	const shoe = gears.find(({ id }) => id === shoeGear?.id);
+	const locationName = resolveLocationTag(
+		data.locationName,
+		defaults.defaultCity,
+	);
+	const locationCountry = resolveLocationTag(
+		data.locationCountry,
+		defaults.defaultCountry,
+	);
 	return [
 		"---",
 		`date: ${formatDate(new Date(data.timestamp), { format: "YYYY-MM-DDTHH:mm:ss", timezone: data.timezone })}`,
@@ -38,8 +63,8 @@ const prepareObsidianRunningFile = (
 		data.subtype ? `type: ${data.subtype}` : "",
 		"tags:",
 		"  - running",
-		`  - ${data.locationName.toLowerCase() || "cheongra"}`,
-		`  - ${data.locationCountry.toLowerCase() || "korea"}`,
+		locationName ? `  - ${locationName}` : "",
+		locationCountry ? `  - ${locationCountry}` : "",
 		"---",
 		data.connections.length > 0
 			? [
@@ -55,7 +80,10 @@ const prepareObsidianRunningFile = (
 	];
 };
 
-const prepareObsidianSwimmingFile = (data: DbActivityPopulated) => {
+const prepareObsidianSwimmingFile = (
+	data: DbActivityPopulated,
+	defaults: ObsidianDefaults,
+) => {
 	const swimMetadata =
 		data.type === ActivityType.SWIM && data.metadata
 			? data.metadata
@@ -77,8 +105,8 @@ const prepareObsidianSwimmingFile = (data: DbActivityPopulated) => {
 		data.subtype ? `type: ${data.subtype}` : "",
 		"tags:",
 		"  - swim",
-		`  - ${data.locationName.toLowerCase() || "cheongra"}`,
-		`  - ${data.locationCountry.toLowerCase() || "korea"}`,
+		`  - ${resolveLocationTag(data.locationName, defaults.defaultCity)}`,
+		`  - ${resolveLocationTag(data.locationCountry, defaults.defaultCountry)}`,
 		"---",
 	];
 };
@@ -86,6 +114,7 @@ const prepareObsidianSwimmingFile = (data: DbActivityPopulated) => {
 const prepareObsidianCyclingFile = (
 	data: DbActivityPopulated,
 	gears: IDbGear[],
+	defaults: ObsidianDefaults,
 ) => {
 	const bikeGear = data.gears.find((gear) => gear.type === GearType.BIKE);
 	const bike = gears.find(({ id }) => id === bikeGear?.id);
@@ -98,8 +127,8 @@ const prepareObsidianCyclingFile = (
 		data.subtype ? `type: ${data.subtype}` : "",
 		"tags:",
 		"  - cycling",
-		`  - ${data.locationName.toLowerCase() || "cheongra"}`,
-		`  - ${data.locationCountry.toLowerCase() || "korea"}`,
+		`  - ${resolveLocationTag(data.locationName, defaults.defaultCity)}`,
+		`  - ${resolveLocationTag(data.locationCountry, defaults.defaultCountry)}`,
 		"---",
 		data.connections.length > 0
 			? [
@@ -115,7 +144,10 @@ const prepareObsidianCyclingFile = (
 	];
 };
 
-const prepareObsidianGymFile = (data: DbActivityPopulated) => {
+const prepareObsidianGymFile = (
+	data: DbActivityPopulated,
+	defaults: ObsidianDefaults,
+) => {
 	return [
 		"---",
 		`date: ${formatDate(new Date(data.timestamp), { format: "YYYY-MM-DDTHH:mm:ss", timezone: data.timezone })}`,
@@ -123,8 +155,8 @@ const prepareObsidianGymFile = (data: DbActivityPopulated) => {
 		data.subtype ? `type: ${data.subtype}` : "",
 		"tags:",
 		"  - gym",
-		`  - ${data.locationName.toLowerCase() || "cheongra"}`,
-		`  - ${data.locationCountry.toLowerCase() || "korea"}`,
+		`  - ${resolveLocationTag(data.locationName, defaults.defaultCity)}`,
+		`  - ${resolveLocationTag(data.locationCountry, defaults.defaultCountry)}`,
 		"---",
 		"\n# WORKOUT",
 		data.notes || "-",
@@ -134,23 +166,28 @@ const prepareObsidianGymFile = (data: DbActivityPopulated) => {
 const generateContent = (
 	data: DbActivityPopulated,
 	gears: IDbGear[],
+	defaults: ObsidianDefaults,
 ): string[] => {
 	switch (data.type) {
 		case ActivityType.RUN:
-			return prepareObsidianRunningFile(data, gears);
+			return prepareObsidianRunningFile(data, gears, defaults);
 		case ActivityType.SWIM:
-			return prepareObsidianSwimmingFile(data);
+			return prepareObsidianSwimmingFile(data, defaults);
 		case ActivityType.BIKE:
-			return prepareObsidianCyclingFile(data, gears);
+			return prepareObsidianCyclingFile(data, gears, defaults);
 		case ActivityType.GYM:
-			return prepareObsidianGymFile(data);
+			return prepareObsidianGymFile(data, defaults);
 		default:
 			return [];
 	}
 };
 
-const prepareContent = (data: DbActivityPopulated, gears: IDbGear[]) => {
-	const content = generateContent(data, gears);
+const prepareContent = (
+	data: DbActivityPopulated,
+	gears: IDbGear[],
+	defaults: ObsidianDefaults,
+) => {
+	const content = generateContent(data, gears, defaults);
 	return content.filter((row) => row.length).join("\n");
 };
 
@@ -175,9 +212,14 @@ const ObsidianRow: React.FC<ObsidianRowProps> = ({ data, gears }) => {
 		if (obsidianDisabled === "true") return;
 		const obsidianFolder = await getValue<string>(StorageKeys.OBSIDIAN_FOLDER);
 		if (!obsidianFolder) return;
+		const defaultCity = await getValue<string>(StorageKeys.DEFAULT_CITY);
+		const defaultCountry = await getValue<string>(StorageKeys.DEFAULT_COUNTRY);
 		setLocalLoading(true);
 		setLoading(true);
-		const content = prepareContent(data, gears);
+		const content = prepareContent(data, gears, {
+			defaultCity,
+			defaultCountry,
+		});
 
 		if (content.length > 0) {
 			const result = await client.exportActivityObsidian({
