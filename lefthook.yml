@@ -1,0 +1,11 @@
+pre-commit:
+  commands:
+    format:
+      glob: "{apps,packages}/**/*.{js,jsx,ts,tsx}"
+      run: pnpm biome check --write {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm commitlint --edit {1}
