@@ -1,4 +1,5 @@
 import {
+	ActivityType,
 	AppType,
 	type DbActivityPopulated,
 	type IDbGear,
@@ -135,6 +136,9 @@ export function ActivityCardTemplate({
 		}),
 		[activityData, handleEditActivity, refreshActivity],
 	);
+	const isRaceEligibleActivity =
+		activityData.type === ActivityType.RUN ||
+		activityData.type === ActivityType.BIKE;
 
 	return (
 		<Box>
@@ -142,7 +146,7 @@ export function ActivityCardTemplate({
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-4">
 						<ActivityTypeIcon type={activityData.type} />
-						{activityData.isEvent === 1 && (
+						{isRaceEligibleActivity && activityData.isEvent === 1 && (
 							<Medal size={16} className="text-yellow-500" />
 						)}
 						<EditableText

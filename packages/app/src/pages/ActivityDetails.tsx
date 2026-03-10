@@ -6,6 +6,7 @@ import {
 	Providers,
 	StorageKeys,
 } from "@repo/types";
+import { cn } from "@repo/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
@@ -16,6 +17,7 @@ import { ActivityCard } from "../components/index.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useLoading } from "../contexts/LoadingContext.js";
 import { useStore } from "../contexts/StoreContext.js";
+import { useTheme } from "../contexts/ThemeContext.js";
 
 export function ActivityDetails() {
 	const { client } = useDataClient();
@@ -92,7 +94,11 @@ export function ActivityDetails() {
 
 	return (
 		<div className="space-y-4">
-			<ActivityCard activity={activity} gears={gears} />
+			<ActivityCard
+				activity={activity}
+				gears={gears}
+				onActivityRefresh={loadActivity}
+			/>
 			<GearConnectionsSection
 				activityId={activity.id}
 				selectedGearIds={activity.gears.map((gear) => gear.id)}
@@ -111,7 +117,10 @@ export function ActivityDetails() {
 				/>
 			)}
 			<ActivityConnectionsPanel activity={activity} reload={loadActivity} />
-			<EventToggle activity={activity} reload={loadActivity} />
+			{(activity.type === ActivityType.RUN ||
+				activity.type === ActivityType.BIKE) && (
+				<EventToggle activity={activity} reload={loadActivity} />
+			)}
 			<ActivityDeleteSection
 				activity={activity}
 				gears={gears}
@@ -130,6 +139,7 @@ function ActivityConnectionsPanel({
 }) {
 	const { client, type } = useDataClient();
 	const { setLocalLoading } = useLoading();
+	const { isDarkMode } = useTheme();
 	const { store } = useStore();
 	const [pendingProvider, setPendingProvider] = useState<Providers | null>(
 		null,
@@ -309,7 +319,12 @@ function ActivityConnectionsPanel({
 											}))
 										}
 										placeholder="Provider activity id"
-										className="rounded border border-gray-300 px-3 py-1 text-sm"
+										className={cn(
+											"rounded border px-3 py-1 text-sm focus:outline-none focus:ring-1",
+											isDarkMode
+												? "border-gray-600 bg-gray-800 text-white placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400"
+												: "border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500",
+										)}
 									/>
 									<button
 										type="button"
