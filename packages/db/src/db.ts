@@ -234,6 +234,62 @@ export class Db {
 		this._client = client;
 	}
 
+	async findNearestLocationByCoordinates({
+		latitude,
+		longitude,
+		maxDistanceDegrees = 0.1,
+	}: {
+		latitude: number;
+		longitude: number;
+		maxDistanceDegrees?: number;
+	}): Promise<
+		| {
+				locationName: string;
+				locationCountry: string;
+		  }
+		| undefined
+	> {
+		if (
+			!Number.isFinite(latitude) ||
+			!Number.isFinite(longitude) ||
+			latitude === 0 ||
+			longitude === 0
+		) {
+			return undefined;
+		}
+
+		const distanceSq = sql<number>`
+			((${activities.startLatitude} - ${latitude}) * (${activities.startLatitude} - ${latitude}))
+			+ ((${activities.startLongitude} - ${longitude}) * (${activities.startLongitude} - ${longitude}))
+		`;
+		const maxDistanceSq = maxDistanceDegrees * maxDistanceDegrees;
+
+		const nearest = await this._client
+			.select({
+				locationName: activities.locationName,
+				locationCountry: activities.locationCountry,
+			})
+			.from(activities)
+			.where(sql`
+				${activities.startLatitude} IS NOT NULL
+				AND ${activities.startLongitude} IS NOT NULL
+				AND ${activities.startLatitude} != 0
+				AND ${activities.startLongitude} != 0
+				AND (trim(${activities.locationName}) != '' OR trim(${activities.locationCountry}) != '')
+				AND ${distanceSq} <= ${maxDistanceSq}
+			`)
+			.orderBy(asc(distanceSq))
+			.limit(1);
+
+		const location = nearest[0];
+		if (!location) return undefined;
+
+		return {
+			locationName: location.locationName ?? "",
+			locationCountry: location.locationCountry ?? "",
+		};
+	}
+
 	async getActivitiesOverview(limit = 12): Promise<IOverviewData[]> {
 		const subquery = this._client
 			.select({
@@ -811,6 +867,33 @@ export class Db {
 	async insertActivity({ activity, gears }: IInsertActivityPayload) {
 		let activityId = "";
 		const providerActivity = activity.providerActivity;
+		const hasMissingLocation =
+			!activity.data.locationName?.trim() ||
+			!activity.data.locationCountry?.trim();
+		if (
+			hasMissingLocation &&
+			activity.data.startLatitude !== 0 &&
+			activity.data.startLongitude !== 0
+		) {
+			const nearestLocation = await this.findNearestLocationByCoordinates({
+				latitude: activity.data.startLatitude,
+				longitude: activity.data.startLongitude,
+			});
+			if (nearestLocation) {
+				if (
+					!activity.data.locationName?.trim() &&
+					nearestLocation.locationName
+				) {
+					activity.data.locationName = nearestLocation.locationName;
+				}
+				if (
+					!activity.data.locationCountry?.trim() &&
+					nearestLocation.locationCountry
+				) {
+					activity.data.locationCountry = nearestLocation.locationCountry;
+				}
+			}
+		}
 		if (providerActivity) {
 			const providerExists = await this._client
 				.select({ id: providerActivities.id })
