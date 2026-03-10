@@ -2,12 +2,9 @@
 
 interface ImportMetaEnv {
 	readonly VITE_APP_TITLE: string;
-	readonly MAIN_VITE_LOCAL_DB_FILE: string;
-	readonly MAIN_VITE_CACHE_DB: string;
 	readonly VITE_HUB_APP_VERSION: string;
 	readonly VITE_HUB_CLIENT_VERSION: string;
 	readonly VITE_HUB_COMMIT: string;
-	// more env variables...
 }
 
 interface ImportMeta {
