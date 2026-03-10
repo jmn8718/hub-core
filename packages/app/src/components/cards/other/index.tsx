@@ -21,6 +21,7 @@ interface OtherActivityCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 	showDetailsButton?: boolean;
+	onActivityRefresh?: () => Promise<void> | void;
 }
 
 const subtypeOptions = ["", ...Object.values(ActivitySubType)];
@@ -30,12 +31,14 @@ export function OtherActivityCard({
 	activity,
 	gears,
 	showDetailsButton,
+	onActivityRefresh,
 }: OtherActivityCardProps) {
 	return (
 		<ActivityCardTemplate
 			activity={activity}
 			gears={gears}
 			showDetailsButton={showDetailsButton}
+			onActivityRefresh={onActivityRefresh}
 		>
 			{(context) => <OtherActivityBody activity={activity} context={context} />}
 		</ActivityCardTemplate>

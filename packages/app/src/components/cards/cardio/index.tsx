@@ -13,18 +13,21 @@ interface CardioCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 	showDetailsButton?: boolean;
+	onActivityRefresh?: () => Promise<void> | void;
 }
 
 export function CardioCard({
 	activity,
 	gears,
 	showDetailsButton,
+	onActivityRefresh,
 }: CardioCardProps) {
 	return (
 		<ActivityCardTemplate
 			activity={activity}
 			gears={gears}
 			showDetailsButton={showDetailsButton}
+			onActivityRefresh={onActivityRefresh}
 		>
 			{(context) => (
 				<CardioCardBody

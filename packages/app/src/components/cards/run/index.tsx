@@ -19,18 +19,21 @@ interface RunningCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 	showDetailsButton?: boolean;
+	onActivityRefresh?: () => Promise<void> | void;
 }
 
 export function RunningCard({
 	activity,
 	gears,
 	showDetailsButton,
+	onActivityRefresh,
 }: RunningCardProps) {
 	return (
 		<ActivityCardTemplate
 			activity={activity}
 			gears={gears}
 			showDetailsButton={showDetailsButton}
+			onActivityRefresh={onActivityRefresh}
 		>
 			{(context) => <RunningCardBody context={context} gears={gears} />}
 		</ActivityCardTemplate>

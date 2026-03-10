@@ -12,18 +12,21 @@ interface HikeCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 	showDetailsButton?: boolean;
+	onActivityRefresh?: () => Promise<void> | void;
 }
 
 export function HikeCard({
 	activity,
 	gears,
 	showDetailsButton,
+	onActivityRefresh,
 }: HikeCardProps) {
 	return (
 		<ActivityCardTemplate
 			activity={activity}
 			gears={gears}
 			showDetailsButton={showDetailsButton}
+			onActivityRefresh={onActivityRefresh}
 		>
 			{(context) => <HikeCardBody context={context} />}
 		</ActivityCardTemplate>

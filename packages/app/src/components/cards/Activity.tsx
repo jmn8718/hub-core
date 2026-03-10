@@ -13,12 +13,14 @@ interface ActivityCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 	showDetailsButton?: boolean;
+	onActivityRefresh?: () => Promise<void> | void;
 }
 
 export function ActivityCard({
 	activity,
 	gears,
 	showDetailsButton,
+	onActivityRefresh,
 }: ActivityCardProps) {
 	if (activity.type === ActivityType.RUN) {
 		return (
@@ -26,6 +28,7 @@ export function ActivityCard({
 				activity={activity}
 				gears={gears}
 				showDetailsButton={showDetailsButton}
+				onActivityRefresh={onActivityRefresh}
 			/>
 		);
 	}
@@ -35,6 +38,7 @@ export function ActivityCard({
 				activity={activity}
 				gears={gears}
 				showDetailsButton={showDetailsButton}
+				onActivityRefresh={onActivityRefresh}
 			/>
 		);
 	}
@@ -44,6 +48,7 @@ export function ActivityCard({
 				activity={activity}
 				gears={gears}
 				showDetailsButton={showDetailsButton}
+				onActivityRefresh={onActivityRefresh}
 			/>
 		);
 	}
@@ -53,6 +58,7 @@ export function ActivityCard({
 				activity={activity}
 				gears={gears}
 				showDetailsButton={showDetailsButton}
+				onActivityRefresh={onActivityRefresh}
 			/>
 		);
 	}
@@ -62,6 +68,7 @@ export function ActivityCard({
 				activity={activity}
 				gears={gears}
 				showDetailsButton={showDetailsButton}
+				onActivityRefresh={onActivityRefresh}
 			/>
 		);
 	}
@@ -70,6 +77,7 @@ export function ActivityCard({
 			activity={activity}
 			gears={gears}
 			showDetailsButton={showDetailsButton}
+			onActivityRefresh={onActivityRefresh}
 		/>
 	);
 }

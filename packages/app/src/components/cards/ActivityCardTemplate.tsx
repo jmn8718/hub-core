@@ -40,6 +40,7 @@ interface ActivityCardTemplateProps {
 	gears: IDbGear[];
 	children?: (props: ActivityCardTemplateRenderProps) => ReactNode;
 	showDetailsButton?: boolean;
+	onActivityRefresh?: () => Promise<void> | void;
 }
 
 export function ActivityCardTemplate({
@@ -47,6 +48,7 @@ export function ActivityCardTemplate({
 	gears,
 	children,
 	showDetailsButton = false,
+	onActivityRefresh,
 }: ActivityCardTemplateProps) {
 	const { isDarkMode } = useTheme();
 	const { client, type } = useDataClient();
@@ -70,6 +72,7 @@ export function ActivityCardTemplate({
 			setActivityData(result.data);
 			setActivityName(result.data.name || "");
 			setActivityNotes(result.data.notes || "");
+			await onActivityRefresh?.();
 		} else if (!result.success) {
 			toast.error(result.error, {
 				hideProgressBar: false,
@@ -77,7 +80,7 @@ export function ActivityCardTemplate({
 				transition: Bounce,
 			});
 		}
-	}, [activity.id, client]);
+	}, [activity.id, client, onActivityRefresh]);
 
 	const handleEditActivity = useCallback(
 		async (field: string, value: string) => {

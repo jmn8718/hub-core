@@ -19,18 +19,21 @@ interface BikeCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 	showDetailsButton?: boolean;
+	onActivityRefresh?: () => Promise<void> | void;
 }
 
 export function BikeCard({
 	activity,
 	gears,
 	showDetailsButton,
+	onActivityRefresh,
 }: BikeCardProps) {
 	return (
 		<ActivityCardTemplate
 			activity={activity}
 			gears={gears}
 			showDetailsButton={showDetailsButton}
+			onActivityRefresh={onActivityRefresh}
 		>
 			{(context) => <BikeCardBody context={context} gears={gears} />}
 		</ActivityCardTemplate>
