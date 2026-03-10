@@ -561,10 +561,15 @@ export class GarminClient extends Base implements Client {
 			force: true,
 		});
 		await this._client.updateActivityDescription(activityId, _notes ?? "");
-		await this._cache.set<IActivityDetails>(this._provider, "activity", _activityId, {
-			...activity,
-			description: _notes ?? "",
-		});
+		await this._cache.set<IActivityDetails>(
+			this._provider,
+			"activity",
+			_activityId,
+			{
+				...activity,
+				description: _notes ?? "",
+			},
+		);
 	}
 
 	async updateActivityName(activityId: string, name?: string | null) {

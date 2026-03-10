@@ -1,4 +1,4 @@
-import { isAfter, isBefore } from "@repo/dates";
+import { formatDate, isAfter, isBefore } from "@repo/dates";
 import type {
 	CacheDb,
 	Db,
@@ -364,10 +364,14 @@ export class StravaClient extends Base implements Client {
 
 	async createManualActivity(data: DbActivityPopulated): Promise<string> {
 		const activityType = mapManualActivityType(data.type);
+		const startDateLocal = formatDate(data.timestamp, {
+			format: "YYYY-MM-DDTHH:mm:ss",
+			timezone: data.timezone || undefined,
+		});
 		const payload = new URLSearchParams({
 			name: data.name || "Manual activity",
 			type: activityType,
-			start_date_local: new Date(data.timestamp).toISOString(),
+			start_date_local: startDateLocal,
 			elapsed_time: Math.max(1, Math.round(data.duration)).toString(),
 			description: data.notes || "",
 		});
