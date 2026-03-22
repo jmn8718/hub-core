@@ -144,10 +144,10 @@ deleted file mode 100644
 index 1943bb64881b6a4f0abaf5dc1984f5b812c45b61..0000000000000000000000000000000000000000
 diff --git a/dist/index.cjs b/dist/index.cjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..e5e0ff3d6bb7ff07512baff2ce46fba5dfeceb77
+index 0000000000000000000000000000000000000000..2199b4f1ba23accbb41de45045bbdf7c6f2a1eb2
 --- /dev/null
 +++ b/dist/index.cjs
-@@ -0,0 +1,1313 @@
+@@ -0,0 +1,1324 @@
 +"use strict";
 +var __create = Object.create;
 +var __defProp = Object.defineProperty;
@@ -881,6 +881,9 @@ index 0000000000000000000000000000000000000000..e5e0ff3d6bb7ff07512baff2ce46fba5
 +var STRENGTH_TRAINING_ACTIVITY_TYPE = "strength_training";
 +var LAP_SWIMMING_ACTIVITY_TYPE = "lap_swimming";
 +var CARDIO_ACTIVITY_TYPE = "cardio_training";
++var ACTIVITY_TYPE_ALIASES = {
++  workout: STRENGTH_TRAINING_ACTIVITY_TYPE
++};
 +var WORKOUT_SPORT_TYPES = {
 +  running: { sportTypeId: 1, sportTypeKey: "running" },
 +  cycling: { sportTypeId: 2, sportTypeKey: "cycling" },
@@ -1308,7 +1311,15 @@ index 0000000000000000000000000000000000000000..e5e0ff3d6bb7ff07512baff2ce46fba5
 +    return this.client.delete(this.url.WORKOUT(workout.workoutId));
 +  }
 +  addActivity(activity) {
-+    return this.client.post(this.url.ACTIVITY, activity);
++    const normalizedTypeKey = ACTIVITY_TYPE_ALIASES[activity.activityTypeDTO.typeKey] ?? activity.activityTypeDTO.typeKey;
++    const payload = normalizedTypeKey === activity.activityTypeDTO.typeKey ? activity : {
++      ...activity,
++      activityTypeDTO: {
++        ...activity.activityTypeDTO,
++        typeKey: normalizedTypeKey
++      }
++    };
++    return this.client.post(this.url.ACTIVITY, payload);
 +  }
 +  async getSteps(date = /* @__PURE__ */ new Date()) {
 +    const dateString = toDateString(date);
@@ -4255,10 +4266,10 @@ deleted file mode 100644
 index 527f7858a51fc6d7310c68185d5ef885e10ae2b8..0000000000000000000000000000000000000000
 diff --git a/dist/index.mjs b/dist/index.mjs
 new file mode 100644
-index 0000000000000000000000000000000000000000..a4d7cf16adb2589201f1f1099594744f9ee287d0
+index 0000000000000000000000000000000000000000..6cfb6387ba8f3e154767b869f28f8c0e6583d655
 --- /dev/null
 +++ b/dist/index.mjs
-@@ -0,0 +1,1275 @@
+@@ -0,0 +1,1286 @@
 +var __defProp = Object.defineProperty;
 +var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 +
@@ -4955,6 +4966,9 @@ index 0000000000000000000000000000000000000000..a4d7cf16adb2589201f1f1099594744f
 +var STRENGTH_TRAINING_ACTIVITY_TYPE = "strength_training";
 +var LAP_SWIMMING_ACTIVITY_TYPE = "lap_swimming";
 +var CARDIO_ACTIVITY_TYPE = "cardio_training";
++var ACTIVITY_TYPE_ALIASES = {
++  workout: STRENGTH_TRAINING_ACTIVITY_TYPE
++};
 +var WORKOUT_SPORT_TYPES = {
 +  running: { sportTypeId: 1, sportTypeKey: "running" },
 +  cycling: { sportTypeId: 2, sportTypeKey: "cycling" },
@@ -5382,7 +5396,15 @@ index 0000000000000000000000000000000000000000..a4d7cf16adb2589201f1f1099594744f
 +    return this.client.delete(this.url.WORKOUT(workout.workoutId));
 +  }
 +  addActivity(activity) {
-+    return this.client.post(this.url.ACTIVITY, activity);
++    const normalizedTypeKey = ACTIVITY_TYPE_ALIASES[activity.activityTypeDTO.typeKey] ?? activity.activityTypeDTO.typeKey;
++    const payload = normalizedTypeKey === activity.activityTypeDTO.typeKey ? activity : {
++      ...activity,
++      activityTypeDTO: {
++        ...activity.activityTypeDTO,
++        typeKey: normalizedTypeKey
++      }
++    };
++    return this.client.post(this.url.ACTIVITY, payload);
 +  }
 +  async getSteps(date = /* @__PURE__ */ new Date()) {
 +    const dateString = toDateString(date);
