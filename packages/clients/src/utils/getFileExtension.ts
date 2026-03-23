@@ -7,7 +7,7 @@ export const getFileExtension = (provider: Providers): FileExtensions => {
 		case Providers.COROS:
 			return FileExtensions.FIT;
 		case Providers.STRAVA:
-			return FileExtensions.GPX;
+			return FileExtensions.TCX;
 		default:
 			throw new Error("Invalid provider");
 	}
