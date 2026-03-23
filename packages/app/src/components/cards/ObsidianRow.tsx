@@ -223,7 +223,7 @@ const ObsidianRow: React.FC<ObsidianRowProps> = ({ data, gears }) => {
 
 		if (content.length > 0) {
 			const result = await client.exportActivityObsidian({
-				folderPath: `${obsidianFolder}/${formatDate(data.timestamp, { format: "YYYY-MM" })}`,
+				folderPath: `${obsidianFolder}/${formatDate(data.timestamp, { format: "YYYY" })}/${formatDate(data.timestamp, { format: "YYYY-MM" })}`,
 				fileName: formatDate(data.timestamp, { format: "YYYY-MM-DD" }),
 				fileFormat: "md",
 				content,
