@@ -102,8 +102,11 @@ function mapManualActivityType(type: ActivityType): string {
 	}
 }
 
-function mapActivitySubtype(type: string): ActivitySubType {
-	switch (type) {
+function mapActivitySubtype(activity: StravaActivity): ActivitySubType {
+	if (activity.trainer) {
+		return ActivitySubType.INDOOR;
+	}
+	switch (activity.sport_type.toLowerCase()) {
 		case "race":
 			return ActivitySubType.ROAD;
 		default:
@@ -262,9 +265,7 @@ function mapActivity(activity: StravaActivity): IDbActivity {
 	const timezone = normalizeTimezone(activity.timezone);
 	const type = mapActivityType(activity.type, activity.name);
 	const subtype =
-		type === ActivityType.RUN
-			? mapActivitySubtype(activity.sport_type)
-			: undefined;
+		type === ActivityType.RUN ? mapActivitySubtype(activity) : undefined;
 	return {
 		id: activity.id.toString(),
 		timestamp: new Date(activity.start_date).getTime(),
