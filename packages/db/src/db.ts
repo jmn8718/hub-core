@@ -1202,6 +1202,18 @@ export class Db {
 			);
 	}
 
+	getActivityByProviderActivityId(providerActivityId: string) {
+		return this._client
+			.select({
+				...getTableColumns(activities),
+			})
+			.from(activitiesConnection)
+			.leftJoin(activities, eq(activities.id, activitiesConnection.activityId))
+			.where(eq(activitiesConnection.providerActivityId, providerActivityId))
+			.limit(1)
+			.then((rows) => rows[0]);
+	}
+
 	linkActivityConnection(activityId: string, providerActivityId: string) {
 		return this._client.transaction(async (tx) => {
 			const providerActivity = await tx

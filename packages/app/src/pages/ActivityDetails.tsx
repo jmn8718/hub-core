@@ -14,6 +14,7 @@ import { Box } from "../components/Box.js";
 import { Text } from "../components/Text.js";
 import { GearConnectionsSection } from "../components/cards/GearConnectionsSection.js";
 import { ActivityCard } from "../components/index.js";
+import { Routes } from "../constants.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useLoading } from "../contexts/LoadingContext.js";
 import { useStore } from "../contexts/StoreContext.js";
@@ -428,7 +429,7 @@ function ActivityDeleteSection({
 				throw new Error(result.error);
 			}
 			toast.success("Activity deleted", { transition: Bounce });
-			navigate("/");
+			navigate(Routes.DATA);
 		} catch (err) {
 			toast.error((err as Error).message, {
 				hideProgressBar: false,
