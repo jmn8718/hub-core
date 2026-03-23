@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Providers } from "@repo/types";
+import { ActivitySubType, ActivityType, Providers } from "@repo/types";
 import {
 	afterEach,
 	beforeAll,
@@ -150,6 +150,63 @@ describe("db", () => {
 		const result = await db.getActivities({});
 		expect(result.data.length).eq(result.count);
 		expect(result.cursor).eq("");
+	});
+
+	test("should get running activities without attached gear", async () => {
+		const baseActivity = {
+			name: "No Gear Activity",
+			timezone: "Asia/Seoul",
+			distance: 5000,
+			duration: 1800,
+			manufacturer: "manual",
+			device: "manual",
+			locationName: "",
+			locationCountry: "",
+			startLatitude: 0,
+			startLongitude: 0,
+			notes: "",
+			metadata: {},
+			isEvent: 0 as const,
+		};
+
+		await db.insertActivity({
+			activity: {
+				data: {
+					...baseActivity,
+					timestamp: Date.now(),
+					type: ActivityType.RUN,
+					subtype: ActivitySubType.EASY_RUN,
+				},
+			},
+		});
+		await db.insertActivity({
+			activity: {
+				data: {
+					...baseActivity,
+					name: "Bike No Gear Activity",
+					timestamp: Date.now() + 1,
+					type: ActivityType.BIKE,
+				},
+			},
+		});
+
+		const result = await db.getActivities({
+			withoutGear: 1,
+		});
+
+		expect(result.data.length).toBeGreaterThan(0);
+		expect(
+			result.data.every((activity) => activity.type === ActivityType.RUN),
+		).toBe(true);
+		expect(result.data.every((activity) => activity.gears.length === 0)).toBe(
+			true,
+		);
+		expect(
+			result.data.some((activity) => activity.name === "No Gear Activity"),
+		).toBe(true);
+		expect(
+			result.data.some((activity) => activity.name === "Bike No Gear Activity"),
+		).toBe(false);
 	});
 
 	test("should get one activity", async () => {

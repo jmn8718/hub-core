@@ -120,6 +120,7 @@ export class AppClient implements Client {
 		endDate?: string;
 		search?: string;
 		isEvent?: 0 | 1;
+		withoutGear?: 0 | 1;
 	}): Promise<
 		ProviderSuccessResponse<{
 			data: ActivitiesData;

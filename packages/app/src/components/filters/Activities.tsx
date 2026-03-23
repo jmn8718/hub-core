@@ -17,6 +17,8 @@ interface ActivityFiltersProps {
 	setEndDate: (value: string) => void;
 	isRace: boolean | "ALL";
 	setIsRace: (value: boolean | "ALL") => void;
+	withoutGear: boolean;
+	setWithoutGear: (value: boolean) => void;
 	onApplyFilters: () => void;
 }
 
@@ -79,6 +81,8 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 	setEndDate,
 	isRace,
 	setIsRace,
+	withoutGear,
+	setWithoutGear,
 	onApplyFilters,
 }) => {
 	const { isDarkMode } = useTheme();
@@ -137,6 +141,21 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 						/>
 					</div>
 					<div className="flex flex-col gap-2 md:flex-row md:gap-4">
+						<label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 md:self-end md:pb-2">
+							<input
+								type="checkbox"
+								checked={withoutGear}
+								onChange={(e) => {
+									const checked = e.target.checked;
+									setWithoutGear(checked);
+									if (checked) {
+										setType(ActivityType.RUN);
+									}
+								}}
+								className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+							/>
+							<span>Running without gear</span>
+						</label>
 						<div className="flex flex-col gap-2">
 							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
 							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">

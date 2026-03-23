@@ -1,9 +1,9 @@
 import { isAfter } from "@repo/dates";
-import type {
-	ActivitiesData,
-	ActivitySubType,
+import {
+	type ActivitiesData,
+	type ActivitySubType,
 	ActivityType,
-	GearsData,
+	type GearsData,
 } from "@repo/types";
 import { cn } from "@repo/ui";
 import { RefreshCcw } from "lucide-react";
@@ -23,6 +23,7 @@ export function DataList() {
 	const [startDate, setStartDate] = useState("");
 	const [endDate, setEndDate] = useState("");
 	const [isRaceFilter, setIsRaceFilter] = useState<boolean | "ALL">("ALL");
+	const [withoutGearFilter, setWithoutGearFilter] = useState(false);
 	const [appliedFilters, setAppliedFilters] = useState<{
 		type: ActivityType | "ALL";
 		subtype: ActivitySubType | "";
@@ -30,6 +31,7 @@ export function DataList() {
 		endDate: string;
 		search: string;
 		isEvent: boolean | "ALL";
+		withoutGear: boolean;
 	}>({
 		type: "ALL",
 		subtype: "",
@@ -37,6 +39,7 @@ export function DataList() {
 		endDate: "",
 		search: "",
 		isEvent: "ALL",
+		withoutGear: false,
 	});
 
 	const [data, setData] = useState<ActivitiesData>({
@@ -96,6 +99,7 @@ export function DataList() {
 						: appliedFilters.isEvent
 							? 1
 							: 0,
+				withoutGear: appliedFilters.withoutGear ? 1 : undefined,
 			});
 			if (result.success) {
 				setData((current) => ({
@@ -165,12 +169,13 @@ export function DataList() {
 			return;
 		}
 		setAppliedFilters({
-			type: typeFilter,
+			type: withoutGearFilter ? ActivityType.RUN : typeFilter,
 			subtype: subtypeFilter,
 			startDate,
 			endDate,
 			isEvent: isRaceFilter,
 			search,
+			withoutGear: withoutGearFilter,
 		});
 	};
 	return (
@@ -186,6 +191,8 @@ export function DataList() {
 				endDate={endDate}
 				setStartDate={setStartDate}
 				setEndDate={setEndDate}
+				withoutGear={withoutGearFilter}
+				setWithoutGear={setWithoutGearFilter}
 				onApplyFilters={applyFilters}
 				isRace={isRaceFilter}
 				setIsRace={setIsRaceFilter}

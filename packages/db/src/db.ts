@@ -501,6 +501,7 @@ export class Db {
 		endDate,
 		search,
 		isEvent,
+		withoutGear,
 	}: {
 		cursor?: string;
 		limit?: number;
@@ -511,6 +512,7 @@ export class Db {
 		endDate?: string;
 		search?: string;
 		isEvent?: 0 | 1;
+		withoutGear?: 0 | 1;
 	}): Promise<ActivitiesData> {
 		const connections = this._client.$with("connections").as(
 			this._client
@@ -592,6 +594,16 @@ export class Db {
 		}
 		if (typeof isEvent === "number") {
 			baseConditions.push(eq(activities.isEvent, isEvent));
+		}
+		if (withoutGear === 1) {
+			baseConditions.push(eq(activities.type, ActivityType.RUN));
+			baseConditions.push(
+				sql`not exists (
+					select 1
+					from ${activityGears}
+					where ${activityGears.activityId} = ${activities.id}
+				)`,
+			);
 		}
 
 		const baseWhere =

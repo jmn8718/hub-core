@@ -174,6 +174,7 @@ export async function handleClientAction(
 				endDate?: string;
 				search?: string;
 				isEvent?: 0 | 1;
+				withoutGear?: 0 | 1;
 			};
 			return withData(() => db.getActivities(params));
 		}
