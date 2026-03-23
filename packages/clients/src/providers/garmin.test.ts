@@ -83,4 +83,33 @@ describe("garmin client", () => {
 			activities[0].activityId.toString(),
 		);
 	});
+
+	test("keeps manually created garmin activities as manual manufacturer", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+		getActivityMock.mockResolvedValueOnce({
+			...activitiesData["17936939301"],
+			activityId: 999999,
+			metadataDTO: {
+				...activitiesData["17936939301"].metadataDTO,
+				manualActivity: true,
+				manufacturer: "",
+				deviceMetaDataDTO: {
+					...activitiesData["17936939301"].metadataDTO.deviceMetaDataDTO,
+					deviceId: "123",
+				},
+			},
+			activityTypeDTO: {
+				...activitiesData["17936939301"].activityTypeDTO,
+				typeKey: "workout",
+			},
+		});
+
+		const result = await client.syncActivity("999999");
+		expect(result.activity.data.manufacturer).toBe("manual");
+		expect(result.activity.providerActivity?.original).toBe(false);
+	});
 });

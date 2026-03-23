@@ -85,10 +85,11 @@ function mapActivity({
 		name: activity.activityName || "",
 		distance: Math.round(activity.summaryDTO.distance),
 		duration: Math.round(activity.summaryDTO.duration),
-		manufacturer:
-			manufacturer ||
-			(isManual || deviceId.toString() !== "0" ? "garmin" : "coros") ||
-			"",
+		manufacturer: isManual
+			? "manual"
+			: manufacturer ||
+				(deviceId.toString() !== "0" ? "garmin" : "coros") ||
+				"",
 		locationName: activity.locationName || "",
 		locationCountry: "",
 		startLatitude: activity.summaryDTO.startLatitude || 0,
