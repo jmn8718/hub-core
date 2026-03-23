@@ -1,4 +1,4 @@
-import { Providers, StorageKeys } from "@repo/types";
+import { ActivityType, Providers, StorageKeys } from "@repo/types";
 import { cn } from "@repo/ui";
 import {
 	Download,
@@ -20,19 +20,23 @@ interface ProviderRowProps {
 	// eslint-disable-next-line react/require-default-props
 	connectionId?: string;
 	activityId: string;
+	activityType: ActivityType;
 	provider: Providers;
 	isOriginalSource: boolean;
 	hasBeenExported: boolean;
+	uploadCandidates: { provider: Providers; activityId: string }[];
 	refreshData: () => void;
 }
 
 const ProviderRow: FC<ProviderRowProps> = ({
 	activityId,
+	activityType,
 	hasConnection,
 	connectionId,
 	provider,
 	isOriginalSource,
 	hasBeenExported,
+	uploadCandidates,
 	refreshData,
 }) => {
 	const { setLocalLoading } = useLoading();
@@ -40,6 +44,17 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	const { getValue } = useStore();
 	const [loading, setLoading] = useState(false);
 	const [hasDownloadFile, setHasDownloadFile] = useState(false);
+	const [availableUploadSource, setAvailableUploadSource] = useState<{
+		provider: Providers;
+		activityId: string;
+	} | null>(null);
+	const uploadCandidatesKey = uploadCandidates
+		.map((candidate) => `${candidate.provider}:${candidate.activityId}`)
+		.join("|");
+	const canDownloadOriginalActivity =
+		hasConnection &&
+		isOriginalSource &&
+		!(provider === Providers.GARMIN && activityType === ActivityType.GYM);
 
 	const onProviderClick = async () => {
 		if (!connectionId) return;
@@ -70,10 +85,36 @@ const ProviderRow: FC<ProviderRowProps> = ({
 		}
 	};
 
+	const checkAvailableUploadSource = async () => {
+		if (hasConnection || provider !== Providers.GARMIN) {
+			setAvailableUploadSource(null);
+			return;
+		}
+		const downloadsFolder = await getValue<string>(StorageKeys.DOWNLOAD_FOLDER);
+		if (!downloadsFolder) {
+			setAvailableUploadSource(null);
+			return;
+		}
+
+		for (const candidate of uploadCandidates) {
+			const result = await client.existsFile({
+				provider: candidate.provider,
+				activityId: candidate.activityId,
+			});
+			if (result.success && result.data.exists) {
+				setAvailableUploadSource(candidate);
+				return;
+			}
+		}
+
+		setAvailableUploadSource(null);
+	};
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
-		checkIsExported();
-	}, []);
+		void checkIsExported();
+		void checkAvailableUploadSource();
+	}, [connectionId, hasConnection, provider, uploadCandidatesKey]);
 
 	const handleManualUpload = async () => {
 		// if it is coros or we have the activity, we do nothing
@@ -98,21 +139,22 @@ const ProviderRow: FC<ProviderRowProps> = ({
 
 		setLocalLoading(false);
 		setLoading(false);
+		await checkAvailableUploadSource();
 		refreshData();
 	};
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const handleUpload = async () => {
-		if (!connectionId) return;
+		if (!availableUploadSource) return;
 		const downloadsFolder = await getValue<string>(StorageKeys.DOWNLOAD_FOLDER);
 		if (!downloadsFolder) return;
 		setLocalLoading(true);
 		setLoading(true);
 
 		const result = await client.uploadActivityFile({
-			provider,
-			target: provider === Providers.COROS ? Providers.GARMIN : Providers.COROS,
-			providerActivityId: connectionId,
+			provider: availableUploadSource.provider,
+			target: provider,
+			providerActivityId: availableUploadSource.activityId,
 			downloadPath: downloadsFolder,
 		});
 		if (!result.success) {
@@ -124,6 +166,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 				transition: Bounce,
 			});
 		}
+		await checkAvailableUploadSource();
 		setLocalLoading(false);
 		setLoading(false);
 		refreshData();
@@ -152,11 +195,15 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			});
 		}
 
-		checkIsExported();
+		await checkIsExported();
+		await checkAvailableUploadSource();
 		setLocalLoading(false);
 		setLoading(false);
 		refreshData();
 	};
+
+	const showUploadButton = !hasConnection && provider === Providers.GARMIN;
+	const canUploadFromFile = showUploadButton && !!availableUploadSource;
 	return (
 		<div className="flex flex-row items-center">
 			{hasConnection ? (
@@ -178,7 +225,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 				{provider}
 			</span>
 			<div className="hidden md:flex items-center gap-2">
-				{hasConnection && isOriginalSource && (
+				{canDownloadOriginalActivity && (
 					<IconButton
 						icon={<Download size={16} />}
 						label="Download activity"
@@ -186,12 +233,12 @@ const ProviderRow: FC<ProviderRowProps> = ({
 						disabled={hasDownloadFile || loading}
 					/>
 				)}
-				{!hasBeenExported && (
+				{showUploadButton && (
 					<IconButton
 						icon={<Upload size={16} />}
 						label="Upload activity"
 						onClick={handleUpload}
-						disabled={!hasDownloadFile || loading}
+						disabled={!canUploadFromFile || loading}
 					/>
 				)}
 				{!hasConnection &&

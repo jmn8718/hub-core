@@ -185,29 +185,52 @@ export function ActivityCardTemplate({
 				<div className="flex flex-col gap-2 md:flex-row md:items-center md:space-x-4">
 					<ProviderRow
 						activityId={activity.id}
+						activityType={activityData.type}
 						provider={Providers.GARMIN}
 						hasConnection={!!garminConnection}
 						connectionId={garminConnection?.id}
 						isOriginalSource={!!garminConnection?.original}
-						hasBeenExported={!!corosConnection}
+						hasBeenExported={false}
+						uploadCandidates={[
+							...(corosConnection
+								? [
+										{
+											provider: Providers.COROS,
+											activityId: corosConnection.id,
+										},
+									]
+								: []),
+							...(stravaConnection
+								? [
+										{
+											provider: Providers.STRAVA,
+											activityId: stravaConnection.id,
+										},
+									]
+								: []),
+						]}
 						refreshData={refreshActivity}
 					/>
 					<ProviderRow
 						activityId={activity.id}
+						activityType={activityData.type}
 						provider={Providers.COROS}
 						hasConnection={!!corosConnection}
 						connectionId={corosConnection?.id}
 						isOriginalSource={!!corosConnection?.original}
-						hasBeenExported={!!garminConnection}
+						hasBeenExported={false}
+						uploadCandidates={[]}
 						refreshData={refreshActivity}
 					/>
 					<ProviderRow
 						activityId={activity.id}
+						activityType={activityData.type}
 						provider={Providers.STRAVA}
 						hasConnection={!!stravaConnection}
 						connectionId={stravaConnection?.id}
 						isOriginalSource={!!stravaConnection?.original}
 						hasBeenExported
+						uploadCandidates={[]}
 						refreshData={refreshActivity}
 					/>
 				</div>
