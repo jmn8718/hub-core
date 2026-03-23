@@ -8,6 +8,7 @@ import type {
 import {
 	ActivitySubType,
 	ActivityType,
+	type DbActivityPopulated,
 	FileExtensions,
 	type IDbActivity,
 	type LoginCredentials,
@@ -24,10 +25,96 @@ type CorosActivityDetails = Omit<
 	"frequencyList" | "graphList" | "gpsLightDuration" | "pauseList"
 >;
 
-function mapActivityDetails(
-	activity: CorosActivityDetails,
-	id: string,
-): IDbActivity {
+function mapActivityType(sportType: number): ActivityType {
+	switch (sportType) {
+		case 100:
+		case 101:
+		case 102:
+		case 103:
+			return ActivityType.RUN;
+		case 104:
+		case 900:
+			return ActivityType.HIKE;
+		case 200:
+		case 201:
+		case 202:
+		case 203:
+		case 204:
+		case 205:
+		case 299:
+			return ActivityType.BIKE;
+		case 300:
+		case 301:
+			return ActivityType.SWIM;
+		case 400:
+		case 401:
+			return ActivityType.CARDIO;
+		case 402:
+			return ActivityType.GYM;
+		default:
+			return ActivityType.OTHER;
+	}
+}
+
+function mapActivitySubtype(
+	activityType: ActivityType,
+	sportType: number,
+): ActivitySubType | undefined {
+	if (activityType !== ActivityType.RUN) return undefined;
+	return sportType === 101 ? ActivitySubType.INDOOR : ActivitySubType.EASY_RUN;
+}
+
+function mapDownloadSportType(sportType?: number): string | undefined {
+	if (sportType === undefined) return undefined;
+	switch (sportType) {
+		case 100:
+		case 101:
+		case 102:
+		case 103:
+		case 104:
+		case 200:
+		case 201:
+		case 202:
+		case 203:
+		case 204:
+		case 205:
+		case 299:
+		case 300:
+		case 301:
+			return sportType.toString();
+		default:
+			return undefined;
+	}
+}
+
+function mapDbActivityToCorosSportType(
+	activity?:
+		| Pick<DbActivityPopulated, "type" | "subtype">
+		| { type: string | null; subtype?: string | null }
+		| null,
+): string | undefined {
+	if (!activity?.type) return undefined;
+	switch (activity.type) {
+		case ActivityType.RUN:
+			return activity.subtype === ActivitySubType.INDOOR ? "101" : "100";
+		case ActivityType.BIKE:
+			return "200";
+		case ActivityType.SWIM:
+			return "300";
+		case ActivityType.HIKE:
+			return "104";
+		case ActivityType.CARDIO:
+			return "400";
+		case ActivityType.GYM:
+			return "402";
+		default:
+			return undefined;
+	}
+}
+
+function mapActivity(activity: CorosActivityDetails, id: string): IDbActivity {
+	const type = mapActivityType(activity.summary.sportType);
+	const subtype = mapActivitySubtype(type, activity.summary.sportType);
 	return {
 		id,
 		timestamp: new Date(
@@ -35,8 +122,8 @@ function mapActivityDetails(
 		).getTime(),
 		timezone: "Etc/UTC",
 		name: activity.summary.name || "",
-		distance: Math.round(activity.summary.distance / 100),
-		duration: Math.round(activity.summary.workoutTime / 100),
+		distance: Math.round((activity.summary.distance ?? 0) / 100),
+		duration: Math.round((activity.summary.workoutTime ?? 0) / 100),
 		manufacturer: activity.deviceList[0]?.name || "",
 		locationName: "",
 		locationCountry: "",
@@ -45,8 +132,8 @@ function mapActivityDetails(
 		startLongitude:
 			(activity.lapList[0]?.lapItemList[0]?.startGpsLon || 0) / 10000000,
 		isEvent: 0,
-		type: ActivityType.RUN,
-		subtype: ActivitySubType.EASY_RUN,
+		type,
+		subtype,
 	};
 }
 
@@ -90,7 +177,7 @@ export class CorosClient extends Base implements Client {
 		}
 	}
 
-	private _fetchRunningActivities({
+	private _fetchActivities({
 		page,
 		size,
 		from,
@@ -113,7 +200,7 @@ export class CorosClient extends Base implements Client {
 		});
 	}
 
-	private async fetchRunningActivities({
+	private async fetchActivities({
 		activitiesToFetch = 2,
 		from,
 		to,
@@ -130,17 +217,14 @@ export class CorosClient extends Base implements Client {
 		>["dataList"] = [];
 
 		do {
-			const activities = await this._fetchRunningActivities({
+			const activities = await this._fetchActivities({
 				page,
 				size: activitiesToFetch,
 				from,
 				to,
 			});
 			if (activities?.dataList) {
-				const activitiesList = activities.dataList.filter(
-					({ sportType }) => sportType === 100 || sportType === 101,
-				);
-				data.push(...activitiesList);
+				data.push(...activities.dataList);
 				console.debug(CorosClient.PROVIDER, {
 					count: activities.count,
 					pageNumber: activities.pageNumber,
@@ -158,7 +242,7 @@ export class CorosClient extends Base implements Client {
 	private getActivities(lastDate?: number) {
 		// add 1 day because coros filter by day precision
 		const from = lastDate ? dayjs(lastDate).add(1, "day").toDate() : undefined;
-		return this.fetchRunningActivities({
+		return this.fetchActivities({
 			// if we have a from point, check few by few,
 			// and if there is no from then we want to fetch all
 			activitiesToFetch: from ? 5 : 100,
@@ -166,7 +250,10 @@ export class CorosClient extends Base implements Client {
 		});
 	}
 
-	async getActivity(id: string, options?: { force?: boolean }) {
+	async getActivity(
+		id: string,
+		options?: { force?: boolean; sportType?: string | number },
+	) {
 		if (!options?.force) {
 			const cacheValue = await this._cache.get<CorosActivityDetails>(
 				this._provider,
@@ -176,7 +263,10 @@ export class CorosClient extends Base implements Client {
 			if (cacheValue) return cacheValue;
 		}
 		const { frequencyList, graphList, gpsLightDuration, pauseList, ...data } =
-			await this._client.getActivityDetails(id);
+			await this._client.getActivityDetails(
+				id,
+				options?.sportType ? options.sportType.toString() : undefined,
+			);
 		if (data) {
 			this._cache.set<CorosActivityDetails>(
 				this._provider,
@@ -188,9 +278,12 @@ export class CorosClient extends Base implements Client {
 		return data;
 	}
 
-	public syncActivity(activityId: string): Promise<IInsertActivityPayload> {
-		return this.getActivity(activityId).then((activity) => {
-			const data = mapActivityDetails(activity, activityId);
+	public syncActivity(
+		activityId: string,
+		sportType?: string | number,
+	): Promise<IInsertActivityPayload> {
+		return this.getActivity(activityId, { sportType }).then((activity) => {
+			const data = mapActivity(activity, activityId);
 			return {
 				activity: {
 					data,
@@ -221,7 +314,7 @@ export class CorosClient extends Base implements Client {
 		}
 		const results = await pMap(newActivities, async (activity) =>
 			this._queue
-				.add(() => this.syncActivity(activity.labelId))
+				.add(() => this.syncActivity(activity.labelId, activity.sportType))
 				.catch((err) => {
 					console.error(err);
 				}),
@@ -245,11 +338,23 @@ export class CorosClient extends Base implements Client {
 		throw new Error("Not supported");
 	}
 
-	downloadActivity(activityId: string, downloadPath: string): Promise<void> {
+	async downloadActivity(
+		activityId: string,
+		downloadPath: string,
+	): Promise<void> {
+		const dbActivity =
+			await this._db.getActivityByProviderActivityId(activityId);
+		const sportTypeFromDb = mapDbActivityToCorosSportType(dbActivity ?? null);
+		const activity = await this.getActivity(activityId, {
+			sportType: sportTypeFromDb,
+		});
+		const sportType =
+			sportTypeFromDb ?? mapDownloadSportType(activity.summary.sportType);
 		return this._client
 			.getActivityDownloadFile({
 				activityId,
 				fileType: CorosClient.EXTENSION,
+				sportType,
 			})
 			.then((fileUrl) => {
 				const filePath = this.generateActivityFilePath(
