@@ -69,16 +69,23 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	};
 
 	const checkIsExported = async () => {
-		if (!connectionId) return;
+		if (!connectionId) {
+			setHasDownloadFile(false);
+			return;
+		}
 		const downloadsFolder = await getValue<string>(StorageKeys.DOWNLOAD_FOLDER);
-		if (!downloadsFolder) return;
+		if (!downloadsFolder) {
+			setHasDownloadFile(false);
+			return;
+		}
 		const result = await client.existsFile({
 			provider,
 			activityId: connectionId,
 		});
 		if (result.success) {
-			if (result.data.exists) setHasDownloadFile(true);
+			setHasDownloadFile(result.data.exists);
 		} else {
+			setHasDownloadFile(false);
 			toast.error(result.error, {
 				transition: Bounce,
 			});
@@ -96,18 +103,20 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			return;
 		}
 
-		for (const candidate of uploadCandidates) {
-			const result = await client.existsFile({
-				provider: candidate.provider,
-				activityId: candidate.activityId,
-			});
-			if (result.success && result.data.exists) {
-				setAvailableUploadSource(candidate);
-				return;
-			}
-		}
+		const candidateResults = await Promise.all(
+			uploadCandidates.map(async (candidate) => ({
+				candidate,
+				result: await client.existsFile({
+					provider: candidate.provider,
+					activityId: candidate.activityId,
+				}),
+			})),
+		);
+		const availableCandidate = candidateResults.find(
+			({ result }) => result.success && result.data.exists,
+		)?.candidate;
 
-		setAvailableUploadSource(null);
+		setAvailableUploadSource(availableCandidate ?? null);
 	};
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -211,19 +220,31 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			) : (
 				<MonitorOff color="gray" />
 			)}
-			{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-			<span
-				onClick={onProviderClick}
-				className={cn([
-					connectionId && "cursor-pointer",
-					"mx-2 px-3 w-[80px] flex justify-center py-1 rounded-full text-sm uppercase",
-					provider === Providers.COROS && "bg-blue-100 text-blue-800",
-					provider === Providers.GARMIN && "bg-orange-100 text-orange-800",
-					provider === Providers.STRAVA && "bg-red-100 text-red-800",
-				])}
-			>
-				{provider}
-			</span>
+			{connectionId ? (
+				<button
+					type="button"
+					onClick={onProviderClick}
+					className={cn([
+						"mx-2 px-3 w-[80px] flex justify-center py-1 rounded-full text-sm uppercase cursor-pointer",
+						provider === Providers.COROS && "bg-blue-100 text-blue-800",
+						provider === Providers.GARMIN && "bg-orange-100 text-orange-800",
+						provider === Providers.STRAVA && "bg-red-100 text-red-800",
+					])}
+				>
+					{provider}
+				</button>
+			) : (
+				<span
+					className={cn([
+						"mx-2 px-3 w-[80px] flex justify-center py-1 rounded-full text-sm uppercase",
+						provider === Providers.COROS && "bg-blue-100 text-blue-800",
+						provider === Providers.GARMIN && "bg-orange-100 text-orange-800",
+						provider === Providers.STRAVA && "bg-red-100 text-red-800",
+					])}
+				>
+					{provider}
+				</span>
+			)}
 			<div className="hidden md:flex items-center gap-2">
 				{canDownloadOriginalActivity && (
 					<IconButton

@@ -31,6 +31,12 @@ export const EditableNumber: React.FC<EditableNumberProps> = ({
 		}
 	}, [isEditing]);
 
+	useEffect(() => {
+		if (!isEditing) {
+			setEditedValue(value.toString());
+		}
+	}, [value, isEditing]);
+
 	const handleClick = () => {
 		setIsEditing(true);
 	};
@@ -81,12 +87,13 @@ export const EditableNumber: React.FC<EditableNumberProps> = ({
 			? formatValue(value)
 			: (value ?? placeholder);
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-		<div
+		<button
+			type="button"
 			onClick={handleClick}
-			className={`cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-2 py-1 -mx-2 ${className}`}
+			aria-label={placeholder ? `Edit ${placeholder}` : "Edit number"}
+			className={`w-full cursor-pointer rounded px-2 py-1 -mx-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${className}`}
 		>
 			{formattedValue}
-		</div>
+		</button>
 	);
 };

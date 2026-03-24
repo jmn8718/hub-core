@@ -30,6 +30,12 @@ export const EditableText: FC<EditableTextProps> = ({
 		}
 	}, [isEditing]);
 
+	useEffect(() => {
+		if (!isEditing) {
+			setEditedValue(value);
+		}
+	}, [value, isEditing]);
+
 	const handleClick = () => {
 		setIsEditing(true);
 	};
@@ -77,11 +83,12 @@ export const EditableText: FC<EditableTextProps> = ({
 	const displayValue = value || placeholder;
 	const formattedValue = formatText ? formatText(displayValue) : displayValue;
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-		<div
+		<button
+			type="button"
 			onClick={handleClick}
+			aria-label={placeholder ? `Edit ${placeholder}` : "Edit text"}
 			className={cn(
-				"cursor-pointer rounded flex items-center px-2 py-1",
+				"w-full rounded flex items-center px-2 py-1 text-left",
 				isDarkMode
 					? "hover:bg-gray-700 text-white"
 					: "hover:bg-gray-100 text-gray-900",
@@ -98,6 +105,6 @@ export const EditableText: FC<EditableTextProps> = ({
 			) : (
 				<span>{formattedValue}</span>
 			)}
-		</div>
+		</button>
 	);
 };

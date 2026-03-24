@@ -1,7 +1,7 @@
 import { formatDate } from "@repo/dates";
 import { cn } from "@repo/ui";
 import { Calendar } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "../../contexts/ThemeContext.js";
 
 interface DatePickerProps {
@@ -21,6 +21,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 	const { isDarkMode } = useTheme();
 	const [dateValue, setDateValue] = useState(date || "");
 
+	useEffect(() => {
+		if (!isEditing) {
+			setDateValue(date || "");
+		}
+	}, [date, isEditing]);
+
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setDateValue(e.target.value);
 	};
@@ -32,19 +38,33 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 		}
 	};
 
+	const openEditor = () => {
+		if (isEditable) {
+			setIsEditing(true);
+		}
+	};
+
 	return (
 		<div className="flex items-center gap-2 text-sm">
-			<Calendar
-				onClick={() => setIsEditing(!isEditing)}
-				size={16}
+			<button
+				type="button"
+				onClick={openEditor}
+				disabled={!isEditable}
+				aria-label={`Edit ${label}`}
 				className={cn(
-					"cursor-pointer",
-					isDarkMode ? "text-white" : "text-gray-500",
+					"rounded p-1",
+					isEditable && "cursor-pointer",
+					isDarkMode
+						? "text-white hover:bg-gray-700"
+						: "text-gray-500 hover:bg-gray-100",
 				)}
-			/>
+			>
+				<Calendar size={16} />
+			</button>
 			{isEditable && isEditing ? (
 				<input
 					type="date"
+					aria-label={label}
 					placeholder="yyyy/mm/dd"
 					value={dateValue}
 					onChange={handleChange}
@@ -56,13 +76,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 					} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
 				/>
 			) : (
-				// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-				<span
-					onClick={() => setIsEditing(isEditable)}
+				<button
+					type="button"
+					onClick={openEditor}
+					disabled={!isEditable}
 					className={cn(isEditable && "cursor-pointer hover:text-blue-500")}
 				>
 					{label}: {dateValue ? formatDate(dateValue) : "-"}
-				</span>
+				</button>
 			)}
 		</div>
 	);

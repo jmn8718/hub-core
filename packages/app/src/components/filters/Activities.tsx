@@ -35,11 +35,13 @@ const subtypeOptions: (ActivitySubType | "")[] = [
 ];
 
 const SelectFilter = ({
+	id,
 	label,
 	value,
 	onChange,
 	options,
 }: {
+	id: string;
 	label: string;
 	value: string;
 	onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -53,11 +55,18 @@ const SelectFilter = ({
 
 	return (
 		<div className="flex flex-col gap-2">
-			{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-			<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+			<label
+				htmlFor={id}
+				className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
+			>
 				{label}
 			</label>
-			<select value={value} onChange={onChange} className={inputClasses}>
+			<select
+				id={id}
+				value={value}
+				onChange={onChange}
+				className={inputClasses}
+			>
 				{options.map((opt) => (
 					<option key={opt} value={opt}>
 						{opt || "ALL"}
@@ -100,11 +109,15 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 		>
 			<div className="flex-1 min-w-[240px]">
 				<div className="relative">
+					<label htmlFor="activity-search" className="sr-only">
+						Search activities
+					</label>
 					<Search
 						className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
 						size={20}
 					/>
 					<input
+						id="activity-search"
 						type="text"
 						placeholder="Search activities..."
 						value={search}
@@ -117,12 +130,14 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 				<div className="flex flex-col md:flex-row gap-4">
 					<div className="flex flex-col gap-2 md:flex-row md:gap-4">
 						<SelectFilter
+							id="activity-filter-type"
 							label="Type"
 							value={type}
 							onChange={(e) => setType(e.target.value as ActivityType | "ALL")}
 							options={typeOptions.map((value) => value)}
 						/>
 						<SelectFilter
+							id="activity-filter-race"
 							label="Race"
 							value={isRace === "ALL" ? "ALL" : isRace ? "YES" : "NO"}
 							onChange={(e) => {
@@ -132,6 +147,7 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 							options={["ALL", "YES", "NO"]}
 						/>
 						<SelectFilter
+							id="activity-filter-subtype"
 							label="Subtype"
 							value={subtype}
 							onChange={(e) =>
@@ -143,6 +159,7 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 					<div className="flex flex-col gap-2 md:flex-row md:gap-4">
 						<label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 md:self-end md:pb-2">
 							<input
+								id="activity-filter-without-gear"
 								type="checkbox"
 								checked={withoutGear}
 								onChange={(e) => {
@@ -157,11 +174,14 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 							<span>Running without gear</span>
 						</label>
 						<div className="flex flex-col gap-2">
-							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+							<label
+								htmlFor="activity-filter-start-date"
+								className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
+							>
 								Start Date
 							</label>
 							<input
+								id="activity-filter-start-date"
 								type="date"
 								value={startDate}
 								onChange={(e) => setStartDate(e.target.value)}
@@ -169,11 +189,14 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 							/>
 						</div>
 						<div className="flex flex-col gap-2">
-							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-							<label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+							<label
+								htmlFor="activity-filter-end-date"
+								className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
+							>
 								End Date
 							</label>
 							<input
+								id="activity-filter-end-date"
 								type="date"
 								value={endDate}
 								onChange={(e) => setEndDate(e.target.value)}
