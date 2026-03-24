@@ -64,9 +64,9 @@ export function Settings() {
 						<FolderPathSection
 							id="download-path"
 							storeKey={StorageKeys.DOWNLOAD_FOLDER}
-							text="This is where your downloaded files will be saved"
-							popupTitle="Select folder to save downloaded files"
-							placeholder="Enter download path"
+							text="Choose where downloaded activity files should be saved."
+							popupTitle="Choose a folder for downloaded activity files"
+							placeholder="Choose a download folder"
 						/>
 					</SectionContainer>
 				)}
@@ -75,9 +75,9 @@ export function Settings() {
 						<FolderPathSection
 							id="cache-path"
 							storeKey={StorageKeys.CACHE_FOLDER}
-							text="Optional folder to persist activity API cache as JSON files"
-							popupTitle="Select folder to save activity cache files"
-							placeholder="Enter cache folder path"
+							text="Optional. Save provider activity data as JSON files for debugging."
+							popupTitle="Choose a folder for cached activity data"
+							placeholder="Choose a cache folder"
 						/>
 					</SectionContainer>
 				)}
@@ -86,20 +86,20 @@ export function Settings() {
 						<FolderPathSection
 							id="obsidian-path"
 							storeKey={StorageKeys.OBSIDIAN_FOLDER}
-							text="Select the Obsidian Vault folder to export the activities"
-							popupTitle="Select folder to export obsidian notes"
-							placeholder="Enter obsidian vault path"
+							text="Choose the Obsidian vault where activity notes should be exported."
+							popupTitle="Choose an Obsidian vault folder"
+							placeholder="Choose an Obsidian vault"
 						/>
 						<div className="mt-4 grid gap-3 md:grid-cols-2">
 							<StoreTextField
 								storeKey={StorageKeys.DEFAULT_CITY}
 								label="Default city"
-								placeholder="Optional fallback city"
+								placeholder="Used when an activity has no city"
 							/>
 							<StoreTextField
 								storeKey={StorageKeys.DEFAULT_COUNTRY}
 								label="Default country"
-								placeholder="Optional fallback country"
+								placeholder="Used when an activity has no country"
 							/>
 						</div>
 					</SectionContainer>

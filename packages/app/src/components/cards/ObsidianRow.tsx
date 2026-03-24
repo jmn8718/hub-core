@@ -233,12 +233,12 @@ const ObsidianRow: React.FC<ObsidianRowProps> = ({ data, gears }) => {
 					transition: Bounce,
 				});
 			} else {
-				toast.success("Activity exported", {
+				toast.success("Exported to Obsidian.", {
 					transition: Bounce,
 				});
 			}
 		} else {
-			toast.info("No export available for this activity type", {
+			toast.info("This activity type cannot be exported to Obsidian yet.", {
 				transition: Bounce,
 			});
 		}
@@ -251,7 +251,7 @@ const ObsidianRow: React.FC<ObsidianRowProps> = ({ data, gears }) => {
 	return (
 		<IconButton
 			icon={<NotebookPen size={16} />}
-			label="Manual upload"
+			label="Export to Obsidian"
 			onClick={handleExport}
 			disabled={loading}
 		/>

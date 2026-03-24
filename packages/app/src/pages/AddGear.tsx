@@ -34,12 +34,12 @@ export function AddGear() {
 		setError(null);
 
 		if (!name.trim()) {
-			setError("Name is required");
+			setError("Enter a gear name.");
 			return;
 		}
 
 		if (!code.trim()) {
-			setError("Code is required");
+			setError("Enter a gear code.");
 			return;
 		}
 
@@ -49,7 +49,7 @@ export function AddGear() {
 				: Math.max(0, Number(maximumDistance));
 
 		if (parsedMaxDistance !== undefined && Number.isNaN(parsedMaxDistance)) {
-			setError("Max distance must be a valid number");
+			setError("Enter a valid maximum distance in kilometers.");
 			return;
 		}
 
@@ -69,9 +69,9 @@ export function AddGear() {
 		try {
 			const result = await client.createGear(payload);
 			if (!result.success) {
-				throw new Error(result.error ?? "Unable to create gear");
+				throw new Error(result.error ?? "Could not create the gear.");
 			}
-			toast.success("Gear created", { transition: Bounce });
+			toast.success("Gear saved.", { transition: Bounce });
 			navigate(`${Routes.GEAR}/${result.id}`);
 		} catch (err) {
 			setError((err as Error).message);
@@ -113,7 +113,10 @@ export function AddGear() {
 					</button>
 				</div>
 			</div>
-			<Box title="Add Gear" description="Create a new piece of gear">
+			<Box
+				title="Add Gear"
+				description="Create gear you want to track for distance and wear."
+			>
 				<div className="space-y-4">
 					{error ? (
 						<div className="rounded border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
@@ -171,7 +174,7 @@ export function AddGear() {
 							/>
 						</label>
 						<label className="flex flex-col gap-1 text-sm font-medium">
-							<span>Start Date</span>
+							<span>Start date</span>
 							<input
 								type="date"
 								value={dateBegin}
@@ -180,7 +183,7 @@ export function AddGear() {
 							/>
 						</label>
 						<label className="flex flex-col gap-1 text-sm font-medium">
-							<span>Max Distance (km)</span>
+							<span>Max distance (km)</span>
 							<input
 								type="number"
 								min="0"

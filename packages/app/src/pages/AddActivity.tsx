@@ -55,23 +55,23 @@ export function AddActivity() {
 		setError(null);
 
 		if (!allowedActivityTypes.includes(activityType)) {
-			setError("Only swim, gym, or other activities can be created here.");
+			setError("You can only create gym, swim, or other activities here.");
 			return;
 		}
 
 		if (!name.trim()) {
-			setError("Name is required");
+			setError("Enter an activity name.");
 			return;
 		}
 
 		if (!timestamp) {
-			setError("Date & time is required");
+			setError("Choose a date and time.");
 			return;
 		}
 
 		const parsedDate = new Date(timestamp);
 		if (Number.isNaN(parsedDate.getTime())) {
-			setError("Invalid date & time");
+			setError("Enter a valid date and time.");
 			return;
 		}
 
@@ -85,11 +85,11 @@ export function AddActivity() {
 				: Math.max(0, Number(distanceMeters));
 
 		if (parsedDuration !== undefined && Number.isNaN(parsedDuration)) {
-			setError("Duration must be a valid number");
+			setError("Enter a valid duration in minutes.");
 			return;
 		}
 		if (parsedDistance !== undefined && Number.isNaN(parsedDistance)) {
-			setError("Distance must be a valid number");
+			setError("Enter a valid distance in meters.");
 			return;
 		}
 
@@ -99,11 +99,11 @@ export function AddActivity() {
 			poolLength.trim() === "" ? undefined : Math.max(0, Number(poolLength));
 
 		if (parsedLaps !== undefined && Number.isNaN(parsedLaps)) {
-			setError("Laps must be a valid number");
+			setError("Enter a valid lap count.");
 			return;
 		}
 		if (parsedPoolLength !== undefined && Number.isNaN(parsedPoolLength)) {
-			setError("Pool length must be a valid number");
+			setError("Enter a valid pool length.");
 			return;
 		}
 
@@ -131,9 +131,9 @@ export function AddActivity() {
 		try {
 			const result = await client.createActivity(payload);
 			if (!result.success) {
-				throw new Error(result.error ?? "Unable to create activity");
+				throw new Error(result.error ?? "Could not create the activity.");
 			}
-			toast.success("Activity created", { transition: Bounce });
+			toast.success("Activity saved.", { transition: Bounce });
 			navigate(`${Routes.DETAILS}/${result.id}`);
 		} catch (err) {
 			setError((err as Error).message);
@@ -175,7 +175,10 @@ export function AddActivity() {
 					</button>
 				</div>
 			</div>
-			<Box title="Add Activity" description="Limited to Swim, Gym, or Other">
+			<Box
+				title="Add Activity"
+				description="Create a manual gym, swim, or other activity."
+			>
 				<div className="space-y-4">
 					{error ? (
 						<div className="rounded border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">

@@ -24,14 +24,16 @@ export function GearDetails() {
 
 	const loadGear = useCallback(async () => {
 		if (!gearId) {
-			toast.error("Missing gear id", { transition: Bounce });
+			toast.error("Missing gear ID.", { transition: Bounce });
 			setIsLoading(false);
 			return null;
 		}
 		setIsLoading(true);
 		const result = await client.getGear(gearId);
 		if (!result.success || !result.data) {
-			const message = result.success ? "Gear not found" : result.error;
+			const message = result.success
+				? "We couldn't find that gear."
+				: result.error;
 			toast.error(message, { transition: Bounce });
 			setGear(null);
 			setIsLoading(false);
@@ -77,7 +79,7 @@ export function GearDetails() {
 				throw new Error(result.error);
 			}
 			await loadGear();
-			toast.success(`${provider} gear connected`, { transition: Bounce });
+			toast.success(`${provider} gear linked.`, { transition: Bounce });
 		} catch (error) {
 			toast.error((error as Error).message, { transition: Bounce });
 		} finally {
@@ -109,7 +111,10 @@ export function GearDetails() {
 				isEditable
 				maxDistanceEditable={gear.type === GearType.SHOES}
 			/>
-			<Box title="Provider Connections">
+			<Box
+				title="Provider Connections"
+				description="Check whether this gear is linked in each provider, or create the link."
+			>
 				<div className="space-y-3">
 					{providersList.map((provider) => {
 						const providerId = connectionMap.get(provider);
@@ -126,8 +131,8 @@ export function GearDetails() {
 										variant="description"
 										text={
 											providerId
-												? `Connected as ${providerId}`
-												: "Not connected"
+												? `Linked as gear ${providerId}`
+												: "Not linked yet"
 										}
 									/>
 								</div>
@@ -151,7 +156,7 @@ export function GearDetails() {
 													: "border-gray-300 text-gray-700 hover:bg-gray-100",
 											)}
 										>
-											Open
+											Open in provider
 										</button>
 									) : (
 										<button
@@ -166,7 +171,7 @@ export function GearDetails() {
 												isConnecting && "opacity-60 cursor-not-allowed",
 											)}
 										>
-											{isConnecting ? "Connecting..." : "Connect"}
+											{isConnecting ? "Linking..." : "Create and link"}
 										</button>
 									)}
 								</div>

@@ -30,7 +30,9 @@ export function useProviderSyncActions({
 		try {
 			const result = await client.providerSyncGear(provider);
 			if (result.success) {
-				toast.success("Gear synced", { transition: Bounce });
+				toast.success(`${provider} gear sync complete.`, {
+					transition: Bounce,
+				});
 			} else {
 				throw new Error(result.error);
 			}
@@ -54,7 +56,9 @@ export function useProviderSyncActions({
 		try {
 			const result = await client.providerSync(provider, true);
 			if (result.success) {
-				toast.success("Activities synced", { transition: Bounce });
+				toast.success(`${provider} activity sync complete.`, {
+					transition: Bounce,
+				});
 				setValue(getLastSyncKey(provider), new Date().toISOString());
 			} else {
 				throw new Error(result.error);

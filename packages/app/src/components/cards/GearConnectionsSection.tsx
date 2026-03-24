@@ -50,7 +50,7 @@ export function GearConnectionsSection({
 		);
 		if (!hasProviderConnection) {
 			toast.error(
-				`${gear.name} is not synced with ${provider}. Sync your gear first.`,
+				`${gear.name} is not available in ${provider} yet. Sync gear from that provider first.`,
 				{
 					transition: Bounce,
 				},
@@ -66,7 +66,7 @@ export function GearConnectionsSection({
 				transition: Bounce,
 			});
 		} else {
-			toast.success(`${gear.name} connected to ${provider}`, {
+			toast.success(`${gear.name} linked to ${provider}.`, {
 				transition: Bounce,
 			});
 			setOverrides((current) => {
@@ -93,7 +93,11 @@ export function GearConnectionsSection({
 	};
 
 	return (
-		<Box title="Gear connections" icon={Cable}>
+		<Box
+			title="Gear Connections"
+			description="Link selected gear to the providers already linked to this activity."
+			icon={Cable}
+		>
 			<div className="space-y-3">
 				{selectedGears.map((gear) => (
 					<div key={gear.id} className="rounded-lg border p-3">

@@ -183,7 +183,7 @@ function ActivityConnectionsPanel({
 			);
 			if (!result.success) throw new Error(result.error);
 			await reload();
-			toast.success(`${provider} connection removed`, { transition: Bounce });
+			toast.success(`${provider} link removed.`, { transition: Bounce });
 		} catch (err) {
 			toast.error((err as Error).message, {
 				hideProgressBar: false,
@@ -197,9 +197,11 @@ function ActivityConnectionsPanel({
 	};
 
 	const handleLink = async (provider: Providers) => {
-		const providerActivityId = inputValues[provider];
+		const providerActivityId = inputValues[provider]?.trim();
 		if (!providerActivityId) {
-			toast.error("Enter provider activity id", { transition: Bounce });
+			toast.error(`Enter the ${provider} activity ID.`, {
+				transition: Bounce,
+			});
 			return;
 		}
 		setPendingProvider(provider);
@@ -211,7 +213,7 @@ function ActivityConnectionsPanel({
 			);
 			if (!result.success) throw new Error(result.error);
 			await reload();
-			toast.success(`${provider} connection added`, { transition: Bounce });
+			toast.success(`${provider} link added.`, { transition: Bounce });
 			setInputValues((prev) => ({ ...prev, [provider]: "" }));
 		} catch (err) {
 			toast.error((err as Error).message, {
@@ -230,7 +232,7 @@ function ActivityConnectionsPanel({
 		if (!providerActivityId) return;
 		const cacheFolder = store[StorageKeys.CACHE_FOLDER];
 		if (!cacheFolder) {
-			toast.error("Set cache path first", { transition: Bounce });
+			toast.error("Choose a cache folder first.", { transition: Bounce });
 			return;
 		}
 		setPendingPersistProvider(provider);
@@ -241,7 +243,7 @@ function ActivityConnectionsPanel({
 				providerActivityId,
 			});
 			if (!result.success) throw new Error(result.error);
-			toast.success(`${provider} activity downloaded to cache path`, {
+			toast.success(`${provider} activity saved to the cache folder.`, {
 				transition: Bounce,
 			});
 		} catch (err) {
@@ -261,7 +263,7 @@ function ActivityConnectionsPanel({
 	return (
 		<Box
 			title="Provider Connections"
-			description="Link this activity to provider entries already imported into the system."
+			description="Match this activity to the same workout from Garmin, COROS, or Strava."
 		>
 			<div className="space-y-3">
 				{providersList.map((provider) => {
@@ -279,8 +281,8 @@ function ActivityConnectionsPanel({
 									variant="description"
 									text={
 										connectionId
-											? `Connected to ${connectionId}`
-											: "No provider link set"
+											? `Linked to activity ${connectionId}`
+											: "No linked activity yet"
 									}
 								/>
 							</div>
@@ -296,7 +298,7 @@ function ActivityConnectionsPanel({
 											>
 												{pendingPersistProvider === provider
 													? "Saving..."
-													: "Download"}
+													: "Save cache file"}
 											</button>
 										)}
 									<button
@@ -305,7 +307,7 @@ function ActivityConnectionsPanel({
 										disabled={isProcessing}
 										className="rounded border border-red-500 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400"
 									>
-										{isProcessing ? "Removing..." : "Disconnect"}
+										{isProcessing ? "Removing..." : "Remove link"}
 									</button>
 								</div>
 							) : (
@@ -319,7 +321,7 @@ function ActivityConnectionsPanel({
 												[provider]: event.target.value,
 											}))
 										}
-										placeholder="Provider activity id"
+										placeholder={`${provider} activity ID`}
 										className={cn(
 											"rounded border px-3 py-1 text-sm focus:outline-none focus:ring-1",
 											isDarkMode
@@ -333,7 +335,7 @@ function ActivityConnectionsPanel({
 										disabled={isProcessing}
 										className="rounded border border-blue-500 px-3 py-1 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400"
 									>
-										{isProcessing ? "Linking..." : "Link"}
+										{isProcessing ? "Linking..." : "Add link"}
 									</button>
 								</div>
 							)}

@@ -43,7 +43,7 @@ export function FolderPathSection({
 		if (result.success) {
 			if (result.data && result.data !== currentValue) {
 				saveNewPath(result.data);
-				toast.success("Value updated", { transition: Bounce });
+				toast.success("Folder updated.", { transition: Bounce });
 			}
 		} else {
 			toast.error(result.error, {

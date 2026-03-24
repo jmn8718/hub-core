@@ -93,7 +93,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 				lastSync: syncDate,
 				isSyncing: false,
 			}));
-			toast.success("Synced completed", { transition: Bounce });
+			toast.success(`${provider} sync complete.`, { transition: Bounce });
 		} else {
 			toast.error(result.error, {
 				hideProgressBar: false,
@@ -124,8 +124,8 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 						)}
 					>
 						{data.lastSync
-							? `Last synchronized ${formatRelativeTime(data.lastSync)}`
-							: "No synchronization data available"}
+							? `Last synced ${formatRelativeTime(data.lastSync)}`
+							: "No sync yet"}
 					</p>
 				</div>
 				<button
@@ -150,6 +150,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 					/>
 					<span className="sr-only">
 						{data.isSyncing ? "Syncing..." : "Sync Now"}
+						{data.isSyncing ? "Syncing..." : `Sync ${provider}`}
 					</span>
 				</button>
 			</div>
