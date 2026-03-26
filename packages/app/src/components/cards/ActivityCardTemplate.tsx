@@ -59,6 +59,7 @@ export function ActivityCardTemplate({
 		useState<DbActivityPopulated>(activity);
 	const [activityName, setActivityName] = useState(activity.name || "");
 	const [activityNotes, setActivityNotes] = useState(activity.notes || "");
+	const [fileStateVersion, setFileStateVersion] = useState(0);
 	const navigate = useNavigate();
 
 	useEffect(() => {
@@ -117,6 +118,10 @@ export function ActivityCardTemplate({
 			void handleEditActivity("notes", newNotes);
 		}
 	};
+
+	const notifyFileStateChange = useCallback(() => {
+		setFileStateVersion((current) => current + 1);
+	}, []);
 
 	const garminConnection = activityData.connections.find(
 		(connection) => connection.provider === Providers.GARMIN,
@@ -209,6 +214,8 @@ export function ActivityCardTemplate({
 									]
 								: []),
 						]}
+						fileStateVersion={fileStateVersion}
+						notifyFileStateChange={notifyFileStateChange}
 						refreshData={refreshActivity}
 					/>
 					<ProviderRow
@@ -220,6 +227,8 @@ export function ActivityCardTemplate({
 						isOriginalSource={!!corosConnection?.original}
 						hasBeenExported={false}
 						uploadCandidates={[]}
+						fileStateVersion={fileStateVersion}
+						notifyFileStateChange={notifyFileStateChange}
 						refreshData={refreshActivity}
 					/>
 					<ProviderRow
@@ -231,6 +240,8 @@ export function ActivityCardTemplate({
 						isOriginalSource={!!stravaConnection?.original}
 						hasBeenExported
 						uploadCandidates={[]}
+						fileStateVersion={fileStateVersion}
+						notifyFileStateChange={notifyFileStateChange}
 						refreshData={refreshActivity}
 					/>
 				</div>

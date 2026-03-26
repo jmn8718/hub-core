@@ -34,6 +34,8 @@ interface ProviderRowProps {
 	isOriginalSource: boolean;
 	hasBeenExported: boolean;
 	uploadCandidates: { provider: Providers; activityId: string }[];
+	fileStateVersion: number;
+	notifyFileStateChange: () => void;
 	refreshData: () => void;
 }
 
@@ -46,6 +48,8 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	isOriginalSource,
 	hasBeenExported,
 	uploadCandidates,
+	fileStateVersion,
+	notifyFileStateChange,
 	refreshData,
 }) => {
 	const { setLocalLoading } = useLoading();
@@ -150,7 +154,13 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	useEffect(() => {
 		void checkIsExported();
 		void checkAvailableUploadSource();
-	}, [connectionId, hasConnection, provider, uploadCandidatesKey]);
+	}, [
+		connectionId,
+		hasConnection,
+		provider,
+		uploadCandidatesKey,
+		fileStateVersion,
+	]);
 
 	const handleManualUpload = async () => {
 		// if it is coros or we have the activity, we do nothing
@@ -171,6 +181,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			toast.success("Manual upload completed", {
 				transition: Bounce,
 			});
+			notifyFileStateChange();
 		}
 
 		setLocalLoading(false);
@@ -201,6 +212,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			toast.success("Upload completed", {
 				transition: Bounce,
 			});
+			notifyFileStateChange();
 		}
 		await checkAvailableUploadSource();
 		setLocalLoading(false);
@@ -230,6 +242,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			toast.success("Download completed", {
 				transition: Bounce,
 			});
+			notifyFileStateChange();
 		}
 
 		await checkIsExported();
