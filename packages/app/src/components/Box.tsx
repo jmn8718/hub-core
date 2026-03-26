@@ -20,18 +20,19 @@ export const Box: React.FC<PageBoxProps> = ({
 	title,
 	description,
 }) => {
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 
 	return (
 		<div
 			className={cn(
 				"rounded-lg shadow-lg p-4 space-y-4 transition-all hover:shadow-lg relative",
-				isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800",
+				colors.panel,
+				colors.panelHover,
 				classes || "",
 			)}
 		>
 			{(title || description) && (
-				<div>
+				<div className="min-w-0">
 					{title && (
 						<Text className="text-sm font-semibold" text={title} icon={icon} />
 					)}

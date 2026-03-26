@@ -3,13 +3,14 @@ import { useTheme } from "../../contexts/ThemeContext.js";
 import { Text } from "../Text.js";
 
 export function ThemeSection() {
-	const { isDarkMode, toggleDarkMode } = useTheme();
+	const { isDarkMode, toggleDarkMode, colors } = useTheme();
 	return (
 		<div className="flex items-center justify-between">
 			<Text text="Dark Mode" className="text-md" />
 			<label
 				htmlFor="toggle-dark"
-				className="relative inline-flex items-center cursor-pointer"
+				className="relative inline-flex min-h-11 min-w-[52px] items-center justify-end cursor-pointer"
+				aria-label="Toggle dark mode"
 			>
 				<input
 					id="toggle-dark"
@@ -20,11 +21,9 @@ export function ThemeSection() {
 				/>
 				<div
 					className={cn(
-						"w-11 h-6 bg-gray-200 rounded-full",
-						"peer-focus:outline-none peer-focus:ring-4 peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600",
-						isDarkMode
-							? "border-gray-600 peer-focus:ring-blue-800"
-							: "peer-focus:ring-blue-300",
+						"relative h-7 w-12 rounded-full transition-colors peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-5 after:absolute after:left-[3px] after:top-[3px] after:h-5 after:w-5 after:rounded-full after:transition-transform after:content-['']",
+						colors.toggleTrack,
+						colors.toggleThumb,
 					)}
 				/>
 			</label>

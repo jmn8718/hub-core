@@ -100,7 +100,7 @@ export function GearConnectionsSection({
 		>
 			<div className="space-y-3">
 				{selectedGears.map((gear) => (
-					<div key={gear.id} className="rounded-lg border p-3">
+					<div key={gear.id} className="min-w-0 rounded-lg border p-3">
 						<Text className="font-semibold" text={gear.name} />
 						<div className="mt-2 flex flex-wrap gap-2">
 							{activityProviders.map((provider) => {
@@ -126,6 +126,7 @@ export function GearConnectionsSection({
 												type="button"
 												onClick={() => handleConnect(gear, provider)}
 												disabled={connectingKey === key}
+												title={`Connect ${gear.name} to ${provider}`}
 												className={cn(
 													"rounded px-3 py-1 text-xs font-medium border",
 													isDarkMode

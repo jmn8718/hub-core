@@ -17,21 +17,18 @@ const IconButton: FC<IconButtonProps> = ({
 	disabled = false,
 	className = "",
 }) => {
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 
 	return (
 		<button
 			type="button"
 			onClick={onClick}
 			disabled={disabled}
+			aria-label={label}
 			className={cn(
 				disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
-				isDarkMode
-					? "text-gray-300 hover:text-white hover:bg-gray-700"
-					: "text-gray-600 hover:text-gray-900 hover:bg-gray-100",
-				`
-            inline-flex items-center gap-1 px-2 py-1 rounded-md
-            text-sm transition-colors duration-200`,
+				colors.iconButton,
+				"inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-md px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2",
 				className,
 			)}
 			title={label}

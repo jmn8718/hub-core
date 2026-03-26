@@ -19,25 +19,35 @@ import { useDataClient } from "../contexts/DataClientContext.js";
 import { useLoading } from "../contexts/LoadingContext.js";
 import { useStore } from "../contexts/StoreContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
+import {
+	actionButtonBaseClass,
+	inputBaseClass,
+	pillButtonBaseClass,
+} from "../utils/style.js";
 
 export function ActivityDetails() {
 	const { client } = useDataClient();
 	const { setLocalLoading } = useLoading();
+	const { colors } = useTheme();
 	const { activityId } = useParams();
 	const [activity, setActivity] = useState<DbActivityPopulated | null>(null);
 	const [gears, setGears] = useState<IDbGearWithDistance[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [loadError, setLoadError] = useState<string | null>(null);
 
 	const MAX_RETRIES = 3;
 	const RETRY_DELAY_MS = 1000;
 
 	const loadActivity = useCallback(async () => {
 		if (!activityId) {
-			toast.error("Missing activity id", { transition: Bounce });
+			const message = "Missing activity id";
+			toast.error(message, { transition: Bounce });
+			setLoadError(message);
 			setIsLoading(false);
 			return;
 		}
 		setIsLoading(true);
+		setLoadError(null);
 
 		for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
 			try {
@@ -52,6 +62,7 @@ export function ActivityDetails() {
 						setGears(gearsResult.data.data);
 					}
 					setIsLoading(false);
+					setLoadError(null);
 					return;
 				}
 
@@ -66,7 +77,9 @@ export function ActivityDetails() {
 					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
 					continue;
 				}
-				toast.error((err as Error).message, { transition: Bounce });
+				const message = (err as Error).message;
+				toast.error(message, { transition: Bounce });
+				setLoadError(message);
 				setIsLoading(false);
 				return;
 			}
@@ -79,7 +92,15 @@ export function ActivityDetails() {
 
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center py-10 text-gray-500 dark:text-gray-400">
+			<div
+				// biome-ignore lint/a11y/useSemanticElements: <explanation>
+				role="status"
+				aria-live="polite"
+				className={cn(
+					"flex items-center justify-center py-10",
+					colors.description,
+				)}
+			>
 				Loading activity…
 			</div>
 		);
@@ -87,8 +108,23 @@ export function ActivityDetails() {
 
 	if (!activity) {
 		return (
-			<div className="flex items-center justify-center py-10 text-gray-500 dark:text-gray-400">
-				Activity not found.
+			<div
+				role="alert"
+				className={cn(
+					"flex flex-col items-center justify-center gap-3 py-10 text-center",
+					colors.description,
+				)}
+			>
+				<p>{loadError || "Activity not found."}</p>
+				<button
+					type="button"
+					onClick={() => {
+						void loadActivity();
+					}}
+					className={cn(actionButtonBaseClass, colors.buttonSecondary)}
+				>
+					Try again
+				</button>
 			</div>
 		);
 	}
@@ -140,7 +176,7 @@ function ActivityConnectionsPanel({
 }) {
 	const { client, type } = useDataClient();
 	const { setLocalLoading } = useLoading();
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 	const { store } = useStore();
 	const [pendingProvider, setPendingProvider] = useState<Providers | null>(
 		null,
@@ -259,6 +295,16 @@ function ActivityConnectionsPanel({
 	};
 
 	const providersList = [Providers.GARMIN, Providers.COROS, Providers.STRAVA];
+	const connectionRowClass = cn(
+		"flex flex-col gap-2 rounded-lg p-3 md:flex-row md:items-center md:justify-between",
+		colors.panel,
+	);
+	const inlineInputClass = cn(
+		inputBaseClass,
+		"min-w-[220px] py-1.5",
+		colors.input,
+	);
+	const actionButtonClass = cn(actionButtonBaseClass, "py-1.5");
 
 	return (
 		<Box
@@ -270,14 +316,11 @@ function ActivityConnectionsPanel({
 					const connectionId = connectionMap.get(provider);
 					const isProcessing = pendingProvider === provider;
 					return (
-						<div
-							key={provider}
-							className="flex flex-col gap-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:flex-row md:items-center md:justify-between"
-						>
-							<div>
+						<div key={provider} className={connectionRowClass}>
+							<div className="min-w-0">
 								<Text className="text-sm font-semibold" text={provider} />
 								<Text
-									className="text-xs pt-1"
+									className="break-all pt-1 text-xs"
 									variant="description"
 									text={
 										connectionId
@@ -287,14 +330,14 @@ function ActivityConnectionsPanel({
 								/>
 							</div>
 							{connectionId ? (
-								<div className="flex items-center gap-2">
+								<div className="flex flex-wrap items-center gap-2">
 									{type === AppType.DESKTOP &&
 										!!store[StorageKeys.CACHE_FOLDER] && (
 											<button
 												type="button"
 												onClick={() => handlePersistCache(provider)}
 												disabled={pendingPersistProvider === provider}
-												className="rounded border border-green-500 px-3 py-1 text-sm font-medium text-green-600 hover:bg-green-50 disabled:border-gray-300 disabled:text-gray-400"
+												className={cn(actionButtonClass, colors.buttonSuccess)}
 											>
 												{pendingPersistProvider === provider
 													? "Saving..."
@@ -305,7 +348,7 @@ function ActivityConnectionsPanel({
 										type="button"
 										onClick={() => handleUnlink(provider)}
 										disabled={isProcessing}
-										className="rounded border border-red-500 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400"
+										className={cn(actionButtonClass, colors.buttonDanger)}
 									>
 										{isProcessing ? "Removing..." : "Remove link"}
 									</button>
@@ -322,18 +365,13 @@ function ActivityConnectionsPanel({
 											}))
 										}
 										placeholder={`${provider} activity ID`}
-										className={cn(
-											"rounded border px-3 py-1 text-sm focus:outline-none focus:ring-1",
-											isDarkMode
-												? "border-gray-600 bg-gray-800 text-white placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400"
-												: "border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500",
-										)}
+										className={inlineInputClass}
 									/>
 									<button
 										type="button"
 										onClick={() => handleLink(provider)}
 										disabled={isProcessing}
-										className="rounded border border-blue-500 px-3 py-1 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400"
+										className={cn(actionButtonClass, colors.buttonPrimary)}
 									>
 										{isProcessing ? "Linking..." : "Add link"}
 									</button>
@@ -356,6 +394,7 @@ function EventToggle({
 }) {
 	const { client } = useDataClient();
 	const { setLocalLoading } = useLoading();
+	const { colors } = useTheme();
 	const [isSaving, setIsSaving] = useState(false);
 	const isRace = activity.isEvent === 1;
 
@@ -394,11 +433,10 @@ function EventToggle({
 				type="button"
 				onClick={handleToggle}
 				disabled={isSaving}
-				className={`rounded-full px-4 py-2 text-sm font-medium ${
-					isRace
-						? "bg-rose-600 text-white hover:bg-rose-700"
-						: "bg-gray-200 text-gray-700 hover:bg-gray-300"
-				}`}
+				className={cn(
+					pillButtonBaseClass,
+					isRace ? colors.buttonDanger : colors.buttonSecondary,
+				)}
 			>
 				{isSaving ? "Saving…" : isRace ? "Unset race" : "Mark as race"}
 			</button>
@@ -418,6 +456,7 @@ function ActivityDeleteSection({
 	const { client } = useDataClient();
 	const navigate = useNavigate();
 	const { setLocalLoading } = useLoading();
+	const { colors } = useTheme();
 	const [isDeleting, setIsDeleting] = useState(false);
 	const hasGearConnected = activity.gears.length > 0;
 
@@ -453,7 +492,11 @@ function ActivityDeleteSection({
 				type="button"
 				disabled={hasGearConnected || hasConnections || isDeleting}
 				onClick={handleDelete}
-				className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-gray-300"
+				className={cn(
+					pillButtonBaseClass,
+					"font-semibold",
+					colors.buttonDanger,
+				)}
 			>
 				{hasGearConnected
 					? "Remove gear before deleting"
@@ -477,6 +520,7 @@ function ActivitySubtypePanel({
 	setLocalLoading: (value: boolean) => void;
 }) {
 	const { client } = useDataClient();
+	const { colors } = useTheme();
 	const [subtype, setSubtype] = useState<ActivitySubType | "">(
 		(activity.subtype as ActivitySubType) || "",
 	);
@@ -515,7 +559,7 @@ function ActivitySubtypePanel({
 		<Box title="Subtype">
 			<div className="flex flex-col gap-2 md:flex-row md:items-center">
 				<select
-					className="rounded border border-gray-300 bg-transparent px-3 py-2 text-sm"
+					className={cn(inputBaseClass, colors.input)}
 					value={subtype}
 					onChange={(event) =>
 						setSubtype(event.target.value as ActivitySubType | "")
@@ -531,7 +575,7 @@ function ActivitySubtypePanel({
 					type="button"
 					onClick={handleApply}
 					disabled={!hasChanges || isSaving}
-					className="rounded border border-blue-500 px-4 py-2 text-sm font-medium text-blue-600 disabled:border-gray-300 disabled:text-gray-400"
+					className={cn(actionButtonBaseClass, colors.buttonPrimary)}
 				>
 					{isSaving ? "Saving…" : "Apply subtype"}
 				</button>

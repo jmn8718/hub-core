@@ -15,6 +15,15 @@ import { useStore } from "../../contexts/StoreContext.js";
 import { generateExternalLink } from "../../utils/providers.js";
 import IconButton from "../IconButton.js";
 
+const fileExistsCache = new Map<string, boolean | Promise<boolean>>();
+
+const getFileCacheKey = (provider: Providers, activityId: string) =>
+	`${provider}:${activityId}`;
+
+const invalidateFileExists = (provider: Providers, activityId: string) => {
+	fileExistsCache.delete(getFileCacheKey(provider, activityId));
+};
+
 interface ProviderRowProps {
 	hasConnection: boolean;
 	// eslint-disable-next-line react/require-default-props
@@ -56,6 +65,38 @@ const ProviderRow: FC<ProviderRowProps> = ({
 		isOriginalSource &&
 		!(provider === Providers.GARMIN && activityType === ActivityType.GYM);
 
+	const readFileExists = async (
+		targetProvider: Providers,
+		targetActivityId: string,
+	) => {
+		const cacheKey = getFileCacheKey(targetProvider, targetActivityId);
+		const cachedResult = fileExistsCache.get(cacheKey);
+		if (typeof cachedResult === "boolean") {
+			return cachedResult;
+		}
+		if (cachedResult) {
+			return cachedResult;
+		}
+
+		const pendingResult = client
+			.existsFile({
+				provider: targetProvider,
+				activityId: targetActivityId,
+			})
+			.then((result) => {
+				const exists = result.success ? result.data.exists : false;
+				fileExistsCache.set(cacheKey, exists);
+				return exists;
+			})
+			.catch(() => {
+				fileExistsCache.delete(cacheKey);
+				return false;
+			});
+
+		fileExistsCache.set(cacheKey, pendingResult);
+		return pendingResult;
+	};
+
 	const onProviderClick = async () => {
 		if (!connectionId) return;
 		try {
@@ -78,18 +119,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			setHasDownloadFile(false);
 			return;
 		}
-		const result = await client.existsFile({
-			provider,
-			activityId: connectionId,
-		});
-		if (result.success) {
-			setHasDownloadFile(result.data.exists);
-		} else {
-			setHasDownloadFile(false);
-			toast.error(result.error, {
-				transition: Bounce,
-			});
-		}
+		setHasDownloadFile(await readFileExists(provider, connectionId));
 	};
 
 	const checkAvailableUploadSource = async () => {
@@ -106,14 +136,11 @@ const ProviderRow: FC<ProviderRowProps> = ({
 		const candidateResults = await Promise.all(
 			uploadCandidates.map(async (candidate) => ({
 				candidate,
-				result: await client.existsFile({
-					provider: candidate.provider,
-					activityId: candidate.activityId,
-				}),
+				exists: await readFileExists(candidate.provider, candidate.activityId),
 			})),
 		);
 		const availableCandidate = candidateResults.find(
-			({ result }) => result.success && result.data.exists,
+			({ exists }) => exists,
 		)?.candidate;
 
 		setAvailableUploadSource(availableCandidate ?? null);
@@ -199,6 +226,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 				transition: Bounce,
 			});
 		} else {
+			invalidateFileExists(provider, connectionId);
 			toast.success("Download completed", {
 				transition: Bounce,
 			});
@@ -225,7 +253,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 					type="button"
 					onClick={onProviderClick}
 					className={cn([
-						"mx-2 px-3 w-[80px] flex justify-center py-1 rounded-full text-sm uppercase cursor-pointer",
+						"mx-2 flex min-w-[80px] justify-center rounded-full px-3 py-1 text-sm uppercase cursor-pointer",
 						provider === Providers.COROS && "bg-blue-100 text-blue-800",
 						provider === Providers.GARMIN && "bg-orange-100 text-orange-800",
 						provider === Providers.STRAVA && "bg-red-100 text-red-800",
@@ -236,7 +264,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			) : (
 				<span
 					className={cn([
-						"mx-2 px-3 w-[80px] flex justify-center py-1 rounded-full text-sm uppercase",
+						"mx-2 flex min-w-[80px] justify-center rounded-full px-3 py-1 text-sm uppercase",
 						provider === Providers.COROS && "bg-blue-100 text-blue-800",
 						provider === Providers.GARMIN && "bg-orange-100 text-orange-800",
 						provider === Providers.STRAVA && "bg-red-100 text-red-800",

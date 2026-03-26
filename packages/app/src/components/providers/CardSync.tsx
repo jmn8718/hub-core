@@ -24,7 +24,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 	provider,
 	onSyncDone,
 }) => {
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 	const { client } = useDataClient();
 	const { getValue, setValue } = useStore();
 	const { setLocalLoading } = useLoading();
@@ -117,12 +117,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 			<div className="flex items-center justify-between">
 				<div className="flex-1 space-y-2">
 					<H2 text={provider} classes="font-semibold capitalize" />
-					<p
-						className={cn(
-							"text-lg",
-							isDarkMode ? "text-gray-300" : "text-gray-600",
-						)}
-					>
+					<p className={cn("text-lg", colors.description)}>
 						{data.lastSync
 							? `Last synced ${formatRelativeTime(data.lastSync)}`
 							: "No sync yet"}
@@ -132,16 +127,12 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 					type="button"
 					disabled={data.isSyncing || !data.hasValidData}
 					onClick={onSync}
+					aria-label={
+						data.isSyncing ? `Syncing ${provider}` : `Sync ${provider}`
+					}
 					className={cn(
-						`inline-flex items-center px-4 py-3 rounded-lg
-            text-white font-medium text-sm
-            focus:outline-none focus:ring-2 focus:ring-offset-2
-            transition-colors duration-200
-            disabled:opacity-50 disabled:cursor-not-allowed
-            self-center`,
-						isDarkMode
-							? "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
-							: "bg-blue-500 hover:bg-blue-600 focus:ring-blue-400",
+						"inline-flex min-h-11 items-center justify-center rounded-lg border px-4 py-3 text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 self-center",
+						colors.buttonPrimary,
 					)}
 				>
 					<RefreshCw
@@ -149,8 +140,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 						className={cn("", data.isSyncing ? "animate-spin" : "")}
 					/>
 					<span className="sr-only">
-						{data.isSyncing ? "Syncing..." : "Sync Now"}
-						{data.isSyncing ? "Syncing..." : `Sync ${provider}`}
+						{data.isSyncing ? `Syncing ${provider}` : `Sync ${provider}`}
 					</span>
 				</button>
 			</div>

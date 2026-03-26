@@ -1,3 +1,4 @@
+import { cn } from "@repo/ui";
 import type React from "react";
 import { Link as RouterLink, useLocation } from "react-router-dom";
 import { useTheme } from "../contexts/ThemeContext.js";
@@ -8,37 +9,27 @@ export const Link: React.FC<{
 	label: string;
 }> = ({ href, icon, label }) => {
 	const location = useLocation();
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 	const isActive = location.pathname === href;
 
 	return (
 		<RouterLink
 			to={href}
-			className={`relative group flex items-center justify-center w-12 h-12 rounded-lg ${
-				isActive
-					? isDarkMode
-						? "bg-gray-700"
-						: "bg-gray-100"
-					: isDarkMode
-						? "hover:bg-gray-700"
-						: "hover:bg-gray-100"
-			}`}
+			className={cn(
+				"relative group flex h-12 w-12 items-center justify-center rounded-lg",
+				isActive ? colors.navActive : colors.navHover,
+			)}
+			aria-label={label}
+			title={label}
 		>
-			<div
-				className={
-					isActive
-						? "text-blue-500"
-						: isDarkMode
-							? "text-gray-400 group-hover:text-blue-500"
-							: "text-gray-600 group-hover:text-blue-600"
-				}
-			>
+			<div className={cn(isActive ? "text-current" : colors.navIcon)}>
 				{icon}
 			</div>
 			<span
-				className={`absolute left-full ml-2 px-2 py-1 ${
-					isDarkMode ? "bg-gray-700" : "bg-gray-800"
-				} text-white text-sm rounded opacity-0 group-hover:opacity-100 whitespace-nowrap`}
+				className={cn(
+					"pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded px-2 py-1 text-sm opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100",
+					colors.tooltip,
+				)}
 			>
 				{label}
 			</span>

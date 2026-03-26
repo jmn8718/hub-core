@@ -3,16 +3,18 @@ import {
 	type GearsData,
 	type IDbGearWithDistance,
 } from "@repo/types";
+import { cn } from "@repo/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import { GearCard, GearFilters, H2 } from "../components/index.js";
 import { Routes } from "../constants.js";
-import { useDataClient, useLoading } from "../contexts/index.js";
+import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
 
 export function Gears() {
 	const { client } = useDataClient();
 	const { setGlobalLoading, isGlobalLoading } = useLoading();
+	const { colors } = useTheme();
 	const [search, setSearch] = useState("");
 	const [showRetired, setShowRetired] = useState(false);
 
@@ -101,7 +103,10 @@ export function Gears() {
 			<div className="mt-4 flex justify-end">
 				<Link
 					to={Routes.GEAR_ADD}
-					className="rounded-full border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-600"
+					className={cn(
+						"rounded-full border px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2",
+						colors.buttonPrimary,
+					)}
 				>
 					Add Gear
 				</Link>

@@ -6,6 +6,11 @@ import { Bounce, toast } from "react-toastify";
 import { Box } from "../components/Box.js";
 import { Routes } from "../constants.js";
 import { useDataClient, useTheme } from "../contexts/index.js";
+import {
+	formLabelClass,
+	inputBaseClass,
+	pillButtonBaseClass,
+} from "../utils/style.js";
 import { toDateTimeLocal } from "./inbodyFormConfig.js";
 
 const allowedActivityTypes: readonly ActivityType[] = [
@@ -19,7 +24,7 @@ const formatActivityName = (type: ActivityType) =>
 
 export function AddActivity() {
 	const { client } = useDataClient();
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 	const navigate = useNavigate();
 	const [activityType, setActivityType] = useState<ActivityType>(
 		ActivityType.GYM,
@@ -43,6 +48,8 @@ export function AddActivity() {
 		() => Intl.DateTimeFormat().resolvedOptions().timeZone,
 		[],
 	);
+	const inputClass = cn(inputBaseClass, "text-base", colors.input);
+	const labelClass = cn(formLabelClass, colors.text, "flex flex-col gap-1");
 
 	useEffect(() => {
 		if (!isNameDirty) {
@@ -146,22 +153,14 @@ export function AddActivity() {
 		<form onSubmit={handleSubmit} className="space-y-4">
 			<div className="flex items-center justify-between">
 				<Link
-					className={cn(
-						"text-sm font-medium",
-						isDarkMode ? "text-white" : "text-gray-600",
-					)}
+					className={cn("text-sm font-medium", colors.text)}
 					to={Routes.DATA}
 				>
 					← Back to Activities
 				</Link>
 				<div className="flex items-center gap-3">
 					<Link
-						className={cn(
-							"rounded-full border px-4 py-2 text-sm font-medium",
-							isDarkMode
-								? "border-gray-600 text-gray-200"
-								: "border-gray-400 text-gray-700",
-						)}
+						className={cn(pillButtonBaseClass, colors.buttonSecondary)}
 						to={Routes.DATA}
 					>
 						Cancel
@@ -169,7 +168,11 @@ export function AddActivity() {
 					<button
 						type="submit"
 						disabled={isSubmitting}
-						className="rounded-full border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+						className={cn(
+							pillButtonBaseClass,
+							"font-semibold",
+							colors.buttonPrimary,
+						)}
 					>
 						{isSubmitting ? "Saving..." : "Save Activity"}
 					</button>
@@ -186,7 +189,7 @@ export function AddActivity() {
 						</div>
 					) : null}
 					<div className="grid gap-4 md:grid-cols-2">
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Name *</span>
 							<input
 								type="text"
@@ -196,41 +199,37 @@ export function AddActivity() {
 									setName(event.target.value);
 								}}
 								required
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							/>
 						</label>
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Type *</span>
 							<select
 								value={activityType}
 								onChange={(event) =>
 									setActivityType(event.target.value as ActivityType)
 								}
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							>
 								{allowedActivityTypes.map((type) => (
-									<option
-										key={type}
-										value={type}
-										className="bg-gray-900 text-white"
-									>
+									<option key={type} value={type}>
 										{type.charAt(0).toUpperCase() + type.slice(1)}
 									</option>
 								))}
 							</select>
 						</label>
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Date &amp; Time *</span>
 							<input
 								type="datetime-local"
 								value={timestamp}
 								onChange={(event) => setTimestamp(event.target.value)}
 								required
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							/>
 						</label>
 						<div className="grid gap-4 sm:grid-cols-2 md:col-span-2 md:grid-cols-4">
-							<label className="flex flex-col gap-1 text-sm font-medium">
+							<label className={labelClass}>
 								<span>Duration (minutes)</span>
 								<input
 									type="number"
@@ -238,12 +237,12 @@ export function AddActivity() {
 									step="0.1"
 									value={durationMinutes}
 									onChange={(event) => setDurationMinutes(event.target.value)}
-									className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+									className={inputClass}
 								/>
 							</label>
 							{activityType !== ActivityType.SWIM &&
 								activityType !== ActivityType.GYM && (
-									<label className="flex flex-col gap-1 text-sm font-medium">
+									<label className={labelClass}>
 										<span>Distance (meters)</span>
 										<input
 											type="number"
@@ -253,13 +252,13 @@ export function AddActivity() {
 											onChange={(event) =>
 												setDistanceMeters(event.target.value)
 											}
-											className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+											className={inputClass}
 										/>
 									</label>
 								)}
 							{activityType === ActivityType.SWIM && (
 								<>
-									<label className="flex flex-col gap-1 text-sm font-medium">
+									<label className={labelClass}>
 										<span>Laps</span>
 										<input
 											type="number"
@@ -267,10 +266,10 @@ export function AddActivity() {
 											step="1"
 											value={laps}
 											onChange={(event) => setLaps(event.target.value)}
-											className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+											className={inputClass}
 										/>
 									</label>
-									<label className="flex flex-col gap-1 text-sm font-medium">
+									<label className={labelClass}>
 										<span>Pool Length (meters)</span>
 										<input
 											type="number"
@@ -278,41 +277,41 @@ export function AddActivity() {
 											step="1"
 											value={poolLength}
 											onChange={(event) => setPoolLength(event.target.value)}
-											className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+											className={inputClass}
 										/>
 									</label>
 								</>
 							)}
-							<label className="flex flex-col gap-1 text-sm font-medium">
+							<label className={labelClass}>
 								<span>Location</span>
 								<input
 									type="text"
 									value={locationName}
 									onChange={(event) => setLocationName(event.target.value)}
-									className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+									className={inputClass}
 								/>
 							</label>
-							<label className="flex flex-col gap-1 text-sm font-medium">
+							<label className={labelClass}>
 								<span>Country</span>
 								<input
 									type="text"
 									value={locationCountry}
 									onChange={(event) => setLocationCountry(event.target.value)}
-									className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+									className={inputClass}
 								/>
 							</label>
 						</div>
-						<label className="flex flex-col gap-1 text-sm font-medium md:col-span-2">
+						<label className={cn(labelClass, "md:col-span-2")}>
 							<span>Notes</span>
 							<textarea
 								value={notes}
 								onChange={(event) => setNotes(event.target.value)}
 								rows={3}
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							/>
 						</label>
 					</div>
-					<p className="text-xs text-gray-500 dark:text-gray-400">
+					<p className={cn("text-xs", colors.description)}>
 						Manual activities are limited to Swim, Gym, or Other and will use
 						your local timezone ({timezone}).
 					</p>

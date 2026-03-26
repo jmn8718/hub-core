@@ -8,6 +8,7 @@ import { Text } from "../components/Text.js";
 import { GearCard } from "../components/index.js";
 import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
 import { generateExternalGearLink } from "../utils/providers.js";
+import { actionButtonBaseClass } from "../utils/style.js";
 
 const providersList = [Providers.GARMIN, Providers.COROS, Providers.STRAVA];
 
@@ -18,17 +19,21 @@ export function GearDetails() {
 	const { gearId } = useParams();
 	const [gear, setGear] = useState<IDbGearWithDistance | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [loadError, setLoadError] = useState<string | null>(null);
 	const [pendingProvider, setPendingProvider] = useState<Providers | null>(
 		null,
 	);
 
 	const loadGear = useCallback(async () => {
 		if (!gearId) {
-			toast.error("Missing gear ID.", { transition: Bounce });
+			const message = "Missing gear ID.";
+			toast.error(message, { transition: Bounce });
+			setLoadError(message);
 			setIsLoading(false);
 			return null;
 		}
 		setIsLoading(true);
+		setLoadError(null);
 		const result = await client.getGear(gearId);
 		if (!result.success || !result.data) {
 			const message = result.success
@@ -36,10 +41,12 @@ export function GearDetails() {
 				: result.error;
 			toast.error(message, { transition: Bounce });
 			setGear(null);
+			setLoadError(message);
 			setIsLoading(false);
 			return null;
 		}
 		setGear(result.data);
+		setLoadError(null);
 		setIsLoading(false);
 		return result.data;
 	}, [client, gearId]);
@@ -90,7 +97,15 @@ export function GearDetails() {
 
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center py-10 text-gray-500 dark:text-gray-400">
+			<div
+				// biome-ignore lint/a11y/useSemanticElements: <explanation>
+				role="status"
+				aria-live="polite"
+				className={cn(
+					"flex items-center justify-center py-10",
+					colors.description,
+				)}
+			>
 				Loading gear…
 			</div>
 		);
@@ -98,8 +113,23 @@ export function GearDetails() {
 
 	if (!gear) {
 		return (
-			<div className="flex items-center justify-center py-10 text-gray-500 dark:text-gray-400">
-				Gear not found.
+			<div
+				role="alert"
+				className={cn(
+					"flex flex-col items-center justify-center gap-3 py-10 text-center",
+					colors.description,
+				)}
+			>
+				<p>{loadError || "Gear not found."}</p>
+				<button
+					type="button"
+					onClick={() => {
+						void loadGear();
+					}}
+					className={cn(actionButtonBaseClass, colors.buttonSecondary)}
+				>
+					Try again
+				</button>
 			</div>
 		);
 	}
@@ -122,12 +152,12 @@ export function GearDetails() {
 						return (
 							<div
 								key={provider}
-								className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:flex-row md:items-center md:justify-between"
+								className="flex min-w-0 flex-col gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:flex-row md:items-center md:justify-between"
 							>
-								<div>
+								<div className="min-w-0 flex-1">
 									<Text className="text-sm font-semibold" text={provider} />
 									<Text
-										className="text-xs pt-1"
+										className="break-all pt-1 text-xs"
 										variant="description"
 										text={
 											providerId
@@ -136,7 +166,7 @@ export function GearDetails() {
 										}
 									/>
 								</div>
-								<div className="flex items-center gap-3">
+								<div className="flex flex-wrap items-center gap-3">
 									<span
 										className={cn(
 											"px-2 py-1 text-xs font-semibold rounded-full",

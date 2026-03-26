@@ -29,13 +29,13 @@ export const Text: React.FC<PageTextProps> = ({
 	const { colors } = useTheme();
 	const textColor = getVariantClass(variant, colors);
 	const classes = cn(
-		"text-sm m-0 p-0",
+		"m-0 min-w-0 break-words p-0 text-sm",
 		textColor,
 		className || "",
 		icon ? "flex items-center gap-2" : "",
 	);
 	return (
-		<p className={classes}>
+		<p className={classes} dir="auto">
 			{icon && createElement(icon, { size: 16, className: textColor })}
 			{text}
 		</p>

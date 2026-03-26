@@ -1,6 +1,7 @@
 import { cn } from "@repo/ui";
 import { Search } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext.js";
+import { inputBaseClass } from "../../utils/style.js";
 
 interface GearFiltersProps {
 	search: string;
@@ -15,19 +16,23 @@ export const GearFilters: React.FC<GearFiltersProps> = ({
 	showRetired,
 	setShowRetired,
 }) => {
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
+	const inputClass = cn(inputBaseClass, colors.input);
 
 	return (
 		<div
 			className={cn(
-				"p-4 rounded-lg shadow-md flex flex-wrap gap-4",
-				isDarkMode ? "bg-gray-800" : "bg-white",
+				"flex flex-wrap gap-4 rounded-lg p-4 shadow-md",
+				colors.panel,
 			)}
 		>
 			<div className="flex-1 min-w-[200px]">
 				<div className="relative">
 					<Search
-						className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+						className={cn(
+							"absolute left-3 top-1/2 -translate-y-1/2",
+							colors.inputIcon,
+						)}
 						size={20}
 					/>
 					<input
@@ -35,11 +40,7 @@ export const GearFilters: React.FC<GearFiltersProps> = ({
 						placeholder="Search gear..."
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className={`w-full pl-10 pr-4 py-2 rounded-lg border ${
-							isDarkMode
-								? "bg-gray-700 border-gray-600 text-white"
-								: "bg-white border-gray-300 text-gray-900"
-						} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+						className={cn(inputClass, "w-full pl-12 pr-4")}
 					/>
 				</div>
 			</div>
@@ -53,9 +54,7 @@ export const GearFilters: React.FC<GearFiltersProps> = ({
 						onChange={(e) => setShowRetired(e.target.checked)}
 						className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 					/>
-					<span className={isDarkMode ? "text-white" : "text-gray-900"}>
-						Show Retired
-					</span>
+					<span className={colors.text}>Show Retired</span>
 				</label>
 			</div>
 		</div>

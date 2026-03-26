@@ -13,6 +13,7 @@ import {
 	useLoading,
 	useTheme,
 } from "../../../contexts/index.js";
+import { formLabelClass, inputBaseClass } from "../../../utils/style.js";
 import { Button } from "../../Button.js";
 import { SectionContainer } from "../../SectionContainer.js";
 import { ActivityCardTemplate } from "../ActivityCardTemplate.js";
@@ -58,7 +59,7 @@ function OtherActivityBody({
 }) {
 	const { client } = useDataClient();
 	const { setLocalLoading } = useLoading();
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 	const [classification, setClassification] = useState<{
 		type: ActivityType;
 		subtype: ActivitySubType | "";
@@ -132,12 +133,7 @@ function OtherActivityBody({
 	return (
 		<>
 			<SectionContainer hasBorder>
-				<div
-					className={cn(
-						"text-sm",
-						isDarkMode ? "text-gray-300" : "text-gray-600",
-					)}
-				>
+				<div className={cn("text-sm", colors.text)}>
 					{formatDateWithTime(
 						context.activityData.timestamp,
 						context.activityData.timezone,
@@ -148,15 +144,15 @@ function OtherActivityBody({
 				<SectionContainer hasBorder className="space-y-4">
 					<div>
 						<p className="text-sm font-medium">Classification</p>
-						<p className="text-xs text-gray-500">
+						<p className={cn("text-xs", colors.description)}>
 							Adjust the activity type and subtype, then apply the change.
 						</p>
 					</div>
 					<div className="grid gap-4 md:grid-cols-2">
-						<label className="text-sm font-medium">
+						<label className={cn(formLabelClass, colors.text)}>
 							Type
 							<select
-								className="mt-1 w-full rounded border border-gray-300 bg-transparent px-3 py-2 text-sm"
+								className={cn(inputBaseClass, "mt-1 w-full", colors.input)}
 								value={classification.type}
 								onChange={(event) =>
 									setClassification((prev) => {
@@ -177,10 +173,10 @@ function OtherActivityBody({
 							</select>
 						</label>
 						{supportsSubtype(classification.type) && (
-							<label className="text-sm font-medium">
+							<label className={cn(formLabelClass, colors.text)}>
 								Subtype
 								<select
-									className="mt-1 w-full rounded border border-gray-300 bg-transparent px-3 py-2 text-sm"
+									className={cn(inputBaseClass, "mt-1 w-full", colors.input)}
 									value={classification.subtype}
 									onChange={(event) =>
 										setClassification((prev) => ({
@@ -198,7 +194,12 @@ function OtherActivityBody({
 							</label>
 						)}
 					</div>
-					<Button onClick={handleClassificationUpdate} disabled={!hasChanges}>
+					<Button
+						onClick={handleClassificationUpdate}
+						disabled={!hasChanges}
+						variant="primary"
+						className="rounded-lg"
+					>
 						Apply classification
 					</Button>
 				</SectionContainer>

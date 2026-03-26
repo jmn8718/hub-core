@@ -16,7 +16,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 	text = "",
 	disabled = false,
 }) => {
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 
 	return (
 		<div className="relative group">
@@ -24,26 +24,24 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 				type="button"
 				onClick={onClick}
 				disabled={disabled}
+				title={tooltip || text}
 				className={cn(
-					"p-2 rounded-lg transition-colors duration-200 flex gap-2 items-center",
-					disabled
-						? "opacity-50 cursor-not-allowed"
-						: isDarkMode
-							? "hover:bg-gray-700 text-gray-300 hover:text-white"
-							: "hover:bg-gray-100 text-gray-600 hover:text-gray-900",
+					"flex items-center gap-2 rounded-lg p-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2",
+					disabled ? "opacity-50 cursor-not-allowed" : colors.iconButton,
 				)}
-				aria-label={tooltip}
+				aria-label={tooltip || text}
 			>
 				{icon}
-
 				{text && <span>{text}</span>}
 			</button>
 			{tooltip && (
 				<span
 					className={cn(
-						"absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs rounded pointer-events-none transition-opacity duration-200 whitespace-nowrap",
-						isDarkMode ? "bg-gray-700 text-white" : "bg-gray-800 text-white",
-						disabled ? "opacity-0" : "opacity-0 group-hover:opacity-100",
+						"pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded px-2 py-1 text-xs transition-opacity duration-200",
+						colors.tooltip,
+						disabled
+							? "opacity-0"
+							: "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
 					)}
 				>
 					{tooltip}

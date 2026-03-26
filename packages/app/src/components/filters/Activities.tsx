@@ -47,17 +47,15 @@ const SelectFilter = ({
 	onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 	options: string[];
 }) => {
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 
-	const inputClasses = isDarkMode
-		? `${inputBase} bg-gray-700 border-gray-600 text-white`
-		: `${inputBase} bg-white border-gray-300 text-gray-900`;
+	const inputClasses = `${inputBase} ${colors.input}`;
 
 	return (
 		<div className="flex flex-col gap-2">
 			<label
 				htmlFor={id}
-				className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
+				className={cn("text-xs uppercase tracking-wide", colors.description)}
 			>
 				{label}
 			</label>
@@ -94,17 +92,15 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 	setWithoutGear,
 	onApplyFilters,
 }) => {
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 
-	const inputClasses = isDarkMode
-		? `${inputBase} bg-gray-700 border-gray-600 text-white`
-		: `${inputBase} bg-white border-gray-300 text-gray-900`;
+	const inputClasses = `${inputBase} ${colors.input}`;
 
 	return (
 		<div
 			className={cn(
 				"flex flex-col p-4 rounded-lg shadow-md flex-wrap gap-4",
-				isDarkMode ? "bg-gray-800" : "bg-white",
+				colors.panel,
 			)}
 		>
 			<div className="flex-1 min-w-[240px]">
@@ -113,7 +109,10 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 						Search activities
 					</label>
 					<Search
-						className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+						className={cn(
+							"absolute left-3 top-1/2 -translate-y-1/2",
+							colors.inputIcon,
+						)}
 						size={20}
 					/>
 					<input
@@ -122,7 +121,7 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 						placeholder="Search activities..."
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className={`w-full pl-10 pr-4 ${inputClasses}`}
+						className={`${inputClasses} w-full pl-10 pr-4`}
 					/>
 				</div>
 			</div>
@@ -157,7 +156,13 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 						/>
 					</div>
 					<div className="flex flex-col gap-2 md:flex-row md:gap-4">
-						<label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 md:self-end md:pb-2">
+						<label
+							htmlFor="activity-filter-without-gear"
+							className={cn(
+								"flex items-center gap-2 text-sm md:self-end md:pb-2",
+								colors.text,
+							)}
+						>
 							<input
 								id="activity-filter-without-gear"
 								type="checkbox"
@@ -176,7 +181,10 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 						<div className="flex flex-col gap-2">
 							<label
 								htmlFor="activity-filter-start-date"
-								className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
+								className={cn(
+									"text-xs uppercase tracking-wide",
+									colors.description,
+								)}
 							>
 								Start Date
 							</label>
@@ -191,7 +199,10 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 						<div className="flex flex-col gap-2">
 							<label
 								htmlFor="activity-filter-end-date"
-								className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
+								className={cn(
+									"text-xs uppercase tracking-wide",
+									colors.description,
+								)}
 							>
 								End Date
 							</label>
@@ -208,11 +219,10 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 				<button
 					type="button"
 					onClick={onApplyFilters}
-					className={`px-4 py-2 rounded-lg text-sm font-medium ${
-						isDarkMode
-							? "bg-blue-600 text-white hover:bg-blue-700"
-							: "bg-blue-500 text-white hover:bg-blue-600"
-					}`}
+					className={cn(
+						"rounded-lg border px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2",
+						colors.buttonPrimary,
+					)}
 				>
 					Apply
 				</button>

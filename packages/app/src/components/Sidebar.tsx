@@ -18,14 +18,14 @@ export function Sidebar({
 		hideOnWeb?: boolean;
 	}[];
 }) {
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 	const { type } = useDataClient();
 	const location = useLocation();
 	return (
 		<aside
 			className={cn(
-				"fixed left-0 top-0 h-full shadow-lg flex flex-col items-center py-6 transition-colors duration-200",
-				isDarkMode ? "bg-gray-800" : "bg-white",
+				"fixed left-0 top-0 z-40 h-full shadow-lg flex flex-col items-center py-6 transition-colors duration-200",
+				colors.navSurface,
 				type === AppType.DESKTOP ? "w-16" : "w-12",
 			)}
 		>
@@ -36,26 +36,25 @@ export function Sidebar({
 						to={href}
 						className={cn(
 							"relative group flex items-center justify-center w-8 h-8 rounded-lg",
-							isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-200",
+							colors.navHover,
 							type === AppType.DESKTOP ? "w-12 h-12" : "w-8 h-8",
 							type === AppType.WEB && hideOnWeb && "hidden",
+							location.pathname === href && colors.navActive,
 						)}
+						aria-label={label}
+						title={label}
 					>
 						<Icon
 							size={24}
-							color={
-								location.pathname === href
-									? isDarkMode
-										? "white"
-										: "black"
-									: "gray"
-							}
+							className={cn(
+								"h-6 w-6",
+								location.pathname === href ? "text-current" : colors.navIcon,
+							)}
 						/>
 						<span
 							className={cn(
-								"sr-only absolute left-full ml-2 px-2 py-1",
-								"text-white text-sm rounded opacity-0 group-hover:opacity-100 whitespace-nowrap",
-								isDarkMode ? "bg-gray-700" : "bg-gray-800",
+								"pointer-events-none absolute left-full z-50 ml-2 rounded px-2 py-1 text-sm whitespace-nowrap opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+								colors.tooltip,
 							)}
 						>
 							{label}

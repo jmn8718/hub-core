@@ -6,6 +6,11 @@ import { Box } from "../components/index.js";
 import { Routes } from "../constants.js";
 import { useDataClient, useTheme } from "../contexts/index.js";
 import {
+	formLabelClass,
+	inputBaseClass,
+	pillButtonBaseClass,
+} from "../utils/style.js";
+import {
 	type MeasurementValuesState,
 	createEmptyMeasurementValues,
 	measurementFields,
@@ -15,7 +20,7 @@ import {
 
 export function InbodyAdd() {
 	const { client } = useDataClient();
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 	const navigate = useNavigate();
 	const location = useLocation();
 	const locationState = location.state as {
@@ -37,6 +42,8 @@ export function InbodyAdd() {
 	);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const inputClass = cn(inputBaseClass, "text-base", colors.input);
+	const labelClass = cn(formLabelClass, colors.text, "flex flex-col gap-1");
 
 	const navigateToList = (typeToShow: InbodyType) => {
 		navigate(returnTo, {
@@ -136,10 +143,7 @@ export function InbodyAdd() {
 				<button
 					type="button"
 					onClick={goBackToList}
-					className={cn(
-						"text-sm font-medium",
-						isDarkMode ? "text-white" : "text-gray-500",
-					)}
+					className={cn("text-sm font-medium", colors.text)}
 					disabled={isSubmitting}
 				>
 					← Back to Inbody history
@@ -149,14 +153,18 @@ export function InbodyAdd() {
 					<button
 						type="button"
 						onClick={goBackToList}
-						className="rounded-full border border-gray-500 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:border-gray-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+						className={cn(pillButtonBaseClass, colors.buttonSecondary)}
 						disabled={isSubmitting}
 					>
 						Cancel
 					</button>
 					<button
 						type="submit"
-						className="rounded-full border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+						className={cn(
+							pillButtonBaseClass,
+							"font-semibold",
+							colors.buttonPrimary,
+						)}
 						disabled={isSubmitting}
 					>
 						{isSubmitting ? "Saving..." : "Save Entry"}
@@ -172,33 +180,29 @@ export function InbodyAdd() {
 						</div>
 					) : null}
 					<div className="grid gap-4 md:grid-cols-2">
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Entry Type</span>
 							<select
 								value={entryType}
 								onChange={(event) =>
 									setEntryType(event.target.value as InbodyType)
 								}
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							>
 								{Object.values(InbodyType).map((type) => (
-									<option
-										key={type}
-										value={type}
-										className="bg-gray-900 text-white"
-									>
+									<option key={type} value={type}>
 										{type.charAt(0).toUpperCase() + type.slice(1)}
 									</option>
 								))}
 							</select>
 						</label>
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Date &amp; Time</span>
 							<input
 								type="datetime-local"
 								value={timestamp}
 								onChange={(event) => setTimestamp(event.target.value)}
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 								required
 							/>
 						</label>
@@ -206,10 +210,7 @@ export function InbodyAdd() {
 
 					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						{measurementFields.map(({ name, label, required }) => (
-							<label
-								key={name}
-								className="flex flex-col gap-1 text-sm font-medium"
-							>
+							<label key={name} className={labelClass}>
 								<span>
 									{label}
 									{required ? " *" : ""}
@@ -220,7 +221,7 @@ export function InbodyAdd() {
 									value={values[name]}
 									required={required}
 									onChange={handleChange(name)}
-									className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+									className={inputClass}
 								/>
 							</label>
 						))}

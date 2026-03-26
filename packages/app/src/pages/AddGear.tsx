@@ -6,6 +6,11 @@ import { Bounce, toast } from "react-toastify";
 import { Box } from "../components/Box.js";
 import { Routes } from "../constants.js";
 import { useDataClient, useTheme } from "../contexts/index.js";
+import {
+	formLabelClass,
+	inputBaseClass,
+	pillButtonBaseClass,
+} from "../utils/style.js";
 
 const gearTypes: readonly GearType[] = [
 	GearType.SHOES,
@@ -18,7 +23,7 @@ const todayAsDateInput = () => new Date().toISOString().slice(0, 10);
 
 export function AddGear() {
 	const { client } = useDataClient();
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 	const navigate = useNavigate();
 	const [name, setName] = useState("");
 	const [code, setCode] = useState("");
@@ -28,6 +33,8 @@ export function AddGear() {
 	const [maximumDistance, setMaximumDistance] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const inputClass = cn(inputBaseClass, "text-base", colors.input);
+	const labelClass = cn(formLabelClass, colors.text, "flex flex-col gap-1");
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -84,22 +91,14 @@ export function AddGear() {
 		<form onSubmit={handleSubmit} className="space-y-4">
 			<div className="flex items-center justify-between">
 				<Link
-					className={cn(
-						"text-sm font-medium",
-						isDarkMode ? "text-white" : "text-gray-600",
-					)}
+					className={cn("text-sm font-medium", colors.text)}
 					to={Routes.GEAR}
 				>
 					← Back to Gear
 				</Link>
 				<div className="flex items-center gap-3">
 					<Link
-						className={cn(
-							"rounded-full border px-4 py-2 text-sm font-medium",
-							isDarkMode
-								? "border-gray-600 text-gray-200"
-								: "border-gray-400 text-gray-700",
-						)}
+						className={cn(pillButtonBaseClass, colors.buttonSecondary)}
 						to={Routes.GEAR}
 					>
 						Cancel
@@ -107,7 +106,11 @@ export function AddGear() {
 					<button
 						type="submit"
 						disabled={isSubmitting}
-						className="rounded-full border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+						className={cn(
+							pillButtonBaseClass,
+							"font-semibold",
+							colors.buttonPrimary,
+						)}
 					>
 						{isSubmitting ? "Saving..." : "Save Gear"}
 					</button>
@@ -124,65 +127,61 @@ export function AddGear() {
 						</div>
 					) : null}
 					<div className="grid gap-4 md:grid-cols-2">
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Name *</span>
 							<input
 								type="text"
 								value={name}
 								onChange={(event) => setName(event.target.value)}
 								required
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							/>
 						</label>
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Code *</span>
 							<input
 								type="text"
 								value={code}
 								onChange={(event) => setCode(event.target.value)}
 								required
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							/>
 						</label>
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Type *</span>
 							<select
 								value={gearType}
 								onChange={(event) =>
 									setGearType(event.target.value as GearType)
 								}
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							>
 								{gearTypes.map((type) => (
-									<option
-										key={type}
-										value={type}
-										className="bg-gray-900 text-white"
-									>
+									<option key={type} value={type}>
 										{type.charAt(0).toUpperCase() + type.slice(1)}
 									</option>
 								))}
 							</select>
 						</label>
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Brand</span>
 							<input
 								type="text"
 								value={brand}
 								onChange={(event) => setBrand(event.target.value)}
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							/>
 						</label>
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Start date</span>
 							<input
 								type="date"
 								value={dateBegin}
 								onChange={(event) => setDateBegin(event.target.value)}
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							/>
 						</label>
-						<label className="flex flex-col gap-1 text-sm font-medium">
+						<label className={labelClass}>
 							<span>Max distance (km)</span>
 							<input
 								type="number"
@@ -190,7 +189,7 @@ export function AddGear() {
 								step="1"
 								value={maximumDistance}
 								onChange={(event) => setMaximumDistance(event.target.value)}
-								className="rounded border border-gray-600 bg-transparent px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								className={inputClass}
 							/>
 						</label>
 					</div>

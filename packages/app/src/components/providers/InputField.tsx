@@ -2,6 +2,7 @@ import { cn } from "@repo/ui";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "../../contexts/index.js";
+import { formLabelClass, inputBaseClass } from "../../utils/style.js";
 
 interface InputFieldProps {
 	id: string;
@@ -20,17 +21,14 @@ export const InputField: React.FC<InputFieldProps> = ({
 	onChange,
 	placeholder,
 }) => {
-	const { isDarkMode } = useTheme();
+	const { colors } = useTheme();
 	const [showPassword, setShowPassword] = useState(false);
 	const isPassword = type === "password";
 	return (
 		<div className="mb-4">
 			<label
 				htmlFor={id}
-				className={cn(
-					"pl-1 mb-2 block text-sm font-medium",
-					isDarkMode ? "text-white" : "text-gray-800",
-				)}
+				className={cn("mb-2 block pl-1", formLabelClass, colors.text)}
 			>
 				{label}
 			</label>
@@ -42,18 +40,21 @@ export const InputField: React.FC<InputFieldProps> = ({
 					value={value}
 					onChange={(e) => onChange(e.target.value)}
 					placeholder={placeholder}
-					className={cn(
-						"w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500",
-						isDarkMode
-							? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
-							: "bg-white border-gray-300 text-gray-900 focus:border-blue-500",
-					)}
+					dir="auto"
+					spellCheck={false}
+					autoCapitalize="none"
+					autoCorrect="off"
+					className={cn(inputBaseClass, "w-full pr-10", colors.input)}
 				/>
 				{isPassword && (
 					<button
 						type="button"
 						onClick={() => setShowPassword(!showPassword)}
-						className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+						className={cn(
+							"absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 focus:outline-none focus:ring-2 focus:ring-offset-2",
+							colors.iconButton,
+						)}
+						aria-label={showPassword ? "Hide password" : "Show password"}
 					>
 						{showPassword ? (
 							<EyeOff size={20} className="stroke-current" />
