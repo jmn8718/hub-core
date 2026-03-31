@@ -1,16 +1,28 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
-import { BrowserWindow, app, dialog, screen, shell } from "electron";
+import {
+	BrowserWindow,
+	app,
+	dialog,
+	nativeImage,
+	screen,
+	shell,
+} from "electron";
 import icon from "../../resources/icon.png?asset";
 import { initializeClients } from "./client.js";
 import { initializeDbConnection } from "./db.js";
 import { storage } from "./storage.js";
 
 function createSplashWindow(): BrowserWindow {
+	const logoImage = nativeImage.createFromPath(icon);
+	const logoDataUrl = logoImage.isEmpty()
+		? `data:image/png;base64,${readFileSync(icon).toString("base64")}`
+		: logoImage.toDataURL();
 	const splashWindow = new BrowserWindow({
-		width: 420,
-		height: 260,
-		show: true,
+		width: 320,
+		height: 320,
+		show: false,
 		frame: false,
 		resizable: false,
 		movable: false,
@@ -18,6 +30,10 @@ function createSplashWindow(): BrowserWindow {
 		autoHideMenuBar: true,
 		backgroundColor: "#f8fafc",
 		...(process.platform === "linux" ? { icon } : {}),
+	});
+
+	splashWindow.once("ready-to-show", () => {
+		splashWindow.show();
 	});
 
 	void splashWindow.loadURL(
@@ -32,75 +48,85 @@ function createSplashWindow(): BrowserWindow {
 					/>
 					<title>Hub Core</title>
 					<style>
+						:root {
+							color-scheme: light;
+						}
+						* {
+							box-sizing: border-box;
+						}
 						body {
 							margin: 0;
-							font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-							background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-							color: #0f172a;
+							background:
+								radial-gradient(circle at 50% 22%, rgba(148, 163, 184, 0.16), transparent 34%),
+								linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+							overflow: hidden;
 						}
 						.shell {
+							width: 100vw;
 							height: 100vh;
 							display: grid;
 							place-items: center;
-							padding: 24px;
+							padding: 28px;
 						}
 						.card {
 							width: 100%;
-							max-width: 320px;
-							border: 1px solid #cbd5e1;
-							border-radius: 20px;
-							background: rgba(255, 255, 255, 0.92);
-							box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
-							padding: 28px 24px;
+							height: 100%;
+							display: grid;
+							place-items: center;
+							padding: 30px;
+							border-radius: 30px;
+							border: 1px solid rgba(148, 163, 184, 0.18);
+							background: rgba(255, 255, 255, 0.72);
+							box-shadow:
+								0 18px 40px rgba(15, 23, 42, 0.08),
+								inset 0 1px 0 rgba(255, 255, 255, 0.9);
+							backdrop-filter: blur(10px);
 						}
-						.title {
-							font-size: 14px;
-							font-weight: 700;
-							letter-spacing: 0.08em;
-							text-transform: uppercase;
-							color: #334155;
-							margin-bottom: 10px;
+						.stack {
+							width: 100%;
+							height: 100%;
+							display: flex;
+							flex-direction: column;
+							align-items: center;
+							justify-content: center;
+							gap: 24px;
 						}
-						h1 {
-							font-size: 28px;
-							line-height: 1.1;
-							margin: 0 0 12px;
-						}
-						p {
-							margin: 0;
-							font-size: 15px;
-							line-height: 1.5;
-							color: #475569;
+						.logo {
+							width: 184px;
+							height: 184px;
+							object-fit: contain;
+							filter: drop-shadow(0 10px 22px rgba(15, 23, 42, 0.08));
 						}
 						.bar {
-							margin-top: 18px;
-							height: 6px;
+							width: 100%;
+							max-width: 148px;
+							height: 5px;
 							border-radius: 999px;
-							background: #dbeafe;
+							background: rgba(203, 213, 225, 0.8);
 							overflow: hidden;
 						}
 						.bar::after {
 							content: "";
 							display: block;
 							height: 100%;
-							width: 38%;
+							width: 30%;
 							border-radius: 999px;
 							background: #0f172a;
-							animation: pulse 1.2s ease-in-out infinite;
+							animation: pulse 1.15s ease-in-out infinite;
 						}
 						@keyframes pulse {
 							0% { transform: translateX(-100%); }
-							100% { transform: translateX(340%); }
+							100% { transform: translateX(390%); }
 						}
 					</style>
 				</head>
 				<body>
 					<div class="shell">
 						<div class="card">
-							<div class="title">Hub Core</div>
-							<h1>Starting app</h1>
-							<p>Loading database migrations, provider connections, and local cache.</p>
-							<div class="bar"></div>
+							<div class="stack">
+								<img class="logo" src="${logoDataUrl}" alt="Hub Core" />
+								<div class="bar"></div>
+							</div>
 						</div>
 					</div>
 				</body>
