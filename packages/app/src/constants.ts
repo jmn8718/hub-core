@@ -1,5 +1,6 @@
 export const Routes = {
 	ANALYTICS: "/analytics",
+	CALENDAR: "/calendar",
 	HOME: "/",
 	DATA: "/data",
 	DETAILS: "/details",

@@ -53,7 +53,7 @@ export function Sidebar({
 						/>
 						<span
 							className={cn(
-								"pointer-events-none absolute left-full z-50 ml-2 rounded px-2 py-1 text-sm whitespace-nowrap opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+								"pointer-events-none absolute left-full z-50 ml-2 rounded px-2 py-1 text-sm whitespace-nowrap opacity-0 transition-opacity group-hover:opacity-100",
 								colors.tooltip,
 							)}
 						>

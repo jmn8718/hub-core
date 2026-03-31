@@ -2,6 +2,7 @@ import { cn } from "@repo/ui";
 import {
 	Atom,
 	BookHeart,
+	CalendarDays,
 	ChartSpline,
 	Database,
 	Dumbbell,
@@ -10,6 +11,7 @@ import {
 	Settings,
 } from "lucide-react";
 import type React from "react";
+import { useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { Routes as AppRoutes } from "../constants.js";
 import { useTheme } from "../contexts/ThemeContext.js";
@@ -21,6 +23,8 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
 	const { isDarkMode } = useTheme();
+	const location = useLocation();
+	const isCalendarRoute = location.pathname === AppRoutes.CALENDAR;
 
 	return (
 		<div
@@ -33,6 +37,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 				sidebarItems={[
 					{ icon: Home, href: AppRoutes.HOME, label: "Home" },
 					{ icon: Database, href: AppRoutes.DATA, label: "Data" },
+					{ icon: CalendarDays, href: AppRoutes.CALENDAR, label: "Calendar" },
 					{ icon: PlusSquare, href: AppRoutes.ADD, label: "Add Activity" },
 					{ icon: BookHeart, href: AppRoutes.INBODY, label: "Inbody" },
 					{ icon: ChartSpline, href: AppRoutes.ANALYTICS, label: "Analytics" },
@@ -47,7 +52,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 				]}
 			/>
 			<div className="p-0 pl-12 md:pl-16 min-h-screen">
-				<div className="p-2 md:p-4 max-w-4xl mx-auto min-h-screen flex flex-col">
+				<div
+					className={cn(
+						"min-h-screen flex flex-col p-2 md:p-4",
+						isCalendarRoute ? "mx-0 max-w-none" : "mx-auto max-w-4xl",
+					)}
+				>
 					{children}
 				</div>
 				<ToastContainer position="bottom-right" autoClose={3000} />

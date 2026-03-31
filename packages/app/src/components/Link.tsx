@@ -27,7 +27,7 @@ export const Link: React.FC<{
 			</div>
 			<span
 				className={cn(
-					"pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded px-2 py-1 text-sm opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100",
+					"pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded px-2 py-1 text-sm opacity-0 transition-opacity group-hover:opacity-100",
 					colors.tooltip,
 				)}
 			>

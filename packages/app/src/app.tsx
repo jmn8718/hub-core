@@ -38,6 +38,10 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										path={AppRoutes.DATA}
 										element={<Pages.DataListPage />}
 									/>
+									<Route
+										path={AppRoutes.CALENDAR}
+										element={<Pages.CalendarPage />}
+									/>
 									<Route path={AppRoutes.DEBUG} element={<Pages.DebugPage />} />
 									<Route path={AppRoutes.GEAR} element={<Pages.GearsPage />} />
 									<Route
