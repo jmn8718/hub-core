@@ -17,10 +17,16 @@ function StoreTextField({
 	storeKey,
 	label,
 	placeholder,
+	type = "text",
 }: {
-	storeKey: StorageKeys.DEFAULT_CITY | StorageKeys.DEFAULT_COUNTRY;
+	storeKey:
+		| StorageKeys.DEFAULT_CITY
+		| StorageKeys.DEFAULT_COUNTRY
+		| StorageKeys.TURSO_DATABASE_URL
+		| StorageKeys.TURSO_AUTH_TOKEN;
 	label: string;
 	placeholder: string;
+	type?: "text" | "password";
 }) {
 	const { store, setValue } = useStore();
 	const { isDarkMode } = useTheme();
@@ -33,6 +39,7 @@ function StoreTextField({
 		<label className="flex flex-col gap-2">
 			<span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
 			<input
+				type={type}
 				value={(store[storeKey] as string) || ""}
 				onChange={handleChange}
 				placeholder={placeholder}
@@ -56,6 +63,32 @@ export function Settings() {
 				<SectionContainer title="Theme Settings" hasBorder>
 					<ThemeSection />
 				</SectionContainer>
+				{type === AppType.DESKTOP && (
+					<SectionContainer title="Database Sync" hasBorder>
+						<p className="text-sm text-gray-500 dark:text-gray-400">
+							Optional. Set a Turso database URL and auth token to enable
+							embedded replica sync for the desktop app. Saving either field
+							restarts the desktop database connection immediately. If both
+							values are present, the app uses Turso sync. If only one or none
+							are present, it falls back to local SQLite only. This does not
+							merge an unrelated local database into a new remote database
+							automatically.
+						</p>
+						<div className="mt-4 grid gap-3">
+							<StoreTextField
+								storeKey={StorageKeys.TURSO_DATABASE_URL}
+								label="Turso database URL"
+								placeholder="libsql://your-database-name.turso.io"
+							/>
+							<StoreTextField
+								storeKey={StorageKeys.TURSO_AUTH_TOKEN}
+								label="Turso auth token"
+								placeholder="Paste the Turso auth token used for sync"
+								type="password"
+							/>
+						</div>
+					</SectionContainer>
+				)}
 				{type === AppType.DESKTOP && (
 					<SectionContainer
 						title="Downloads"

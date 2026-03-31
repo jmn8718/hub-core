@@ -234,6 +234,10 @@ export class Db {
 		this._client = client;
 	}
 
+	setClient(client: DbClient) {
+		this._client = client;
+	}
+
 	async findNearestLocationByCoordinates({
 		latitude,
 		longitude,

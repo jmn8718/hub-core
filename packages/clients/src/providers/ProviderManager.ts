@@ -61,6 +61,14 @@ export class ProviderManager {
 		this._cache = cache;
 	}
 
+	public setDb(db: Db) {
+		this._db = db;
+	}
+
+	public setCache(cache: CacheDb) {
+		this._cache = cache;
+	}
+
 	private _getProvider(provider: Providers) {
 		if (!this._clients[provider])
 			throw new Error(`${provider} not initialized`);

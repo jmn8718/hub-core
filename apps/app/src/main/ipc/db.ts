@@ -10,7 +10,7 @@ import {
 } from "@repo/types";
 import { ipcMain } from "electron";
 import { manager } from "../client.js";
-import { db } from "../db.js";
+import { getDb } from "../db.js";
 
 ipcMain.handle(
 	Channels.DB_OVERVIEW,
@@ -22,7 +22,7 @@ ipcMain.handle(
 			limit?: number;
 		},
 	) => {
-		return db.getActivitiesOverview(limit);
+		return getDb().getActivitiesOverview(limit);
 	},
 );
 
@@ -36,7 +36,7 @@ ipcMain.handle(
 			limit?: number;
 		},
 	) => {
-		return db.getWeeklyActivitiesOverview(limit);
+		return getDb().getWeeklyActivitiesOverview(limit);
 	},
 );
 
@@ -56,7 +56,7 @@ ipcMain.handle(
 			periodCount?: number;
 		},
 	) => {
-		return db.getDailyActivitiesOverview({
+		return getDb().getDailyActivitiesOverview({
 			startDate,
 			endDate,
 			periodType,
@@ -82,25 +82,25 @@ ipcMain.handle(
 			withoutGear?: 0 | 1;
 		},
 	) => {
-		return db.getActivities(params);
+		return getDb().getActivities(params);
 	},
 );
 
 ipcMain.handle(Channels.DB_ACTIVITY, async (_event, activityId: string) => {
-	return db.getActivity(activityId);
+	return getDb().getActivity(activityId);
 });
 
 ipcMain.handle(
 	Channels.DB_ACTIVITY_CREATE,
 	async (_event, params: { data: unknown }) => {
-		return db.createActivity(params.data as IActivityCreateInput);
+		return getDb().createActivity(params.data as IActivityCreateInput);
 	},
 );
 
 ipcMain.handle(
 	Channels.DB_ACTIVITY_DELETE,
 	async (_event, params: { activityId: string }) => {
-		return db.deleteActivity(params.activityId);
+		return getDb().deleteActivity(params.activityId);
 	},
 );
 
@@ -121,27 +121,29 @@ ipcMain.handle(
 			};
 		},
 	) => {
-		return db.editActivity(params.activityId, params.data).then(() => {
-			const updates: Promise<void>[] = [];
-			if (typeof params.data.notes !== "undefined") {
-				updates.push(
-					manager.updateActivityNotes({
-						activityId: params.activityId,
-						notes: params.data.notes ?? null,
-					}),
-				);
-			}
-			if (typeof params.data.name !== "undefined") {
-				updates.push(
-					manager.updateActivityName({
-						activityId: params.activityId,
-						name: params.data.name ?? null,
-					}),
-				);
-			}
-			if (updates.length === 0) return undefined;
-			return Promise.all(updates).then(() => undefined);
-		});
+		return getDb()
+			.editActivity(params.activityId, params.data)
+			.then(() => {
+				const updates: Promise<void>[] = [];
+				if (typeof params.data.notes !== "undefined") {
+					updates.push(
+						manager.updateActivityNotes({
+							activityId: params.activityId,
+							notes: params.data.notes ?? null,
+						}),
+					);
+				}
+				if (typeof params.data.name !== "undefined") {
+					updates.push(
+						manager.updateActivityName({
+							activityId: params.activityId,
+							name: params.data.name ?? null,
+						}),
+					);
+				}
+				if (updates.length === 0) return undefined;
+				return Promise.all(updates).then(() => undefined);
+			});
 	},
 );
 
@@ -151,7 +153,7 @@ ipcMain.handle(
 		_event,
 		params: { activityId: string; providerActivityId: string },
 	) => {
-		return db.linkActivityConnection(
+		return getDb().linkActivityConnection(
 			params.activityId,
 			params.providerActivityId,
 		);
@@ -164,7 +166,7 @@ ipcMain.handle(
 		_event,
 		params: { activityId: string; providerActivityId: string },
 	) => {
-		return db.unlinkActivityConnection(
+		return getDb().unlinkActivityConnection(
 			params.activityId,
 			params.providerActivityId,
 		);
@@ -181,18 +183,18 @@ ipcMain.handle(
 			offset?: number;
 		},
 	) => {
-		return db.getGears(params);
+		return getDb().getGears(params);
 	},
 );
 
 ipcMain.handle(Channels.DB_GEAR, async (_event, gearId: string) => {
-	return db.getGear(gearId);
+	return getDb().getGear(gearId);
 });
 
 ipcMain.handle(
 	Channels.DB_GEAR_CREATE,
 	async (_event, params: IGearCreateInput) => {
-		return db.createGear(params);
+		return getDb().createGear(params);
 	},
 );
 
@@ -210,7 +212,7 @@ ipcMain.handle(
 			};
 		},
 	) => {
-		return db.editGear(params.gearId, params.data);
+		return getDb().editGear(params.gearId, params.data);
 	},
 );
 
@@ -222,20 +224,20 @@ ipcMain.handle(
 			type: InbodyType;
 		},
 	) => {
-		return db.getInbodyData(params);
+		return getDb().getInbodyData(params);
 	},
 );
 
 ipcMain.handle(
 	Channels.DB_INBODY_CREATE,
 	async (_event, params: IInbodyCreateInput) => {
-		return db.createInbodyData(params);
+		return getDb().createInbodyData(params);
 	},
 );
 
 ipcMain.handle(
 	Channels.DB_INBODY_UPDATE,
 	async (_event, params: IInbodyUpdateInput) => {
-		return db.updateInbodyData(params);
+		return getDb().updateInbodyData(params);
 	},
 );

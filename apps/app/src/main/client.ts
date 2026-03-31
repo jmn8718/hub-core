@@ -5,10 +5,10 @@ import {
 	StorageKeys,
 	type StravaCredentials,
 } from "@repo/types";
-import { cacheDb, db } from "./db.js";
+import { getCacheDb, getDb } from "./db.js";
 import { storage } from "./storage.js";
 
-export const manager = new ProviderManager(db, cacheDb);
+export const manager = new ProviderManager(getDb(), getCacheDb());
 
 export const initializeClients = async () => {
 	const corosCredentials = storage.getValue<LoginCredentials>(
@@ -64,4 +64,12 @@ export const initializeClients = async () => {
 			storage.setValue(StorageKeys.STRAVA_VALIDATED, false);
 		}
 	}
+};
+
+export const reinitializeManagerDb = async () => {
+	manager.setDb(getDb(), getCacheDb());
+};
+
+export const reinitializeManagerClient = async () => {
+	await initializeClients();
 };

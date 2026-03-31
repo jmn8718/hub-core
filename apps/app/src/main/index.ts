@@ -1,12 +1,117 @@
 import { join } from "node:path";
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
-import { BrowserWindow, app, shell } from "electron";
+import { BrowserWindow, app, dialog, shell } from "electron";
 import icon from "../../resources/icon.png?asset";
 import { initializeClients } from "./client.js";
+import { initializeDbConnection } from "./db.js";
 import { storage } from "./storage.js";
 
-function createWindow(): void {
-	// Create the browser window.
+function createSplashWindow(): BrowserWindow {
+	const splashWindow = new BrowserWindow({
+		width: 420,
+		height: 260,
+		show: true,
+		frame: false,
+		resizable: false,
+		movable: false,
+		fullscreenable: false,
+		autoHideMenuBar: true,
+		backgroundColor: "#f8fafc",
+		...(process.platform === "linux" ? { icon } : {}),
+	});
+
+	void splashWindow.loadURL(
+		`data:text/html;charset=utf-8,${encodeURIComponent(`
+			<!doctype html>
+			<html lang="en">
+				<head>
+					<meta charset="UTF-8" />
+					<meta
+						name="viewport"
+						content="width=device-width, initial-scale=1.0"
+					/>
+					<title>Hub Core</title>
+					<style>
+						body {
+							margin: 0;
+							font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+							background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+							color: #0f172a;
+						}
+						.shell {
+							height: 100vh;
+							display: grid;
+							place-items: center;
+							padding: 24px;
+						}
+						.card {
+							width: 100%;
+							max-width: 320px;
+							border: 1px solid #cbd5e1;
+							border-radius: 20px;
+							background: rgba(255, 255, 255, 0.92);
+							box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+							padding: 28px 24px;
+						}
+						.title {
+							font-size: 14px;
+							font-weight: 700;
+							letter-spacing: 0.08em;
+							text-transform: uppercase;
+							color: #334155;
+							margin-bottom: 10px;
+						}
+						h1 {
+							font-size: 28px;
+							line-height: 1.1;
+							margin: 0 0 12px;
+						}
+						p {
+							margin: 0;
+							font-size: 15px;
+							line-height: 1.5;
+							color: #475569;
+						}
+						.bar {
+							margin-top: 18px;
+							height: 6px;
+							border-radius: 999px;
+							background: #dbeafe;
+							overflow: hidden;
+						}
+						.bar::after {
+							content: "";
+							display: block;
+							height: 100%;
+							width: 38%;
+							border-radius: 999px;
+							background: #0f172a;
+							animation: pulse 1.2s ease-in-out infinite;
+						}
+						@keyframes pulse {
+							0% { transform: translateX(-100%); }
+							100% { transform: translateX(340%); }
+						}
+					</style>
+				</head>
+				<body>
+					<div class="shell">
+						<div class="card">
+							<div class="title">Hub Core</div>
+							<h1>Starting app</h1>
+							<p>Loading database migrations, provider connections, and local cache.</p>
+							<div class="bar"></div>
+						</div>
+					</div>
+				</body>
+			</html>
+		`)}`,
+	);
+
+	return splashWindow;
+}
+
+function createMainWindow(): BrowserWindow {
 	const mainWindow = new BrowserWindow({
 		width: 900,
 		height: 670,
@@ -17,12 +122,6 @@ function createWindow(): void {
 			preload: join(__dirname, "../preload/index.mjs"),
 			sandbox: false,
 		},
-	});
-
-	storage.initRenderer();
-	initializeClients();
-	mainWindow.on("ready-to-show", () => {
-		mainWindow.show();
 	});
 
 	mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -36,6 +135,35 @@ function createWindow(): void {
 		mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
 	} else {
 		mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+	}
+
+	return mainWindow;
+}
+
+async function initializeAppBackend() {
+	await initializeDbConnection();
+	storage.initRenderer();
+	await initializeClients();
+}
+
+async function bootstrapApplication() {
+	const splashWindow = createSplashWindow();
+
+	try {
+		await initializeAppBackend();
+		const mainWindow = createMainWindow();
+		mainWindow.once("ready-to-show", () => {
+			splashWindow.close();
+			mainWindow.show();
+		});
+	} catch (error) {
+		splashWindow.close();
+		console.error("Application startup failed", error);
+		dialog.showErrorBox(
+			"Startup failed",
+			error instanceof Error ? error.message : "Unknown startup error",
+		);
+		app.quit();
 	}
 }
 
@@ -53,14 +181,14 @@ app.whenReady().then(() => {
 		optimizer.watchWindowShortcuts(window);
 	});
 
-	// IPC test
-
-	createWindow();
+	void bootstrapApplication();
 
 	app.on("activate", () => {
 		// On macOS it's common to re-create a window in the app when the
 		// dock icon is clicked and there are no other windows open.
-		if (BrowserWindow.getAllWindows().length === 0) createWindow();
+		if (BrowserWindow.getAllWindows().length === 0) {
+			void bootstrapApplication();
+		}
 	});
 });
 

@@ -26,3 +26,8 @@ The monorepo is divided on 2 parts:
 ## references
 
 This repository has been created from the turborepo template [https://github.com/vercel/turborepo/tree/main/examples/with-tailwind]
+
+## Database modes
+
+- Desktop app: local SQLite by default, with optional Turso embedded-replica sync configured in app settings
+- Webapp/API: remote database configured at deploy time through environment variables

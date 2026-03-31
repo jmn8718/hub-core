@@ -27,3 +27,16 @@ interface (activities, gears, providers, Inbody, etc).
 - `STRAVA_VERIFY_TOKEN`
 - `COROS_USERNAME` / `COROS_PASSWORD` (optional, used to auto-initialize the COROS client)
 - `GARMIN_USERNAME` / `GARMIN_PASSWORD` (optional, used to auto-initialize the Garmin client)
+
+### Database configuration
+
+For the webapp/API deployment, the database is configured at deploy time through
+environment variables:
+
+- `TURSO_DATABASE_URL`
+- `TURSO_AUTH_TOKEN`
+
+The desktop app is different: it can read the Turso sync configuration from user
+settings and still keep a local SQLite file as the embedded replica. The webapp
+does not have that per-user database setting; it relies on the API deployment
+configuration instead.
