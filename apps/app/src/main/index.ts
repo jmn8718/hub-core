@@ -146,25 +146,37 @@ async function initializeAppBackend() {
 	await initializeClients();
 }
 
+let bootstrapPromise: Promise<void> | undefined;
+
 async function bootstrapApplication() {
+	if (bootstrapPromise) {
+		return bootstrapPromise;
+	}
+
 	const splashWindow = createSplashWindow();
 
-	try {
-		await initializeAppBackend();
-		const mainWindow = createMainWindow();
-		mainWindow.once("ready-to-show", () => {
+	bootstrapPromise = (async () => {
+		try {
+			await initializeAppBackend();
+			const mainWindow = createMainWindow();
+			mainWindow.once("ready-to-show", () => {
+				splashWindow.close();
+				mainWindow.show();
+			});
+		} catch (error) {
 			splashWindow.close();
-			mainWindow.show();
-		});
-	} catch (error) {
-		splashWindow.close();
-		console.error("Application startup failed", error);
-		dialog.showErrorBox(
-			"Startup failed",
-			error instanceof Error ? error.message : "Unknown startup error",
-		);
-		app.quit();
-	}
+			console.error("Application startup failed", error);
+			dialog.showErrorBox(
+				"Startup failed",
+				error instanceof Error ? error.message : "Unknown startup error",
+			);
+			app.quit();
+		} finally {
+			bootstrapPromise = undefined;
+		}
+	})();
+
+	return bootstrapPromise;
 }
 
 // This method will be called when Electron has finished
