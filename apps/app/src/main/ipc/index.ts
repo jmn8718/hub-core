@@ -3,7 +3,12 @@ import { join } from "node:path";
 import { getFileExtension } from "@repo/clients";
 import { Channels, type Providers, StorageKeys } from "@repo/types";
 import { dialog, ipcMain, shell } from "electron";
-import { reinitializeManagerDb } from "../client.js";
+import {
+	initializeCorosClient,
+	initializeGarminClient,
+	initializeStravaClient,
+	reinitializeManagerDb,
+} from "../client.js";
 import { applyConfiguredDbClient } from "../db.js";
 import { storage } from "../storage.js";
 
@@ -41,12 +46,19 @@ ipcMain.handle(
 	Channels.STORE_SET,
 	async (_event, { key, value }: { key: string; value: string }) => {
 		storage.setValue(key, value);
+
 		if (
 			key === StorageKeys.TURSO_DATABASE_URL ||
 			key === StorageKeys.TURSO_AUTH_TOKEN
 		) {
 			await applyConfiguredDbClient();
 			await reinitializeManagerDb();
+		} else if (key === StorageKeys.COROS_CREDENTIALS) {
+			await initializeCorosClient();
+		} else if (key === StorageKeys.GARMIN_CREDENTIALS) {
+			await initializeGarminClient();
+		} else if (key === StorageKeys.STRAVA_CREDENTIALS) {
+			await initializeStravaClient();
 		}
 		return value;
 	},
