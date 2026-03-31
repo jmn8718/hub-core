@@ -1,6 +1,7 @@
 {
-  "name": "app",
-  "version": "1.0.0",
+	"name": "app",
+	"productName": "hub-core",
+	"version": "1.0.0",
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {

@@ -1,5 +1,5 @@
 appId: com.hubcore.app
-productName: hub-core/app
+productName: hub-core
 directories:
   buildResources: build
 files:

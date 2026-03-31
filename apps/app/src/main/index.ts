@@ -9,10 +9,24 @@ import {
 	screen,
 	shell,
 } from "electron";
+import macDockIcon from "../../resources/icon-mac-dock.png?asset";
 import icon from "../../resources/icon.png?asset";
 import { initializeClients } from "./client.js";
 import { initializeDbConnection } from "./db.js";
 import { storage } from "./storage.js";
+
+type PackageMetadata = {
+	productName?: string;
+	name?: string;
+};
+
+const packageMetadata = JSON.parse(
+	readFileSync(join(process.cwd(), "package.json"), "utf8"),
+) as PackageMetadata;
+const appDisplayName =
+	packageMetadata.productName || packageMetadata.name || "hub-core/app";
+
+app.setName(appDisplayName);
 
 function createSplashWindow(): BrowserWindow {
 	const logoImage = nativeImage.createFromPath(icon);
@@ -146,6 +160,7 @@ function createMainWindow(): BrowserWindow {
 	const windowHeight = Math.min(defaultHeight, screenHeight);
 
 	const mainWindow = new BrowserWindow({
+		title: appDisplayName,
 		width: windowWidth,
 		height: windowHeight,
 		show: false,
@@ -217,7 +232,11 @@ async function bootstrapApplication() {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
 	// Set app user model id for windows
-	electronApp.setAppUserModelId("com.electron");
+	electronApp.setAppUserModelId("com.hubcore.app");
+	const appIcon = nativeImage.createFromPath(macDockIcon);
+	if (!appIcon.isEmpty() && process.platform === "darwin") {
+		app.dock.setIcon(appIcon);
+	}
 
 	// Default open or close DevTools by F12 in development
 	// and ignore CommandOrControl + R in production.
