@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
-import { BrowserWindow, app, dialog, shell } from "electron";
+import { BrowserWindow, app, dialog, screen, shell } from "electron";
 import icon from "../../resources/icon.png?asset";
 import { initializeClients } from "./client.js";
 import { initializeDbConnection } from "./db.js";
@@ -112,9 +112,16 @@ function createSplashWindow(): BrowserWindow {
 }
 
 function createMainWindow(): BrowserWindow {
+	const defaultWidth = 1247;
+	const defaultHeight = 720;
+	const { width: screenWidth, height: screenHeight } =
+		screen.getPrimaryDisplay().workAreaSize;
+	const windowWidth = Math.min(defaultWidth, screenWidth);
+	const windowHeight = Math.min(defaultHeight, screenHeight);
+
 	const mainWindow = new BrowserWindow({
-		width: 900,
-		height: 670,
+		width: windowWidth,
+		height: windowHeight,
 		show: false,
 		autoHideMenuBar: true,
 		...(process.platform === "linux" ? { icon } : {}),

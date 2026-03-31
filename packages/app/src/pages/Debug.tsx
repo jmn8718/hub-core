@@ -25,6 +25,7 @@ const getBuildInfo = (): BuildInfo => {
 export function Debug() {
 	const { type, client } = useDataClient();
 	const [debugInfo, setDebugInfo] = useState<string[]>([]);
+	const [windowSize, setWindowSize] = useState<string>("unknown");
 	const buildInfo = getBuildInfo();
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -32,6 +33,9 @@ export function Debug() {
 		const info = client.getDebugInfo();
 		if (info.success) {
 			setDebugInfo(info.data);
+		}
+		if (typeof window !== "undefined") {
+			setWindowSize(`${window.innerWidth}x${window.innerHeight}`);
 		}
 	}, []);
 	return (
@@ -43,6 +47,7 @@ export function Debug() {
 				<p>App version: {buildInfo.appVersion}</p>
 				<p>Client version: {buildInfo.clientVersion}</p>
 				<p>Commit: {buildInfo.commit}</p>
+				<p>Window size: {windowSize}</p>
 			</Box>
 			{debugInfo.length > 0 && (
 				<Box>
