@@ -3,6 +3,7 @@ import { cn } from "@repo/ui";
 import type { LucideProps } from "lucide-react";
 import type React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Routes as AppRoutes } from "../constants.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
 
@@ -34,6 +35,14 @@ export function Sidebar({
 					<Link
 						key={href}
 						to={href}
+						onClick={() => {
+							if (
+								href === AppRoutes.CALENDAR &&
+								typeof window !== "undefined"
+							) {
+								window.scrollTo(0, 0);
+							}
+						}}
 						className={cn(
 							"relative group flex items-center justify-center w-8 h-8 rounded-lg",
 							colors.navHover,
