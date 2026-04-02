@@ -7,6 +7,7 @@ import type {
 	IInsertGearPayload,
 } from "@repo/db";
 import {
+	type ActivityMetadata,
 	ActivitySubType,
 	ActivityType,
 	type ApiCredentials,
@@ -112,6 +113,28 @@ function mapActivitySubtype(activity: StravaActivity): ActivitySubType {
 		default:
 			return ActivitySubType.EASY_RUN;
 	}
+}
+
+function buildMetadataForActivity(
+	type: ActivityType,
+	activity: StravaActivity,
+): ActivityMetadata | undefined {
+	const metadata: Record<string, number> = {};
+	if (type === ActivityType.RUN && activity.average_speed > 0) {
+		metadata.averagePace = 1000 / activity.average_speed;
+	}
+	if (type === ActivityType.BIKE && activity.average_speed > 0) {
+		metadata.averageSpeed = activity.average_speed;
+	}
+	if (activity.average_heartrate && activity.average_heartrate > 0) {
+		metadata.averageHeartRate = activity.average_heartrate;
+	}
+	if (activity.max_heartrate && activity.max_heartrate > 0) {
+		metadata.maximumHeartRate = activity.max_heartrate;
+	}
+	return Object.keys(metadata).length > 0
+		? (metadata as ActivityMetadata)
+		: undefined;
 }
 
 function mapTcxSport(type: ActivityType): string {
@@ -279,6 +302,7 @@ function mapActivity(activity: StravaActivity): IDbActivity {
 		startLatitude: activity.start_latlng[0] || 0,
 		startLongitude: activity.start_latlng[1] || 0,
 		isEvent: activity.workout_type ? 1 : 0,
+		metadata: buildMetadataForActivity(type, activity),
 		type,
 		subtype,
 	};

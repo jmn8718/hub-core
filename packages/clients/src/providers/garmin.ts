@@ -7,6 +7,7 @@ import type {
 	IInsertGearPayload,
 } from "@repo/db";
 import {
+	type ActivityMetadata,
 	ActivitySubType,
 	ActivityType,
 	type DbActivityPopulated,
@@ -64,6 +65,38 @@ function mapProviderActivitySubType(type: string): ActivitySubType | undefined {
 	}
 }
 
+function toMetersPerSecond(value?: number | null): number | undefined {
+	if (!value || value <= 0) return undefined;
+	if (value <= 40) return value;
+	if (value <= 4000) return value / 100;
+	return undefined;
+}
+
+function buildMetadataForActivity(params: {
+	type: ActivityType;
+	averageSpeed?: number | null;
+	averageHeartRate?: number | null;
+	maximumHeartRate?: number | null;
+}): ActivityMetadata | undefined {
+	const metadata: Record<string, number> = {};
+	const averageSpeed = toMetersPerSecond(params.averageSpeed);
+	if (params.type === ActivityType.RUN && averageSpeed) {
+		metadata.averagePace = 1000 / averageSpeed;
+	}
+	if (params.type === ActivityType.BIKE && averageSpeed) {
+		metadata.averageSpeed = averageSpeed;
+	}
+	if (params.averageHeartRate && params.averageHeartRate > 0) {
+		metadata.averageHeartRate = params.averageHeartRate;
+	}
+	if (params.maximumHeartRate && params.maximumHeartRate > 0) {
+		metadata.maximumHeartRate = params.maximumHeartRate;
+	}
+	return Object.keys(metadata).length > 0
+		? (metadata as ActivityMetadata)
+		: undefined;
+}
+
 function mapActivity({
 	activity,
 }: { activity: IActivityDetails }): IDbActivity {
@@ -95,6 +128,12 @@ function mapActivity({
 		startLatitude: activity.summaryDTO.startLatitude || 0,
 		startLongitude: activity.summaryDTO.startLongitude || 0,
 		isEvent: activity.eventTypeDTO.typeKey === "race" ? 1 : 0,
+		metadata: buildMetadataForActivity({
+			type,
+			averageSpeed: activity.summaryDTO.averageSpeed,
+			averageHeartRate: activity.summaryDTO.averageHR,
+			maximumHeartRate: activity.summaryDTO.maxHR,
+		}),
 		type,
 		subtype,
 	};

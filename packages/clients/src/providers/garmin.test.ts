@@ -1,4 +1,5 @@
 import { createTestCacheDb, createTestDb } from "@repo/db/utils";
+import { ActivityType } from "@repo/types";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { activities, activitiesData, gears } from "../mocks/garmin.js";
 import { GarminClient } from "./garmin.js";
@@ -7,6 +8,9 @@ const loginMock = vi.fn();
 const getActivitiesMock = vi.fn();
 const getActivityMock = vi.fn();
 const getActivityGearMock = vi.fn();
+const exportTokenMock = vi.fn();
+const loadTokenMock = vi.fn();
+const getUserProfileMock = vi.fn();
 
 vi.mock(import("garmin-connect"), async (importOriginal) => {
 	const mod = await importOriginal();
@@ -14,6 +18,9 @@ vi.mock(import("garmin-connect"), async (importOriginal) => {
 		...mod,
 		GarminConnect: vi.fn().mockImplementation(() => ({
 			login: loginMock,
+			exportToken: exportTokenMock,
+			loadToken: loadTokenMock,
+			getUserProfile: getUserProfileMock,
 			getActivities: getActivitiesMock,
 			getActivity: getActivityMock,
 			getActivityGear: getActivityGearMock,
@@ -32,9 +39,31 @@ const createContext = async () => {
 	return { client };
 };
 
-describe("garmin client", () => {
+describe.sequential("garmin client", () => {
 	beforeEach(() => {
+		loginMock.mockReset();
+		exportTokenMock.mockReset();
+		loadTokenMock.mockReset();
+		getUserProfileMock.mockReset();
+		getActivitiesMock.mockReset();
+		getActivityMock.mockReset();
+		getActivityGearMock.mockReset();
 		loginMock.mockResolvedValue(undefined);
+		exportTokenMock.mockReturnValue({
+			oauth1: {
+				oauth_token: "oauth1-token",
+				oauth_token_secret: "oauth1-secret",
+			},
+			oauth2: {
+				access_token: "access-token",
+				refresh_token: "refresh-token",
+				token_type: "Bearer",
+				expires_in: 3600,
+				expires_at: Date.now() + 3600 * 1000,
+			},
+		});
+		loadTokenMock.mockReturnValue(undefined);
+		getUserProfileMock.mockResolvedValue({ id: 1 });
 		getActivitiesMock.mockResolvedValue(activities);
 		getActivityMock.mockImplementation(
 			({ activityId }: { activityId: string }) =>
@@ -111,5 +140,26 @@ describe("garmin client", () => {
 		const result = await client.syncActivity("999999");
 		expect(result.activity.data.manufacturer).toBe("manual");
 		expect(result.activity.providerActivity?.original).toBe(false);
+	});
+
+	test("maps running metadata from garmin activity details", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+
+		const result = await client.syncActivity("17936939301");
+		expect(result.activity.data.type).toBe(ActivityType.RUN);
+		expect(result.activity.data.metadata?.averagePace).toBeCloseTo(
+			1000 / activitiesData["17936939301"].summaryDTO.averageSpeed,
+			5,
+		);
+		expect(result.activity.data.metadata?.averageHeartRate).toBe(
+			activitiesData["17936939301"].summaryDTO.averageHR,
+		);
+		expect(result.activity.data.metadata?.maximumHeartRate).toBe(
+			activitiesData["17936939301"].summaryDTO.maxHR,
+		);
 	});
 });

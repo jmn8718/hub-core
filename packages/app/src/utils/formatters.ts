@@ -20,3 +20,15 @@ export const formatMeasurement = (
 	}
 	return (value / 100).toFixed(fractionDigits);
 };
+
+export const formatPace = (secondsPerKilometer: number): string => {
+	const totalSeconds = Math.max(0, Math.round(secondsPerKilometer));
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds % 60;
+	return `${minutes}:${`${seconds}`.padStart(2, "0")} /km`;
+};
+
+export const formatSpeed = (metersPerSecond: number): string => {
+	const kilometersPerHour = metersPerSecond * 3.6;
+	return `${kilometersPerHour.toFixed(1)} km/h`;
+};

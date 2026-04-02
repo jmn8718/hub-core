@@ -29,7 +29,20 @@ export interface IDailyOverviewData {
 	count: number;
 }
 
-export type SwimActivityMetadata = {
+type ActivityHeartRateMetadata = {
+	averageHeartRate?: number;
+	maximumHeartRate?: number;
+};
+
+export type RunningActivityMetadata = ActivityHeartRateMetadata & {
+	averagePace?: number;
+};
+
+export type CyclingActivityMetadata = ActivityHeartRateMetadata & {
+	averageSpeed?: number;
+};
+
+export type SwimActivityMetadata = ActivityHeartRateMetadata & {
 	laps?: number;
 	length?: number;
 };

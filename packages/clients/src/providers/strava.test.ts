@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Db } from "@repo/db";
 import { createTestCacheDb, createTestDb } from "@repo/db/utils";
-import { ActivitySubType, Providers } from "@repo/types";
+import { ActivitySubType, ActivityType, Providers } from "@repo/types";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { activities, activitiesData } from "../mocks/strava.js";
 import { StravaClient } from "./strava.js";
@@ -56,7 +56,7 @@ const createContext = async () => {
 	return { client, db };
 };
 
-describe("strava client connect()", () => {
+describe.sequential("strava client connect()", () => {
 	let db: Db;
 	let client: StravaClient;
 
@@ -167,6 +167,36 @@ describe("strava client connect()", () => {
 		const testActivityId = activities[0].id.toString();
 		const result = await client.syncActivity(testActivityId);
 		expect(result.activity.providerActivity?.id).toEqual(testActivityId);
+	});
+
+	test("maps running metadata from strava activity details", async () => {
+		await client.connect({ refreshToken: "token" });
+		const testActivityId = "16198895522";
+		const result = await client.syncActivity(testActivityId);
+		expect(result.activity.data.type).toBe(ActivityType.RUN);
+		expect(result.activity.data.metadata?.averagePace).toBeCloseTo(
+			1000 / activitiesData[testActivityId].average_speed,
+			5,
+		);
+		expect(result.activity.data.metadata?.averageHeartRate).toBeCloseTo(
+			activitiesData[testActivityId].average_heartrate ?? 0,
+			5,
+		);
+		expect(result.activity.data.metadata?.maximumHeartRate).toBe(
+			activitiesData[testActivityId].max_heartrate,
+		);
+	});
+
+	test("maps cycling metadata from strava activity details", async () => {
+		await client.connect({ refreshToken: "token" });
+		const testActivityId = "14917221023";
+		const result = await client.syncActivity(testActivityId);
+		expect(result.activity.data.type).toBe(ActivityType.BIKE);
+		expect(result.activity.data.metadata?.averageSpeed).toBe(
+			activitiesData[testActivityId].average_speed,
+		);
+		expect(result.activity.data.metadata?.averageHeartRate).toBeUndefined();
+		expect(result.activity.data.metadata?.maximumHeartRate).toBeUndefined();
 	});
 
 	test("imports trainer runs as indoor subtype", async () => {

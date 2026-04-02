@@ -11,6 +11,9 @@
     "check-types": {
       "dependsOn": ["^check-types"]
     },
+    "test": {
+      "dependsOn": ["^build"]
+    },
     "clean": {
       "dependsOn": ["^clean"]
     },

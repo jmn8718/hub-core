@@ -1,4 +1,5 @@
 import {
+	type ActivityMetadata,
 	ActivityType,
 	AppType,
 	type DbActivityPopulated,
@@ -23,6 +24,7 @@ import {
 	useStore,
 	useTheme,
 } from "../../contexts/index.js";
+import { formatPace, formatSpeed } from "../../utils/formatters.js";
 import ActivityTypeIcon from "../ActivityTypeIcon.js";
 import { Box } from "../Box.js";
 import { SectionContainer } from "../SectionContainer.js";
@@ -42,6 +44,40 @@ interface ActivityCardTemplateProps {
 	children?: (props: ActivityCardTemplateRenderProps) => ReactNode;
 	showDetailsButton?: boolean;
 	onActivityRefresh?: () => Promise<void> | void;
+}
+
+function getPerformanceMetrics(
+	type: ActivityType,
+	metadata?: ActivityMetadata,
+): Array<{ label: string; value: string }> {
+	if (!metadata) return [];
+	const metrics = metadata as Record<string, unknown>;
+	const values: Array<{ label: string; value: string }> = [];
+	if (type === ActivityType.RUN && typeof metrics.averagePace === "number") {
+		values.push({
+			label: "Average pace",
+			value: formatPace(metrics.averagePace),
+		});
+	}
+	if (type === ActivityType.BIKE && typeof metrics.averageSpeed === "number") {
+		values.push({
+			label: "Average speed",
+			value: formatSpeed(metrics.averageSpeed),
+		});
+	}
+	if (typeof metrics.averageHeartRate === "number") {
+		values.push({
+			label: "Average heart rate",
+			value: `${Math.round(metrics.averageHeartRate)} bpm`,
+		});
+	}
+	if (typeof metrics.maximumHeartRate === "number") {
+		values.push({
+			label: "Maximum heart rate",
+			value: `${Math.round(metrics.maximumHeartRate)} bpm`,
+		});
+	}
+	return values;
 }
 
 export function ActivityCardTemplate({
@@ -144,6 +180,10 @@ export function ActivityCardTemplate({
 	const isRaceEligibleActivity =
 		activityData.type === ActivityType.RUN ||
 		activityData.type === ActivityType.BIKE;
+	const performanceMetrics = getPerformanceMetrics(
+		activityData.type,
+		activityData.metadata,
+	);
 
 	return (
 		<Box>
@@ -182,6 +222,24 @@ export function ActivityCardTemplate({
 			</SectionContainer>
 
 			{children ? children(contextValue) : null}
+
+			{performanceMetrics.length > 0 && (
+				<SectionContainer
+					hasBorder
+					className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:gap-6"
+				>
+					{performanceMetrics.map((metric) => (
+						<div key={metric.label} className="flex items-center gap-2 text-sm">
+							<span className={isDarkMode ? "text-gray-400" : "text-gray-500"}>
+								{metric.label}
+							</span>
+							<span className={isDarkMode ? "text-gray-200" : "text-gray-800"}>
+								{metric.value}
+							</span>
+						</div>
+					))}
+				</SectionContainer>
+			)}
 
 			<SectionContainer
 				hasBorder

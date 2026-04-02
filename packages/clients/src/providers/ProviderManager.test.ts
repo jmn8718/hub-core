@@ -1,5 +1,4 @@
-import { CacheDb, Db, createDbClient } from "@repo/db";
-import { clearData, migrateDb } from "@repo/db/migrations";
+import { createTestCacheDb, createTestDb } from "@repo/db/utils";
 import { Providers } from "@repo/types";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { activities, activitiesData, gears } from "../mocks/garmin.js";
@@ -11,9 +10,24 @@ vi.mock(import("garmin-connect"), async (importOriginal) => {
 		...mod,
 		GarminConnect: vi.fn().mockReturnValue({
 			login: vi.fn().mockImplementation(() => Promise.resolve()),
+			exportToken: vi.fn().mockReturnValue({
+				oauth1: {
+					oauth_token: "oauth1-token",
+					oauth_token_secret: "oauth1-secret",
+				},
+				oauth2: {
+					access_token: "access-token",
+					refresh_token: "refresh-token",
+					token_type: "Bearer",
+					expires_in: 3600,
+					expires_at: Date.now() + 3600 * 1000,
+				},
+			}),
+			loadToken: vi.fn(),
 			getUserSettings: vi.fn().mockImplementation(() => {
 				return Promise.resolve({ id: 1 });
 			}),
+			getUserProfile: vi.fn().mockResolvedValue({ id: 1 }),
 			getGears: vi.fn().mockImplementation(() => Promise.resolve(gears)),
 			getActivities: vi
 				.fn()
@@ -29,19 +43,20 @@ vi.mock(import("garmin-connect"), async (importOriginal) => {
 });
 
 describe("provider manager", () => {
-	const client = createDbClient({
-		url: "file:../../test.sqlite",
-		logger: false,
-	});
-	const db = new Db(client);
-	const cacheDB = new CacheDb(client);
-	const provider = new ProviderManager(db, cacheDB);
-
-	provider.initializeClient(Providers.GARMIN);
+	let provider: ProviderManager;
+	let db: Awaited<ReturnType<typeof createTestDb>>;
 
 	beforeEach(async () => {
-		await migrateDb(client);
-		await clearData(client);
+		db = await createTestDb({
+			clearDb: true,
+		});
+		const cacheDB = await createTestCacheDb({
+			clearDb: true,
+		});
+		provider = new ProviderManager(db, cacheDB);
+		provider.initializeClient({
+			provider: Providers.GARMIN,
+		});
 	});
 
 	test("should sync gear", async () => {

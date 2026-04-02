@@ -6,6 +6,7 @@ import type {
 	IInsertGearPayload,
 } from "@repo/db";
 import {
+	type ActivityMetadata,
 	ActivitySubType,
 	ActivityType,
 	type DbActivityPopulated,
@@ -112,9 +113,49 @@ function mapDbActivityToCorosSportType(
 	}
 }
 
+function toMetersPerSecond(value?: number | null): number | undefined {
+	if (!value || value <= 0) return undefined;
+	if (value <= 40) return value;
+	if (value <= 4000) return value / 100;
+	return undefined;
+}
+
+function buildMetadataForActivity(params: {
+	type: ActivityType;
+	distance: number;
+	duration: number;
+	averageSpeed?: number | null;
+	averageHeartRate?: number | null;
+	maximumHeartRate?: number | null;
+}): ActivityMetadata | undefined {
+	const metadata: Record<string, number> = {};
+	const averageSpeed =
+		toMetersPerSecond(params.averageSpeed) ||
+		(params.distance > 0 && params.duration > 0
+			? params.distance / params.duration
+			: undefined);
+	if (params.type === ActivityType.RUN && averageSpeed) {
+		metadata.averagePace = 1000 / averageSpeed;
+	}
+	if (params.type === ActivityType.BIKE && averageSpeed) {
+		metadata.averageSpeed = averageSpeed;
+	}
+	if (params.averageHeartRate && params.averageHeartRate > 0) {
+		metadata.averageHeartRate = params.averageHeartRate;
+	}
+	if (params.maximumHeartRate && params.maximumHeartRate > 0) {
+		metadata.maximumHeartRate = params.maximumHeartRate;
+	}
+	return Object.keys(metadata).length > 0
+		? (metadata as ActivityMetadata)
+		: undefined;
+}
+
 function mapActivity(activity: CorosActivityDetails, id: string): IDbActivity {
 	const type = mapActivityType(activity.summary.sportType);
 	const subtype = mapActivitySubtype(type, activity.summary.sportType);
+	const distance = Math.round((activity.summary.distance ?? 0) / 100);
+	const duration = Math.round((activity.summary.workoutTime ?? 0) / 100);
 	return {
 		id,
 		timestamp: new Date(
@@ -122,8 +163,8 @@ function mapActivity(activity: CorosActivityDetails, id: string): IDbActivity {
 		).getTime(),
 		timezone: "Etc/UTC",
 		name: activity.summary.name || "",
-		distance: Math.round((activity.summary.distance ?? 0) / 100),
-		duration: Math.round((activity.summary.workoutTime ?? 0) / 100),
+		distance,
+		duration,
 		manufacturer: activity.deviceList[0]?.name || "",
 		locationName: "",
 		locationCountry: "",
@@ -132,6 +173,14 @@ function mapActivity(activity: CorosActivityDetails, id: string): IDbActivity {
 		startLongitude:
 			(activity.lapList[0]?.lapItemList[0]?.startGpsLon || 0) / 10000000,
 		isEvent: 0,
+		metadata: buildMetadataForActivity({
+			type,
+			distance,
+			duration,
+			averageSpeed: activity.summary.avgMoveSpeed ?? activity.summary.avgSpeed,
+			averageHeartRate: activity.summary.avgHr,
+			maximumHeartRate: activity.summary.maxHr,
+		}),
 		type,
 		subtype,
 	};

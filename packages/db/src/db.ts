@@ -79,7 +79,29 @@ function normalizeMetadata(
 ): ActivityMetadata {
 	const metadata: Record<string, unknown> =
 		typeof metadataRaw === "string" ? JSON.parse(metadataRaw) : metadataRaw;
-	const normalizedMetadata: ActivityMetadata = {};
+	const normalizedMetadata: Record<string, number> = {};
+	if (typeof metadata.averagePace === "number") {
+		normalizedMetadata.averagePace = metadata.averagePace;
+	} else if (metadata.averagePace !== undefined) {
+		normalizedMetadata.averagePace = Number(metadata.averagePace) || 0;
+	}
+	if (typeof metadata.averageSpeed === "number") {
+		normalizedMetadata.averageSpeed = metadata.averageSpeed;
+	} else if (metadata.averageSpeed !== undefined) {
+		normalizedMetadata.averageSpeed = Number(metadata.averageSpeed) || 0;
+	}
+	if (typeof metadata.averageHeartRate === "number") {
+		normalizedMetadata.averageHeartRate = metadata.averageHeartRate;
+	} else if (metadata.averageHeartRate !== undefined) {
+		normalizedMetadata.averageHeartRate =
+			Number(metadata.averageHeartRate) || 0;
+	}
+	if (typeof metadata.maximumHeartRate === "number") {
+		normalizedMetadata.maximumHeartRate = metadata.maximumHeartRate;
+	} else if (metadata.maximumHeartRate !== undefined) {
+		normalizedMetadata.maximumHeartRate =
+			Number(metadata.maximumHeartRate) || 0;
+	}
 	if (type === ActivityType.SWIM) {
 		if (typeof metadata.laps === "number") {
 			normalizedMetadata.laps = metadata.laps;
@@ -92,7 +114,7 @@ function normalizeMetadata(
 			normalizedMetadata.length = Number(metadata.length) || 0;
 		}
 	}
-	return normalizedMetadata;
+	return normalizedMetadata as ActivityMetadata;
 }
 
 function mapActivityRow({
@@ -815,7 +837,10 @@ export class Db {
 		return this._client.update(gears).set(data).where(eq(gears.id, id));
 	}
 
-	editActivity(id: string, data: Record<string, string | number | null>) {
+	editActivity(
+		id: string,
+		data: Record<string, string | number | null | Record<string, unknown>>,
+	) {
 		const updateData = { ...data };
 		if ("metadata" in updateData && typeof updateData.metadata === "object") {
 			updateData.metadata = JSON.stringify(updateData.metadata);
@@ -953,6 +978,8 @@ export class Db {
 				locationCountry: activities.locationCountry,
 				startLatitude: activities.startLatitude,
 				startLongitude: activities.startLongitude,
+				metadata: activities.metadata,
+				type: activities.type,
 			})
 			.from(activities)
 			.where(
@@ -965,7 +992,7 @@ export class Db {
 		const dbActivity = query[0];
 		if (dbActivity) {
 			activityId = dbActivity.id;
-			const updateData: Record<string, string> = {};
+			const updateData: Record<string, string | Record<string, unknown>> = {};
 
 			if (!dbActivity.locationCountry && activity.data.locationCountry) {
 				updateData.locationCountry = activity.data.locationCountry;
@@ -978,6 +1005,19 @@ export class Db {
 			}
 			if (!dbActivity.startLongitude && activity.data.startLongitude) {
 				updateData.startLongitude = activity.data.startLongitude.toString();
+			}
+			if (
+				activity.data.metadata &&
+				Object.keys(activity.data.metadata).length > 0
+			) {
+				const currentMetadata = normalizeMetadata(
+					activity.data.type,
+					dbActivity.metadata ?? "{}",
+				) as Record<string, unknown>;
+				updateData.metadata = {
+					...currentMetadata,
+					...activity.data.metadata,
+				};
 			}
 			if (Object.keys(updateData).length > 0) {
 				await this.editActivity(activityId, updateData);

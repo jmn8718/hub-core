@@ -26,7 +26,7 @@
     "db:scripts:gears": "tsx src/scripts/gears.ts",
     "db:scripts:inbody": "tsx src/scripts/inbody.ts",
     "db:scripts:webhooks": "tsx src/scripts/webhooks.ts",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "dependencies": {
     "@libsql/client": "0.15.15",

@@ -6,11 +6,11 @@
   "exports": {
     ".": {
       "browser": {
-        "default": "./dist/index.browser.js",
-        "types": "./dist/index.browser.d.ts"
+        "types": "./dist/index.browser.d.ts",
+        "default": "./dist/index.browser.js"
       },
-      "default": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "license": "MIT",
@@ -18,7 +18,8 @@
     "build": "rimraf dist & tsc",
     "check-types": "tsc --noEmit",
     "clean": "rimraf .turbo node_modules dist",
-    "test": "vitest"
+    "pretest": "pnpm --filter @repo/db build",
+    "test": "vitest run"
   },
   "dependencies": {
     "@repo/dates": "workspace:*",

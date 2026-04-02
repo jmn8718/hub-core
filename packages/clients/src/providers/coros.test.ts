@@ -50,7 +50,7 @@ const createContext = async () => {
 	return { client };
 };
 
-describe("coros client", () => {
+describe.sequential("coros client", () => {
 	test("passes sport type to coros file download", async () => {
 		const { client, db } = await (async () => {
 			const cache = await createTestCacheDb({
@@ -191,6 +191,54 @@ describe("coros client", () => {
 		const result = await client.syncActivity(bikeActivityId, 200);
 		expect(result.activity.data.type).toBe(ActivityType.BIKE);
 		expect(result.activity.data.subtype).toBeUndefined();
+	});
+
+	test("maps running metadata from coros activity details", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+
+		const result = await client.syncActivity("464238568991129601");
+		expect(result.activity.data.type).toBe(ActivityType.RUN);
+		expect(result.activity.data.metadata?.averagePace).toBeCloseTo(
+			1000 / (activitiesData["464238568991129601"].summary.avgMoveSpeed / 100),
+			5,
+		);
+		expect(result.activity.data.metadata?.averageHeartRate).toBe(
+			activitiesData["464238568991129601"].summary.avgHr,
+		);
+		expect(result.activity.data.metadata?.maximumHeartRate).toBe(
+			activitiesData["464238568991129601"].summary.maxHr,
+		);
+	});
+
+	test("maps cycling metadata from coros activity details", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+		const bikeActivityId = "bike-metadata";
+		activitiesData[bikeActivityId] = {
+			...activitiesData["464238568991129601"],
+			summary: {
+				...activitiesData["464238568991129601"].summary,
+				sportType: 200,
+				name: "Bike Activity",
+				distance: 420000,
+				workoutTime: 72000,
+				avgMoveSpeed: 650,
+				avgHr: 142,
+				maxHr: 176,
+			},
+		};
+		const result = await client.syncActivity(bikeActivityId, 200);
+		expect(result.activity.data.type).toBe(ActivityType.BIKE);
+		expect(result.activity.data.metadata?.averageSpeed).toBe(6.5);
+		expect(result.activity.data.metadata?.averageHeartRate).toBe(142);
+		expect(result.activity.data.metadata?.maximumHeartRate).toBe(176);
 	});
 
 	test("maps strength activities to gym type", async () => {

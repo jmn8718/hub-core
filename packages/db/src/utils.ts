@@ -1,3 +1,6 @@
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { CacheDb } from "./cache";
 import { type DbClient, createDbClient } from "./client";
 import { Db } from "./db";
@@ -13,33 +16,44 @@ import {
 	providerGears,
 } from "./schemas";
 
-function clearTestDb(client: DbClient): Promise<void> {
-	return Promise.all([
-		client.delete(activitiesConnection),
-		client.delete(gearsConnection),
-		client.delete(activityGears),
-		client.delete(gears),
-		client.delete(activities),
-		client.delete(providerActivities),
-		client.delete(providerGears),
-		client.delete(profiles),
-	]).then(() => {});
+async function clearTestDb(client: DbClient): Promise<void> {
+	const clearActions = [
+		() => client.delete(activitiesConnection),
+		() => client.delete(gearsConnection),
+		() => client.delete(activityGears),
+		() => client.delete(gears),
+		() => client.delete(activities),
+		() => client.delete(providerActivities),
+		() => client.delete(providerGears),
+		() => client.delete(profiles),
+	];
+
+	for (const clearAction of clearActions) {
+		await clearAction();
+	}
 }
 
-function createTestDbClient({
+async function createPreparedTestDbClient({
 	testDbUrl,
 	clearDb = true,
 }: {
 	testDbUrl?: string;
 	clearDb?: boolean;
-}): DbClient {
+}): Promise<DbClient> {
+	const resolvedTestDbUrl =
+		testDbUrl ||
+		`file:${join(await mkdtemp(join(tmpdir(), "hub-core-test-db-")), "test.sqlite")}`;
 	const client = createDbClient({
-		url: testDbUrl || "file:test.sqlite",
+		url: resolvedTestDbUrl,
 		logger: false,
 	});
+
+	await migrateDb(client);
+
 	if (clearDb) {
-		clearTestDb(client);
+		await clearTestDb(client);
 	}
+
 	return client;
 }
 
@@ -47,18 +61,14 @@ export function createTestCacheDb(params: {
 	testDbUrl?: string;
 	clearDb?: boolean;
 }): Promise<CacheDb> {
-	const client = createTestDbClient(params);
-	return migrateDb(client).then(() => {
-		return new CacheDb(client);
-	});
+	return createPreparedTestDbClient(params).then(
+		(client) => new CacheDb(client),
+	);
 }
 
 export function createTestDb(params: {
 	testDbUrl?: string;
 	clearDb?: boolean;
 }): Promise<Db> {
-	const client = createTestDbClient(params);
-	return migrateDb(client).then(() => {
-		return new Db(client);
-	});
+	return createPreparedTestDbClient(params).then((client) => new Db(client));
 }

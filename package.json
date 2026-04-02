@@ -2,10 +2,12 @@
   "name": "hub-core",
   "private": true,
 	"scripts": {
-		"build": "turbo run build",
+		"build": "turbo run build --filter=@repo/app...",
+		"build:all": "turbo run build",
 		"clean": "turbo run clean && rimraf .turbo node_modules",
 		"dev": "turbo run dev",
 		"check-types": "turbo run check-types",
+		"test:packages": "pnpm -r --filter './packages/*' --if-present --workspace-concurrency=1 run test",
 		"format": "biome check --write",
 		"fix": "biome check --fix --unsafe",
 		"prepare": "lefthook install",
