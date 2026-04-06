@@ -49,36 +49,32 @@ interface ActivityCardTemplateProps {
 function getPerformanceMetrics(
 	type: ActivityType,
 	metadata?: ActivityMetadata,
-): Array<{ label: string; value: string; rawValue: string }> {
+): Array<{ label: string; value: string }> {
 	if (!metadata) return [];
 	const metrics = metadata as Record<string, unknown>;
-	const values: Array<{ label: string; value: string; rawValue: string }> = [];
+	const values: Array<{ label: string; value: string }> = [];
 	if (type === ActivityType.RUN && typeof metrics.averagePace === "number") {
 		values.push({
 			label: "Average pace",
 			value: formatPace(metrics.averagePace, true),
-			rawValue: metrics.averagePace.toString(),
 		});
 	}
 	if (type === ActivityType.BIKE && typeof metrics.averageSpeed === "number") {
 		values.push({
 			label: "Average speed",
 			value: formatSpeed(metrics.averageSpeed),
-			rawValue: metrics.averageSpeed.toString(),
 		});
 	}
 	if (typeof metrics.averageHeartRate === "number") {
 		values.push({
 			label: "Average heart rate",
 			value: `${Math.round(metrics.averageHeartRate)} bpm`,
-			rawValue: metrics.averageHeartRate.toString(),
 		});
 	}
 	if (typeof metrics.maximumHeartRate === "number") {
 		values.push({
 			label: "Maximum heart rate",
 			value: `${Math.round(metrics.maximumHeartRate)} bpm`,
-			rawValue: metrics.maximumHeartRate.toString(),
 		});
 	}
 	return values;
@@ -243,12 +239,6 @@ export function ActivityCardTemplate({
 								className={`inline-flex items-center ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}
 							>
 								{metric.value}
-							</span>
-
-							<span
-								className={`inline-flex items-center ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}
-							>
-								{metric.rawValue}
 							</span>
 						</div>
 					))}
