@@ -49,32 +49,36 @@ interface ActivityCardTemplateProps {
 function getPerformanceMetrics(
 	type: ActivityType,
 	metadata?: ActivityMetadata,
-): Array<{ label: string; value: string }> {
+): Array<{ label: string; value: string; rawValue: string }> {
 	if (!metadata) return [];
 	const metrics = metadata as Record<string, unknown>;
-	const values: Array<{ label: string; value: string }> = [];
+	const values: Array<{ label: string; value: string; rawValue: string }> = [];
 	if (type === ActivityType.RUN && typeof metrics.averagePace === "number") {
 		values.push({
 			label: "Average pace",
-			value: formatPace(metrics.averagePace),
+			value: formatPace(metrics.averagePace, true),
+			rawValue: metrics.averagePace.toString(),
 		});
 	}
 	if (type === ActivityType.BIKE && typeof metrics.averageSpeed === "number") {
 		values.push({
 			label: "Average speed",
 			value: formatSpeed(metrics.averageSpeed),
+			rawValue: metrics.averageSpeed.toString(),
 		});
 	}
 	if (typeof metrics.averageHeartRate === "number") {
 		values.push({
 			label: "Average heart rate",
 			value: `${Math.round(metrics.averageHeartRate)} bpm`,
+			rawValue: metrics.averageHeartRate.toString(),
 		});
 	}
 	if (typeof metrics.maximumHeartRate === "number") {
 		values.push({
 			label: "Maximum heart rate",
 			value: `${Math.round(metrics.maximumHeartRate)} bpm`,
+			rawValue: metrics.maximumHeartRate.toString(),
 		});
 	}
 	return values;
@@ -224,17 +228,27 @@ export function ActivityCardTemplate({
 			{children ? children(contextValue) : null}
 
 			{performanceMetrics.length > 0 && (
-				<SectionContainer
-					hasBorder
-					className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:gap-6"
-				>
+				<SectionContainer hasBorder className="flex flex-col">
 					{performanceMetrics.map((metric) => (
-						<div key={metric.label} className="flex items-center gap-2 text-sm">
-							<span className={isDarkMode ? "text-gray-400" : "text-gray-500"}>
-								{metric.label}
+						<div
+							key={metric.label}
+							className="flex items-center gap-2 text-sm leading-none"
+						>
+							<span
+								className={`inline-flex items-center ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
+							>
+								{metric.label}:
 							</span>
-							<span className={isDarkMode ? "text-gray-200" : "text-gray-800"}>
+							<span
+								className={`inline-flex items-center ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}
+							>
 								{metric.value}
+							</span>
+
+							<span
+								className={`inline-flex items-center ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}
+							>
+								{metric.rawValue}
 							</span>
 						</div>
 					))}

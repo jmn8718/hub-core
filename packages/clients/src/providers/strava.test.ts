@@ -174,8 +174,13 @@ describe.sequential("strava client connect()", () => {
 		const testActivityId = "16198895522";
 		const result = await client.syncActivity(testActivityId);
 		expect(result.activity.data.type).toBe(ActivityType.RUN);
-		expect(result.activity.data.metadata?.averagePace).toBeCloseTo(
-			1000 / activitiesData[testActivityId].average_speed,
+		const averagePace = (
+			result.activity.data.metadata as { averagePace?: number } | undefined
+		)?.averagePace;
+		expect(averagePace).toBeCloseTo(
+			(activitiesData[testActivityId].moving_time /
+				activitiesData[testActivityId].distance) *
+				1000,
 			5,
 		);
 		expect(result.activity.data.metadata?.averageHeartRate).toBeCloseTo(
@@ -187,14 +192,109 @@ describe.sequential("strava client connect()", () => {
 		);
 	});
 
+	test("maps rounded average_speed values to pace using distance and moving_time", async () => {
+		await client.connect({ refreshToken: "token" });
+		const testActivityId = "17682257288";
+		mockFetch.mockImplementation((url: RequestInfo) => {
+			const urlStr = typeof url === "string" ? url : url.url;
+			if (urlStr.includes(`/activities/${testActivityId}`)) {
+				return Promise.resolve({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							resource_state: 2,
+							athlete: { id: 5533532, resource_state: 1 },
+							name: "Precision Pace Run",
+							distance: 10000,
+							moving_time: 3040,
+							elapsed_time: 3040,
+							total_elevation_gain: 0,
+							type: "Run",
+							sport_type: "Run",
+							workout_type: null,
+							device_name: "COROS PACE 2",
+							id: 17682257288,
+							start_date: "2026-03-11T08:10:19Z",
+							start_date_local: "2026-03-11T17:10:19Z",
+							timezone: "(GMT+09:00) Asia/Chita",
+							utc_offset: 32400,
+							location_city: null,
+							location_state: null,
+							location_country: null,
+							achievement_count: 0,
+							kudos_count: 0,
+							comment_count: 0,
+							athlete_count: 1,
+							photo_count: 0,
+							map: {
+								id: "a17682257288",
+								summary_polyline: "",
+								resource_state: 2,
+							},
+							trainer: false,
+							commute: false,
+							manual: false,
+							private: true,
+							visibility: "only_me",
+							flagged: false,
+							gear_id: null,
+							start_latlng: [],
+							end_latlng: [],
+							average_speed: 3.303,
+							max_speed: 3.52,
+							average_cadence: 81.7,
+							has_heartrate: true,
+							average_heartrate: 133.3,
+							max_heartrate: 149,
+							heartrate_opt_out: false,
+							display_hide_heartrate_option: true,
+							elev_high: 0,
+							elev_low: 0,
+							upload_id: 18780672934,
+							upload_id_str: "18780672934",
+							external_id: "475994889845243910.fit",
+							from_accepted_tag: false,
+							pr_count: 0,
+							total_photo_count: 0,
+							has_kudoed: false,
+						}),
+				} as Response);
+			}
+			if (urlStr.includes("/athlete/activities")) {
+				return Promise.resolve({
+					ok: true,
+					json: () => Promise.resolve(activities),
+				} as Response);
+			}
+			if (urlStr.includes("/activities/")) {
+				const activityId = urlStr.split("/").pop() as string;
+				return Promise.resolve({
+					ok: true,
+					json: () => Promise.resolve(activitiesData[activityId]),
+				} as Response);
+			}
+			return Promise.resolve({
+				ok: false,
+				json: () => Promise.resolve({}),
+			} as Response);
+		});
+
+		const result = await client.syncActivity(testActivityId);
+		const averagePace = (
+			result.activity.data.metadata as { averagePace?: number } | undefined
+		)?.averagePace;
+		expect(averagePace).toBeCloseTo(304, 5);
+	});
+
 	test("maps cycling metadata from strava activity details", async () => {
 		await client.connect({ refreshToken: "token" });
 		const testActivityId = "14917221023";
 		const result = await client.syncActivity(testActivityId);
 		expect(result.activity.data.type).toBe(ActivityType.BIKE);
-		expect(result.activity.data.metadata?.averageSpeed).toBe(
-			activitiesData[testActivityId].average_speed,
-		);
+		const averageSpeed = (
+			result.activity.data.metadata as { averageSpeed?: number } | undefined
+		)?.averageSpeed;
+		expect(averageSpeed).toBe(activitiesData[testActivityId].average_speed);
 		expect(result.activity.data.metadata?.averageHeartRate).toBeUndefined();
 		expect(result.activity.data.metadata?.maximumHeartRate).toBeUndefined();
 	});

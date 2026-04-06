@@ -10,6 +10,22 @@ export type ProviderSuccessResponse<T = unknown> =
 	| (T & { success: true })
 	| { success: false; error: string };
 
+export type ActivityRegenerationFailure = {
+	activityId: string;
+	provider?: Providers;
+	providerActivityId?: string;
+	error: string;
+};
+
+export type ActivityRegenerationSummary = {
+	total: number;
+	eligible: number;
+	regenerated: number;
+	skipped: number;
+	failed: number;
+	failures: ActivityRegenerationFailure[];
+};
+
 export interface IOverviewData {
 	distance: number;
 	count: number;

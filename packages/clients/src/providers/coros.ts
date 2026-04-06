@@ -113,13 +113,6 @@ function mapDbActivityToCorosSportType(
 	}
 }
 
-function toMetersPerSecond(value?: number | null): number | undefined {
-	if (!value || value <= 0) return undefined;
-	if (value <= 40) return value;
-	if (value <= 4000) return value / 100;
-	return undefined;
-}
-
 function buildMetadataForActivity(params: {
 	type: ActivityType;
 	distance: number;
@@ -130,14 +123,11 @@ function buildMetadataForActivity(params: {
 }): ActivityMetadata | undefined {
 	const metadata: Record<string, number> = {};
 	const averageSpeed =
-		toMetersPerSecond(params.averageSpeed) ||
-		(params.distance > 0 && params.duration > 0
-			? params.distance / params.duration
-			: undefined);
-	if (params.type === ActivityType.RUN && averageSpeed) {
-		metadata.averagePace = 1000 / averageSpeed;
+		params.averageSpeed || (params.distance || 0) / (params.duration || 1);
+	if (params.type === ActivityType.RUN) {
+		metadata.averagePace = averageSpeed;
 	}
-	if (params.type === ActivityType.BIKE && averageSpeed) {
+	if (params.type === ActivityType.BIKE) {
 		metadata.averageSpeed = averageSpeed;
 	}
 	if (params.averageHeartRate && params.averageHeartRate > 0) {

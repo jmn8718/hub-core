@@ -27,13 +27,14 @@ import {
 
 export function ActivityDetails() {
 	const { client } = useDataClient();
-	const { setLocalLoading } = useLoading();
+	const { setGlobalLoading, setLocalLoading } = useLoading();
 	const { colors } = useTheme();
 	const { activityId } = useParams();
 	const [activity, setActivity] = useState<DbActivityPopulated | null>(null);
 	const [gears, setGears] = useState<IDbGearWithDistance[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadError, setLoadError] = useState<string | null>(null);
+	const [isRegeneratingMetadata, setIsRegeneratingMetadata] = useState(false);
 
 	const MAX_RETRIES = 3;
 	const RETRY_DELAY_MS = 1000;
@@ -136,6 +137,50 @@ export function ActivityDetails() {
 				gears={gears}
 				onActivityRefresh={loadActivity}
 			/>
+			{(activity.type === ActivityType.RUN ||
+				activity.type === ActivityType.BIKE) && (
+				<Box
+					title="Metadata"
+					description="Refresh provider-derived metadata from the main provider source for this activity."
+				>
+					<div className="flex justify-end">
+						<button
+							type="button"
+							onClick={async () => {
+								setIsRegeneratingMetadata(true);
+								setGlobalLoading(true, "Regenerating activity metadata");
+								try {
+									const result = await client.regenerateActivityMetadata(
+										activity.id,
+									);
+									if (!result.success) {
+										throw new Error(result.error);
+									}
+									await loadActivity();
+									toast.success("Activity metadata regenerated.", {
+										transition: Bounce,
+									});
+								} catch (error) {
+									toast.error((error as Error).message, {
+										hideProgressBar: false,
+										closeOnClick: false,
+										transition: Bounce,
+									});
+								} finally {
+									setGlobalLoading(false);
+									setIsRegeneratingMetadata(false);
+								}
+							}}
+							disabled={isRegeneratingMetadata}
+							className={cn(actionButtonBaseClass, colors.buttonSecondary)}
+						>
+							{isRegeneratingMetadata
+								? "Regenerating..."
+								: "Regenerate metadata"}
+						</button>
+					</div>
+				</Box>
+			)}
 			<GearConnectionsSection
 				activityId={activity.id}
 				selectedGearIds={activity.gears.map((gear) => gear.id)}

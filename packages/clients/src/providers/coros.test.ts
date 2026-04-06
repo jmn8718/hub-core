@@ -202,9 +202,8 @@ describe.sequential("coros client", () => {
 
 		const result = await client.syncActivity("464238568991129601");
 		expect(result.activity.data.type).toBe(ActivityType.RUN);
-		expect(result.activity.data.metadata?.averagePace).toBeCloseTo(
-			1000 / (activitiesData["464238568991129601"].summary.avgMoveSpeed / 100),
-			5,
+		expect(result.activity.data.metadata?.averagePace).toBe(
+			activitiesData["464238568991129601"].summary.avgMoveSpeed,
 		);
 		expect(result.activity.data.metadata?.averageHeartRate).toBe(
 			activitiesData["464238568991129601"].summary.avgHr,
@@ -236,7 +235,7 @@ describe.sequential("coros client", () => {
 		};
 		const result = await client.syncActivity(bikeActivityId, 200);
 		expect(result.activity.data.type).toBe(ActivityType.BIKE);
-		expect(result.activity.data.metadata?.averageSpeed).toBe(6.5);
+		expect(result.activity.data.metadata?.averageSpeed).toBe(650);
 		expect(result.activity.data.metadata?.averageHeartRate).toBe(142);
 		expect(result.activity.data.metadata?.maximumHeartRate).toBe(176);
 	});

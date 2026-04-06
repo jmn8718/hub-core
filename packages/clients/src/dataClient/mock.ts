@@ -1,5 +1,6 @@
 import type {
 	ActivitiesData,
+	ActivityRegenerationSummary,
 	ActivitySubType,
 	ActivityType,
 	ConnectCredentials,
@@ -366,6 +367,28 @@ export class MockClient implements Client {
 		return {
 			success: true,
 			data: [],
+		};
+	}
+
+	async regenerateActivitiesData(): Promise<
+		ProviderSuccessResponse<{ data: ActivityRegenerationSummary }>
+	> {
+		return {
+			success: true,
+			data: {
+				total: 0,
+				eligible: 0,
+				regenerated: 0,
+				skipped: 0,
+				failed: 0,
+				failures: [],
+			},
+		};
+	}
+
+	async regenerateActivityMetadata(): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
 		};
 	}
 

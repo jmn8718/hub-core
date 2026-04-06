@@ -165,6 +165,25 @@ export class AppClient implements Client {
 		}
 	}
 
+	async regenerateActivityMetadata(
+		activityId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(
+				Channels.DB_ACTIVITY_METADATA_REGENERATE,
+				{ activityId },
+			);
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async createActivity(
 		data: IActivityCreateInput,
 	): Promise<ProviderSuccessResponse<{ id: string }>> {
@@ -548,6 +567,23 @@ export class AppClient implements Client {
 							!!value && ["node", "electron", "chrome"].includes(key),
 					)
 					.map(([key, value]) => `${key}: ${value}`) as string[],
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async regenerateActivitiesData() {
+		try {
+			const data = await window.electron.ipcRenderer.invoke(
+				Channels.DB_ACTIVITIES_REGENERATE,
+			);
+			return {
+				success: true,
+				data,
 			};
 		} catch (err) {
 			return {

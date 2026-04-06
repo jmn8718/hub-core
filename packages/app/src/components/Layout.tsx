@@ -1,3 +1,4 @@
+import { AppType } from "@repo/types";
 import { cn } from "@repo/ui";
 import {
 	Atom,
@@ -14,6 +15,7 @@ import type React from "react";
 import { useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { Routes as AppRoutes } from "../constants.js";
+import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
 import { Sidebar } from "./Sidebar.js";
 
@@ -23,6 +25,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
 	const { isDarkMode } = useTheme();
+	const { type } = useDataClient();
 	const location = useLocation();
 	const isCalendarRoute = location.pathname === AppRoutes.CALENDAR;
 
@@ -51,7 +54,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 					{ icon: Settings, href: AppRoutes.SETTINGS, label: "Settings" },
 				]}
 			/>
-			<div className="p-0 pl-12 md:pl-16 min-h-screen">
+			<div
+				className={cn(
+					"min-h-screen p-0",
+					type === AppType.DESKTOP ? "pl-16" : "pl-12",
+				)}
+			>
 				<div
 					className={cn(
 						"min-h-screen flex flex-col p-2 md:p-4",

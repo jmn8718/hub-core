@@ -151,8 +151,11 @@ describe.sequential("garmin client", () => {
 
 		const result = await client.syncActivity("17936939301");
 		expect(result.activity.data.type).toBe(ActivityType.RUN);
-		expect(result.activity.data.metadata?.averagePace).toBeCloseTo(
-			1000 / activitiesData["17936939301"].summaryDTO.averageSpeed,
+		const averagePace = (
+			result.activity.data.metadata as { averagePace?: number } | undefined
+		)?.averagePace;
+		expect(averagePace).toBeCloseTo(
+			1000 / activitiesData["17936939301"].summaryDTO.averageMovingSpeed,
 			5,
 		);
 		expect(result.activity.data.metadata?.averageHeartRate).toBe(
@@ -161,5 +164,28 @@ describe.sequential("garmin client", () => {
 		expect(result.activity.data.metadata?.maximumHeartRate).toBe(
 			activitiesData["17936939301"].summaryDTO.maxHR,
 		);
+	});
+
+	test("prefers averageMovingSpeed over averageSpeed for running pace", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+
+		getActivityMock.mockResolvedValueOnce({
+			...activitiesData["17936939301"],
+			summaryDTO: {
+				...activitiesData["17936939301"].summaryDTO,
+				averageSpeed: 3.3020000457763676,
+				averageMovingSpeed: 3.313427565519479,
+			},
+		});
+
+		const result = await client.syncActivity("17936939301");
+		const averagePace = (
+			result.activity.data.metadata as { averagePace?: number } | undefined
+		)?.averagePace;
+		expect(averagePace).toBeCloseTo(1000 / 3.313427565519479, 5);
 	});
 });

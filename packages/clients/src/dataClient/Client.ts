@@ -1,5 +1,6 @@
 import type {
 	ActivitiesData,
+	ActivityRegenerationSummary,
 	ActivitySubType,
 	ActivityType,
 	ConnectCredentials,
@@ -176,6 +177,12 @@ export abstract class Client {
 	abstract signout(): Promise<undefined>;
 
 	abstract getDebugInfo(): ProviderSuccessResponse<{ data: string[] }>;
+	abstract regenerateActivitiesData(): Promise<
+		ProviderSuccessResponse<{ data: ActivityRegenerationSummary }>
+	>;
+	abstract regenerateActivityMetadata(
+		activityId: string,
+	): Promise<ProviderSuccessResponse>;
 
 	abstract openLink(url: string): Promise<void>;
 	abstract existsFile(params: {

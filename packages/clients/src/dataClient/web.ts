@@ -1,6 +1,7 @@
 import { Providers, StorageKeys } from "@repo/types";
 import type {
 	ActivitiesData,
+	ActivityRegenerationSummary,
 	ActivitySubType,
 	ActivityType,
 	ConnectCredentials,
@@ -320,6 +321,22 @@ export class WebClient implements Client {
 			success: true,
 			data: [],
 		};
+	}
+
+	async regenerateActivitiesData(): Promise<
+		ProviderSuccessResponse<{ data: ActivityRegenerationSummary }>
+	> {
+		return this._execute<{ data: ActivityRegenerationSummary }>(
+			"regenerateActivitiesData",
+		);
+	}
+
+	async regenerateActivityMetadata(
+		activityId: string,
+	): Promise<ProviderSuccessResponse> {
+		return this._execute("regenerateActivityMetadata", {
+			activityId,
+		});
 	}
 
 	async openLink(url: string): Promise<undefined> {

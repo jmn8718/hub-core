@@ -90,6 +90,17 @@ ipcMain.handle(Channels.DB_ACTIVITY, async (_event, activityId: string) => {
 	return getDb().getActivity(activityId);
 });
 
+ipcMain.handle(Channels.DB_ACTIVITIES_REGENERATE, async () => {
+	return manager.regenerateActivitiesData();
+});
+
+ipcMain.handle(
+	Channels.DB_ACTIVITY_METADATA_REGENERATE,
+	async (_event, params: { activityId: string }) => {
+		return manager.regenerateActivityMetadata(params.activityId);
+	},
+);
+
 ipcMain.handle(
 	Channels.DB_ACTIVITY_CREATE,
 	async (_event, params: { data: unknown }) => {

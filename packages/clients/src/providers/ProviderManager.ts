@@ -1,5 +1,7 @@
 import type { CacheDb, Db, IInsertActivityPayload } from "@repo/db";
 import {
+	type ActivityRegenerationSummary,
+	ActivityType,
 	type ConnectCredentials,
 	type IDbGearWithDistance,
 	Providers,
@@ -373,5 +375,136 @@ export class ProviderManager {
 				stopOnError: false,
 			},
 		);
+	}
+
+	private _selectMetadataSourceConnection(
+		activity: Awaited<ReturnType<Db["getActivity"]>>,
+	) {
+		if (!activity) return;
+		const originalConnection = activity.connections.find(
+			(connection) =>
+				Boolean(connection.original) &&
+				Boolean(connection.provider) &&
+				Boolean(connection.id),
+		);
+		return (
+			originalConnection ||
+			activity.connections.find(
+				(connection) =>
+					connection.provider === Providers.STRAVA && Boolean(connection.id),
+			)
+		);
+	}
+
+	public async regenerateActivityMetadata(activityId: string): Promise<void> {
+		const activity = await this._db.getActivity(activityId);
+		if (!activity) {
+			throw new Error("Missing activity");
+		}
+		if (
+			activity.type !== ActivityType.RUN &&
+			activity.type !== ActivityType.BIKE
+		) {
+			throw new Error(
+				"Metadata regeneration is only supported for run and bike activities",
+			);
+		}
+
+		const selectedConnection = this._selectMetadataSourceConnection(activity);
+		if (!selectedConnection?.provider || !selectedConnection.id) {
+			throw new Error("No eligible provider connection found");
+		}
+
+		const client = this._clients[selectedConnection.provider];
+		if (!client) {
+			throw new Error(`${selectedConnection.provider} not initialized`);
+		}
+
+		const payload = await client.syncActivity(selectedConnection.id);
+		const metadata = payload.activity.data.metadata;
+		if (!metadata || Object.keys(metadata).length === 0) {
+			throw new Error("No metadata available from provider activity");
+		}
+
+		await this._db.editActivity(activityId, {
+			metadata,
+		});
+	}
+
+	public async regenerateActivitiesData(): Promise<ActivityRegenerationSummary> {
+		const summary: ActivityRegenerationSummary = {
+			total: 0,
+			eligible: 0,
+			regenerated: 0,
+			skipped: 0,
+			failed: 0,
+			failures: [],
+		};
+
+		let cursor: string | undefined;
+
+		do {
+			const batch = await this._db.getActivities({
+				limit: 100,
+				cursor,
+			});
+
+			for (const activity of batch.data) {
+				summary.total += 1;
+				if (
+					activity.type !== ActivityType.RUN &&
+					activity.type !== ActivityType.BIKE
+				) {
+					summary.skipped += 1;
+					continue;
+				}
+				const selectedConnection =
+					this._selectMetadataSourceConnection(activity);
+
+				if (!selectedConnection?.provider || !selectedConnection.id) {
+					summary.skipped += 1;
+					continue;
+				}
+
+				summary.eligible += 1;
+
+				if (!this._clients[selectedConnection.provider]) {
+					summary.failed += 1;
+					summary.failures.push({
+						activityId: activity.id,
+						provider: selectedConnection.provider,
+						providerActivityId: selectedConnection.id,
+						error: `${selectedConnection.provider} not initialized`,
+					});
+					continue;
+				}
+
+				try {
+					const client = this._getProvider(selectedConnection.provider);
+					const payload = await client.syncActivity(selectedConnection.id);
+					const metadata = payload.activity.data.metadata;
+					if (!metadata || Object.keys(metadata).length === 0) {
+						summary.skipped += 1;
+						continue;
+					}
+					await this._db.editActivity(activity.id, {
+						metadata,
+					});
+					summary.regenerated += 1;
+				} catch (error) {
+					summary.failed += 1;
+					summary.failures.push({
+						activityId: activity.id,
+						provider: selectedConnection.provider,
+						providerActivityId: selectedConnection.id,
+						error: (error as Error).message,
+					});
+				}
+			}
+
+			cursor = batch.cursor || undefined;
+		} while (cursor);
+
+		return summary;
 	}
 }

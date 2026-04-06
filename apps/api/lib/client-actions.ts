@@ -183,6 +183,20 @@ export async function handleClientAction(
 			const id = ensureString(activityId, "activity id");
 			return withData(() => db.getActivity(id));
 		}
+		case "regenerateActivitiesData": {
+			return withData(async () => {
+				const manager = await getProviderManager();
+				return manager.regenerateActivitiesData();
+			});
+		}
+		case "regenerateActivityMetadata": {
+			const { activityId } = payload as { activityId?: string };
+			const id = ensureString(activityId, "activity id");
+			return withVoid(async () => {
+				const manager = await getProviderManager();
+				await manager.regenerateActivityMetadata(id);
+			});
+		}
 		case "createActivity": {
 			const { data } = payload as { data?: IActivityCreateInput };
 			if (!data || typeof data !== "object") {

@@ -120,8 +120,12 @@ function buildMetadataForActivity(
 	activity: StravaActivity,
 ): ActivityMetadata | undefined {
 	const metadata: Record<string, number> = {};
-	if (type === ActivityType.RUN && activity.average_speed > 0) {
-		metadata.averagePace = 1000 / activity.average_speed;
+	const speedForPace =
+		activity.distance > 0 && activity.moving_time > 0
+			? activity.distance / activity.moving_time
+			: activity.average_speed;
+	if (type === ActivityType.RUN && speedForPace > 0) {
+		metadata.averagePace = 1000 / speedForPace;
 	}
 	if (type === ActivityType.BIKE && activity.average_speed > 0) {
 		metadata.averageSpeed = activity.average_speed;

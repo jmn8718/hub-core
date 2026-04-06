@@ -21,11 +21,14 @@ export const formatMeasurement = (
 	return (value / 100).toFixed(fractionDigits);
 };
 
-export const formatPace = (secondsPerKilometer: number): string => {
-	const totalSeconds = Math.max(0, Math.round(secondsPerKilometer));
+export const formatPace = (
+	secondsPerKilometer: number,
+	addUnits = false,
+): string => {
+	const totalSeconds = Math.max(0, Math.ceil(secondsPerKilometer) - 1);
 	const minutes = Math.floor(totalSeconds / 60);
 	const seconds = totalSeconds % 60;
-	return `${minutes}:${`${seconds}`.padStart(2, "0")} /km`;
+	return `${minutes}:${`${seconds}`.padStart(2, "0")}${addUnits ? " /km" : ""}`;
 };
 
 export const formatSpeed = (metersPerSecond: number): string => {

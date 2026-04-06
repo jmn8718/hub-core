@@ -130,7 +130,9 @@ function mapActivity({
 		isEvent: activity.eventTypeDTO.typeKey === "race" ? 1 : 0,
 		metadata: buildMetadataForActivity({
 			type,
-			averageSpeed: activity.summaryDTO.averageSpeed,
+			averageSpeed:
+				activity.summaryDTO.averageMovingSpeed ??
+				activity.summaryDTO.averageSpeed,
 			averageHeartRate: activity.summaryDTO.averageHR,
 			maximumHeartRate: activity.summaryDTO.maxHR,
 		}),
