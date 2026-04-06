@@ -126,6 +126,8 @@ ipcMain.handle(
 				locationCountry?: string;
 				name?: string;
 				notes?: string;
+				insight?: string;
+				description?: string;
 				type?: ActivityType;
 				subtype?: ActivitySubType;
 				isEvent?: 0 | 1;

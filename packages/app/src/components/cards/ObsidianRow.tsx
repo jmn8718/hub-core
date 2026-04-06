@@ -75,6 +75,8 @@ const prepareObsidianRunningFile = (
 					),
 				].join("\n")
 			: "",
+		data.description ? `\n## DESCRIPTION\n${data.description}` : "",
+		data.insight ? `\n## INSIGHT\n${data.insight}` : "",
 		"\n## REVIEW",
 		data.notes || "-",
 	];

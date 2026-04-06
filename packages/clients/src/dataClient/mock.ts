@@ -137,6 +137,8 @@ export class MockClient implements Client {
 			locationName?: string;
 			locationCountry?: string;
 			notes?: string;
+			insight?: string;
+			description?: string;
 			name?: string;
 			type?: ActivityType;
 			subtype?: ActivitySubType;

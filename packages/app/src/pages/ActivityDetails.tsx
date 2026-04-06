@@ -130,11 +130,16 @@ export function ActivityDetails() {
 		);
 	}
 
+	const hasLongFormContent =
+		(activity.insight?.trim() ?? "").length > 0 ||
+		(activity.description?.trim() ?? "").length > 0;
+
 	return (
 		<div className="space-y-4">
 			<ActivityCard
 				activity={activity}
 				gears={gears}
+				showExtendedTextFields
 				onActivityRefresh={loadActivity}
 			/>
 			{(activity.type === ActivityType.RUN ||

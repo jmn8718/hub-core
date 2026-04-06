@@ -13,6 +13,7 @@ interface CardioCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 	showDetailsButton?: boolean;
+	showExtendedTextFields?: boolean;
 	onActivityRefresh?: () => Promise<void> | void;
 }
 
@@ -20,6 +21,7 @@ export function CardioCard({
 	activity,
 	gears,
 	showDetailsButton,
+	showExtendedTextFields,
 	onActivityRefresh,
 }: CardioCardProps) {
 	return (
@@ -27,6 +29,7 @@ export function CardioCard({
 			activity={activity}
 			gears={gears}
 			showDetailsButton={showDetailsButton}
+			showExtendedTextFields={showExtendedTextFields}
 			onActivityRefresh={onActivityRefresh}
 		>
 			{(context) => (

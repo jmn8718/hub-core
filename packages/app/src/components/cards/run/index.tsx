@@ -19,6 +19,7 @@ interface RunningCardProps {
 	activity: DbActivityPopulated;
 	gears: IDbGear[];
 	showDetailsButton?: boolean;
+	showExtendedTextFields?: boolean;
 	onActivityRefresh?: () => Promise<void> | void;
 }
 
@@ -26,6 +27,7 @@ export function RunningCard({
 	activity,
 	gears,
 	showDetailsButton,
+	showExtendedTextFields,
 	onActivityRefresh,
 }: RunningCardProps) {
 	return (
@@ -33,6 +35,7 @@ export function RunningCard({
 			activity={activity}
 			gears={gears}
 			showDetailsButton={showDetailsButton}
+			showExtendedTextFields={showExtendedTextFields}
 			onActivityRefresh={onActivityRefresh}
 		>
 			{(context) => <RunningCardBody context={context} gears={gears} />}

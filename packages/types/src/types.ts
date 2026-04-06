@@ -80,6 +80,8 @@ type DbActivityBase = {
 	startLatitude: number;
 	startLongitude: number;
 	notes?: string;
+	insight?: string;
+	description?: string;
 	metadata?: ActivityMetadata;
 	type: ActivityType;
 	subtype?: ActivitySubType;
@@ -106,6 +108,8 @@ export interface IActivityCreateInput {
 	durationSeconds?: number;
 	distanceMeters?: number;
 	notes?: string;
+	insight?: string;
+	description?: string;
 	metadata?: ActivityMetadata | SwimActivityMetadata;
 	locationName?: string;
 	locationCountry?: string;

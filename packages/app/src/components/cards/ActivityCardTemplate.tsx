@@ -43,6 +43,7 @@ interface ActivityCardTemplateProps {
 	gears: IDbGear[];
 	children?: (props: ActivityCardTemplateRenderProps) => ReactNode;
 	showDetailsButton?: boolean;
+	showExtendedTextFields?: boolean;
 	onActivityRefresh?: () => Promise<void> | void;
 }
 
@@ -85,6 +86,7 @@ export function ActivityCardTemplate({
 	gears,
 	children,
 	showDetailsButton = false,
+	showExtendedTextFields = false,
 	onActivityRefresh,
 }: ActivityCardTemplateProps) {
 	const { isDarkMode } = useTheme();
@@ -95,6 +97,12 @@ export function ActivityCardTemplate({
 		useState<DbActivityPopulated>(activity);
 	const [activityName, setActivityName] = useState(activity.name || "");
 	const [activityNotes, setActivityNotes] = useState(activity.notes || "");
+	const [activityInsight, setActivityInsight] = useState(
+		activity.insight || "",
+	);
+	const [activityDescription, setActivityDescription] = useState(
+		activity.description || "",
+	);
 	const [fileStateVersion, setFileStateVersion] = useState(0);
 	const navigate = useNavigate();
 
@@ -102,6 +110,8 @@ export function ActivityCardTemplate({
 		setActivityData(activity);
 		setActivityName(activity.name || "");
 		setActivityNotes(activity.notes || "");
+		setActivityInsight(activity.insight || "");
+		setActivityDescription(activity.description || "");
 	}, [activity]);
 
 	const refreshActivity = useCallback(async () => {
@@ -110,6 +120,8 @@ export function ActivityCardTemplate({
 			setActivityData(result.data);
 			setActivityName(result.data.name || "");
 			setActivityNotes(result.data.notes || "");
+			setActivityInsight(result.data.insight || "");
+			setActivityDescription(result.data.description || "");
 			await onActivityRefresh?.();
 		} else if (!result.success) {
 			toast.error(result.error, {
@@ -152,6 +164,20 @@ export function ActivityCardTemplate({
 		setActivityNotes(newNotes);
 		if (newNotes !== activityData.notes) {
 			void handleEditActivity("notes", newNotes);
+		}
+	};
+
+	const handleInsightChange = (newInsight: string) => {
+		setActivityInsight(newInsight);
+		if (newInsight !== activityData.insight) {
+			void handleEditActivity("insight", newInsight);
+		}
+	};
+
+	const handleDescriptionChange = (newDescription: string) => {
+		setActivityDescription(newDescription);
+		if (newDescription !== activityData.description) {
+			void handleEditActivity("description", newDescription);
 		}
 	};
 
@@ -314,21 +340,63 @@ export function ActivityCardTemplate({
 					)}
 			</SectionContainer>
 			<SectionContainer>
-				<div className="flex items-center gap-2">
-					<Pencil size={16} className="text-gray-500" />
-					<span
-						className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
-					>
-						Notes
-					</span>
+				<div className="space-y-4">
+					<div className="space-y-1">
+						<div className="flex items-center gap-2">
+							<Pencil size={16} className="text-gray-500" />
+							<span
+								className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
+							>
+								Notes
+							</span>
+						</div>
+						<EditableText
+							value={activityNotes}
+							onSave={handleNotesChange}
+							className="w-full"
+							placeholder="Enter activity notes..."
+							useTextArea
+						/>
+					</div>
+					{showExtendedTextFields && (
+						<>
+							<div className="space-y-1">
+								<div className="flex items-center gap-2">
+									<Pencil size={16} className="text-gray-500" />
+									<span
+										className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
+									>
+										Insight
+									</span>
+								</div>
+								<EditableText
+									value={activityInsight}
+									onSave={handleInsightChange}
+									className="w-full"
+									placeholder="Enter activity insight..."
+									useTextArea
+								/>
+							</div>
+							<div className="space-y-1">
+								<div className="flex items-center gap-2">
+									<Pencil size={16} className="text-gray-500" />
+									<span
+										className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
+									>
+										Description
+									</span>
+								</div>
+								<EditableText
+									value={activityDescription}
+									onSave={handleDescriptionChange}
+									className="w-full"
+									placeholder="Enter activity description..."
+									useTextArea
+								/>
+							</div>
+						</>
+					)}
 				</div>
-				<EditableText
-					value={activityNotes}
-					onSave={handleNotesChange}
-					className="w-full"
-					placeholder="Enter activity notes..."
-					useTextArea
-				/>
 			</SectionContainer>
 		</Box>
 	);

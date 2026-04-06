@@ -130,6 +130,8 @@ export class WebClient implements Client {
 		data: {
 			locationName?: string;
 			notes?: string;
+			insight?: string;
+			description?: string;
 			locationCountry?: string;
 			name?: string;
 			type?: ActivityType;

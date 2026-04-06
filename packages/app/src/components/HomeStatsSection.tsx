@@ -1,3 +1,4 @@
+import type { IDailyOverviewData } from "@repo/types";
 import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { Box, DailyActivityStats, Text } from "../components/index.js";
@@ -30,7 +31,7 @@ export function HomeStatsSection({
 
 				if (result.success) {
 					const aggregated = result.data.reduce<DailyStats>(
-						(acc, entry) => ({
+						(acc: DailyStats, entry: IDailyOverviewData) => ({
 							distance: acc.distance + entry.distance,
 							duration: acc.duration + entry.duration,
 							activeDays: acc.activeDays + (entry.distance > 0 ? 1 : 0),

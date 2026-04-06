@@ -67,6 +67,8 @@ interface IDbActivityRow {
 	type: string;
 	subtype: string | null;
 	notes: string | null;
+	insight: string | null;
+	description: string | null;
 	metadata: string | null;
 	isEvent: number | null;
 	startLatitude: number | null;
@@ -879,6 +881,8 @@ export class Db {
 			type: data.type,
 			subtype: data.subtype,
 			notes: data.notes ?? "",
+			insight: data.insight ?? "",
+			description: data.description ?? "",
 			metadata: data.metadata ? JSON.stringify(data.metadata) : "{}",
 			isEvent: data.isEvent ? 1 : 0,
 			startLatitude: 0,
