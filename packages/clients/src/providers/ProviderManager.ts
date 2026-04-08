@@ -426,8 +426,14 @@ export class ProviderManager {
 			throw new Error("No metadata available from provider activity");
 		}
 
+		const nextTimestamp = payload.activity.data.timestamp;
+		if (!nextTimestamp || Number.isNaN(nextTimestamp)) {
+			throw new Error("No valid timestamp available from provider activity");
+		}
+
 		await this._db.editActivity(activityId, {
 			metadata,
+			timestamp: nextTimestamp,
 		});
 	}
 
@@ -487,8 +493,14 @@ export class ProviderManager {
 						summary.skipped += 1;
 						continue;
 					}
+					const nextTimestamp = payload.activity.data.timestamp;
+					if (!nextTimestamp || Number.isNaN(nextTimestamp)) {
+						summary.skipped += 1;
+						continue;
+					}
 					await this._db.editActivity(activity.id, {
 						metadata,
+						timestamp: nextTimestamp,
 					});
 					summary.regenerated += 1;
 				} catch (error) {

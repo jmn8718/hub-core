@@ -209,6 +209,7 @@ export class AppClient implements Client {
 	async editActivity(
 		id: string,
 		data: {
+			timestamp?: number;
 			locationName?: string;
 			locationCountry?: string;
 			name?: string;

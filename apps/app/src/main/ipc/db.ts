@@ -122,6 +122,7 @@ ipcMain.handle(
 		params: {
 			activityId: string;
 			data: {
+				timestamp?: number;
 				locationName?: string;
 				locationCountry?: string;
 				name?: string;

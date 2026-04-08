@@ -134,7 +134,7 @@ export function Debug() {
 
 	const handleRegenerateActivitiesData = async () => {
 		setIsRegeneratingActivities(true);
-		setGlobalLoading(true, "Regenerating activity metadata");
+		setGlobalLoading(true, "Regenerating activity data");
 		try {
 			const result = await client.regenerateActivitiesData();
 			if (!result.success) {
@@ -142,7 +142,7 @@ export function Debug() {
 			}
 			setRegenerationSummary(result.data);
 			toast.success(
-				`Regenerated metadata for ${result.data.regenerated} activities`,
+				`Regenerated activity data for ${result.data.regenerated} activities`,
 				{
 					transition: Bounce,
 				},
@@ -199,10 +199,10 @@ export function Debug() {
 								Regenerate provider-derived activity data
 							</p>
 							<p className="text-sm text-muted-foreground">
-								Recomputes metadata for existing running and cycling activities
-								from their original provider only. It uses cached provider
-								details when available and fetches from that same provider only
-								when needed.
+								Recomputes metadata and activity time for existing running and
+								cycling activities from their original provider only. It uses
+								cached provider details when available and fetches from that
+								same provider only when needed.
 							</p>
 						</div>
 						<Button

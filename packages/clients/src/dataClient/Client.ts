@@ -87,6 +87,7 @@ export abstract class Client {
 	abstract editActivity(
 		id: string,
 		data: {
+			timestamp?: number;
 			locationName?: string;
 			locationCountry?: string;
 			notes?: string;

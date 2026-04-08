@@ -128,6 +128,7 @@ export class WebClient implements Client {
 	async editActivity(
 		id: string,
 		data: {
+			timestamp?: number;
 			locationName?: string;
 			notes?: string;
 			insight?: string;

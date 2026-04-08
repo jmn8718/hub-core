@@ -134,6 +134,7 @@ export class MockClient implements Client {
 	async editActivity(
 		id: string,
 		data: {
+			timestamp?: number;
 			locationName?: string;
 			locationCountry?: string;
 			notes?: string;

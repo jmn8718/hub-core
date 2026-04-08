@@ -1,3 +1,4 @@
+import { dateWithTimezoneToUTC, formatDate } from "@repo/dates";
 import type { DbActivityPopulated, IDbGearWithDistance } from "@repo/types";
 import {
 	ActivitySubType,
@@ -142,6 +143,10 @@ export function ActivityDetails() {
 				showExtendedTextFields
 				onActivityRefresh={loadActivity}
 			/>
+			{(activity.type === ActivityType.GYM ||
+				activity.type === ActivityType.SWIM) && (
+				<ActivityDateSection activity={activity} reload={loadActivity} />
+			)}
 			{(activity.type === ActivityType.RUN ||
 				activity.type === ActivityType.BIKE) && (
 				<Box
@@ -214,6 +219,95 @@ export function ActivityDetails() {
 				hasConnections={activity.connections.length > 0}
 			/>
 		</div>
+	);
+}
+
+function ActivityDateSection({
+	activity,
+	reload,
+}: {
+	activity: DbActivityPopulated;
+	reload: () => Promise<void> | void;
+}) {
+	const { client } = useDataClient();
+	const { setLocalLoading } = useLoading();
+	const { colors } = useTheme();
+	const [timestampValue, setTimestampValue] = useState(() =>
+		formatDate(activity.timestamp, {
+			format: "YYYY-MM-DDTHH:mm",
+			timezone: activity.timezone || undefined,
+		}),
+	);
+	const [isSaving, setIsSaving] = useState(false);
+
+	useEffect(() => {
+		setTimestampValue(
+			formatDate(activity.timestamp, {
+				format: "YYYY-MM-DDTHH:mm",
+				timezone: activity.timezone || undefined,
+			}),
+		);
+	}, [activity.timestamp, activity.timezone]);
+
+	const currentTimestampValue = formatDate(activity.timestamp, {
+		format: "YYYY-MM-DDTHH:mm",
+		timezone: activity.timezone || undefined,
+	});
+	const hasChanges = timestampValue !== currentTimestampValue;
+
+	const handleSave = async () => {
+		if (!hasChanges) return;
+		setIsSaving(true);
+		setLocalLoading(true);
+		try {
+			const nextTimestamp = activity.timezone
+				? dateWithTimezoneToUTC(timestampValue, activity.timezone).getTime()
+				: new Date(timestampValue).getTime();
+			if (Number.isNaN(nextTimestamp)) {
+				throw new Error("Invalid activity date");
+			}
+			const result = await client.editActivity(activity.id, {
+				timestamp: nextTimestamp,
+			});
+			if (!result.success) {
+				throw new Error(result.error);
+			}
+			await reload();
+			toast.success("Activity date updated.", { transition: Bounce });
+		} catch (err) {
+			toast.error((err as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		} finally {
+			setIsSaving(false);
+			setTimeout(() => setLocalLoading(false), 200);
+		}
+	};
+
+	return (
+		<Box
+			title="Date & Time"
+			description="Adjust the recorded date and time for this activity."
+		>
+			<div className="flex flex-col gap-2 md:flex-row md:items-center">
+				<input
+					type="datetime-local"
+					value={timestampValue}
+					onChange={(event) => setTimestampValue(event.target.value)}
+					className={cn(inputBaseClass, colors.input)}
+				/>
+				<button
+					type="button"
+					onClick={handleSave}
+					disabled={!hasChanges || isSaving}
+					className={cn(actionButtonBaseClass, colors.buttonPrimary)}
+				>
+					{isSaving ? "Saving…" : "Save date"}
+				</button>
+			</div>
+		</Box>
 	);
 }
 
