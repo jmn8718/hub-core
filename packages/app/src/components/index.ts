@@ -1,6 +1,7 @@
 export * from "./cards/Activity.js";
 export * from "./cards/gear/index.js";
 export * from "./charts/MonthlyChart.js";
+export * from "./charts/WeeklyDistanceChart.js";
 export * from "./filters/Activities.js";
 export * from "./filters/Gears.js";
 export * from "./settings/FolderPathSection.js";
