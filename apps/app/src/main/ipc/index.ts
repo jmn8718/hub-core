@@ -7,9 +7,7 @@ import {
 	initializeCorosClient,
 	initializeGarminClient,
 	initializeStravaClient,
-	reinitializeManagerDb,
 } from "../client.js";
-import { applyConfiguredDbClient } from "../db.js";
 import { storage } from "../storage.js";
 
 // import other scoped ipc files
@@ -47,13 +45,7 @@ ipcMain.handle(
 	async (_event, { key, value }: { key: string; value: string }) => {
 		storage.setValue(key, value);
 
-		if (
-			key === StorageKeys.TURSO_DATABASE_URL ||
-			key === StorageKeys.TURSO_AUTH_TOKEN
-		) {
-			await applyConfiguredDbClient();
-			await reinitializeManagerDb();
-		} else if (key === StorageKeys.COROS_CREDENTIALS) {
+		if (key === StorageKeys.COROS_CREDENTIALS) {
 			await initializeCorosClient();
 		} else if (key === StorageKeys.GARMIN_CREDENTIALS) {
 			await initializeGarminClient();

@@ -29,8 +29,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 		[StorageKeys.CACHE_FOLDER]: "",
 		[StorageKeys.DEFAULT_CITY]: "",
 		[StorageKeys.DEFAULT_COUNTRY]: "",
-		[StorageKeys.TURSO_DATABASE_URL]: "",
-		[StorageKeys.TURSO_AUTH_TOKEN]: "",
 	});
 
 	const setValue = useCallback(
@@ -74,8 +72,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 		getFromStore(StorageKeys.CACHE_FOLDER, true);
 		getFromStore(StorageKeys.DEFAULT_CITY, true);
 		getFromStore(StorageKeys.DEFAULT_COUNTRY, true);
-		getFromStore(StorageKeys.TURSO_DATABASE_URL, true);
-		getFromStore(StorageKeys.TURSO_AUTH_TOKEN, true);
 	}, [getFromStore]);
 
 	return (

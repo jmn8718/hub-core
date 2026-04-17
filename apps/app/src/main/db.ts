@@ -6,30 +6,8 @@ import { StorageKeys } from "@repo/types";
 import { LOCAL_DB_FILE } from "./config.js";
 import { storage } from "./storage.js";
 
-function createConfiguredClient() {
-	const tursoDatabaseUrl = storage.getValue<string>(
-		StorageKeys.TURSO_DATABASE_URL,
-	);
-	const tursoAuthToken = storage.getValue<string>(StorageKeys.TURSO_AUTH_TOKEN);
-
-	if (
-		(tursoDatabaseUrl && !tursoAuthToken) ||
-		(!tursoDatabaseUrl && tursoAuthToken)
-	) {
-		console.warn(
-			"Ignoring incomplete Turso sync settings. Falling back to local SQLite until both Turso values are provided.",
-		);
-	}
-
+function createLocalClient() {
 	return createDbClient({
-		...(tursoDatabaseUrl && tursoAuthToken
-			? {
-					syncUrl: tursoDatabaseUrl,
-					authToken: tursoAuthToken,
-					syncInterval: 60,
-					readYourWrites: true,
-				}
-			: {}),
 		url: LOCAL_DB_FILE,
 		logger: false,
 	});
@@ -40,7 +18,7 @@ let cacheDbSingleton: CacheDb | undefined;
 
 export function getDb() {
 	if (!dbSingleton) {
-		dbSingleton = new Db(createConfiguredClient());
+		dbSingleton = new Db(createLocalClient());
 	}
 	return dbSingleton;
 }
@@ -70,22 +48,16 @@ export async function persistActivityCacheToDisk(params: {
 
 export function getCacheDb() {
 	if (!cacheDbSingleton) {
-		cacheDbSingleton = new CacheDb(
-			createDbClient({
-				url: LOCAL_DB_FILE,
-				logger: false,
-			}),
-			{
-				onSet: async ({ provider, resource, resourceId, value }) => {
-					if (resource !== "activity") return;
-					await persistActivityCacheToDisk({
-						provider,
-						resourceId,
-						value,
-					});
-				},
+		cacheDbSingleton = new CacheDb(createLocalClient(), {
+			onSet: async ({ provider, resource, resourceId, value }) => {
+				if (resource !== "activity") return;
+				await persistActivityCacheToDisk({
+					provider,
+					resourceId,
+					value,
+				});
 			},
-		);
+		});
 	}
 	return cacheDbSingleton;
 }
@@ -93,7 +65,7 @@ export function getCacheDb() {
 let startupDbPromise: Promise<void> | undefined;
 
 export async function applyConfiguredDbClient() {
-	const client = createConfiguredClient();
+	const client = createLocalClient();
 	await migrateDb(client);
 	getDb().setClient(client);
 }
