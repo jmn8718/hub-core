@@ -12,6 +12,7 @@ import {
 	Settings,
 } from "lucide-react";
 import type React from "react";
+import { useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { Routes as AppRoutes } from "../constants.js";
@@ -28,6 +29,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 	const { type } = useDataClient();
 	const location = useLocation();
 	const isCalendarRoute = location.pathname === AppRoutes.CALENDAR;
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useLayoutEffect(() => {
+		if (typeof window !== "undefined") {
+			window.scrollTo(0, 0);
+		}
+	}, [location.pathname]);
 
 	return (
 		<div

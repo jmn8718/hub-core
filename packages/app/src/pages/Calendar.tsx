@@ -5,13 +5,7 @@ import {
 } from "@repo/types";
 import { cn } from "@repo/ui";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import {
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import { Box, Button, Text } from "../components/index.js";
@@ -191,12 +185,6 @@ export function Calendar() {
 		[cursorMonth],
 	);
 	const gridEnd = useMemo(() => addDays(gridStart, 41), [gridStart]);
-
-	useLayoutEffect(() => {
-		if (typeof window !== "undefined") {
-			window.scrollTo(0, 0);
-		}
-	}, []);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
