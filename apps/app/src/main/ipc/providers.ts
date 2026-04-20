@@ -68,6 +68,22 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
+	Channels.PROVIDERS_ACTIVITY_SYNC,
+	async (
+		_event,
+		{
+			provider,
+			activityId,
+		}: {
+			provider: Providers;
+			activityId: string;
+		},
+	) => {
+		return manager.syncActivity(provider, activityId);
+	},
+);
+
+ipcMain.handle(
 	Channels.PROVIDERS_CONNECT,
 	async (
 		_event,

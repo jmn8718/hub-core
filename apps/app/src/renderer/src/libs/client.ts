@@ -1,6 +1,7 @@
 import type { Client } from "@repo/clients";
 import {
 	type ActivitiesData,
+	type ActivityRegenerationSummary,
 	type ActivitySubType,
 	type ActivityType,
 	Channels,
@@ -492,6 +493,30 @@ export class AppClient implements Client {
 		}
 	}
 
+	async providerSyncActivity(
+		provider: Providers,
+		activityId: string,
+	): Promise<ProviderSuccessResponse<{ id: string }>> {
+		try {
+			const id = (await window.electron.ipcRenderer.invoke(
+				Channels.PROVIDERS_ACTIVITY_SYNC,
+				{
+					provider,
+					activityId,
+				},
+			)) as string;
+			return {
+				success: true,
+				id,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async providerPersistActivityCache(params: {
 		provider: Providers;
 		providerActivityId: string;
@@ -579,7 +604,9 @@ export class AppClient implements Client {
 		}
 	}
 
-	async regenerateActivitiesData() {
+	async regenerateActivitiesData(): Promise<
+		ProviderSuccessResponse<{ data: ActivityRegenerationSummary }>
+	> {
 		try {
 			const data = await window.electron.ipcRenderer.invoke(
 				Channels.DB_ACTIVITIES_REGENERATE,

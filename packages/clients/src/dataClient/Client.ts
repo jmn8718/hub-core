@@ -162,6 +162,10 @@ export abstract class Client {
 		provider: Providers,
 		force?: boolean,
 	): Promise<ProviderSuccessResponse>;
+	abstract providerSyncActivity(
+		provider: Providers,
+		activityId: string,
+	): Promise<ProviderSuccessResponse<{ id: string }>>;
 	abstract providerPersistActivityCache(params: {
 		provider: Providers;
 		providerActivityId: string;

@@ -262,6 +262,13 @@ export class WebClient implements Client {
 		// });
 	}
 
+	async providerSyncActivity(
+		_provider: Providers,
+		_activityId: string,
+	): Promise<ProviderSuccessResponse<{ id: string }>> {
+		throw new Error("Not supported in the web client");
+	}
+
 	async providerPersistActivityCache(_params: {
 		provider: Providers;
 		providerActivityId: string;

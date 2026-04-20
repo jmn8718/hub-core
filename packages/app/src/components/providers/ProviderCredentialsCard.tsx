@@ -10,6 +10,7 @@ import {
 } from "@repo/types";
 import {
 	CheckCircle2,
+	FileSearch,
 	FolderSync,
 	Loader2,
 	RefreshCw,
@@ -18,7 +19,9 @@ import {
 	XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
+import { Routes as AppRoutes } from "../../constants.js";
 import { useDataClient, useLoading, useStore } from "../../contexts/index.js";
 import { Box } from "../Box.js";
 import { H2 } from "../H2.js";
@@ -75,6 +78,7 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 	labels,
 	providerConnect,
 }: ProviderCredentialsCardProps<T>) {
+	const navigate = useNavigate();
 	const { setLocalLoading, isLocalLoading } = useLoading();
 	const { client } = useDataClient();
 	const { setValue, getValue } = useStore();
@@ -142,6 +146,10 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 	const handleClear = useCallback(() => {
 		saveOnStore(emptyCredentialsRef.current);
 	}, [saveOnStore]);
+
+	const handleOpenActivitySync = useCallback(() => {
+		navigate(AppRoutes.PROVIDER_ACTIVITY_SYNC.replace(":provider", provider));
+	}, [navigate, provider]);
 
 	const validateCredentials = useCallback(async () => {
 		if (hasChanges || !isCredentialComplete(credentials)) return;
@@ -265,6 +273,12 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 							icon={<RotateCcw size={20} />}
 							onClick={handleClear}
 							tooltip={labels.clearTooltip}
+							disabled={isLocalLoading}
+						/>
+						<ActionButton
+							icon={<FileSearch size={20} />}
+							onClick={handleOpenActivitySync}
+							tooltip="Sync activity by provider ID"
 							disabled={isLocalLoading}
 						/>
 					</div>

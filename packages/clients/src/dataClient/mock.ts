@@ -339,6 +339,16 @@ export class MockClient implements Client {
 		};
 	}
 
+	async providerSyncActivity(
+		_provider: Providers,
+		activityId: string,
+	): Promise<ProviderSuccessResponse<{ id: string }>> {
+		return {
+			success: true,
+			id: activityId,
+		};
+	}
+
 	async providerPersistActivityCache(_params: {
 		provider: Providers;
 		providerActivityId: string;

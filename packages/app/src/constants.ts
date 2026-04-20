@@ -6,6 +6,7 @@ export const Routes = {
 	DETAILS: "/details",
 	TABLE: "/table",
 	PROVIDERS: "/providers",
+	PROVIDER_ACTIVITY_SYNC: "/providers/:provider/activity-sync",
 	GEAR: "/gear",
 	GEAR_ADD: "/gear/add",
 	INBODY: "/inbody",
