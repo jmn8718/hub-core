@@ -347,25 +347,25 @@ export function Calendar() {
 
 				<Box>
 					<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-						<div className="flex flex-wrap items-center gap-6">
+						<div className="grid gap-3 sm:grid-cols-3 sm:gap-6">
 							<div>
 								<Text variant="description" text="Month total activities" />
 								<Text
-									className="pt-1 text-lg font-semibold"
+									className="pt-0.5 text-lg font-semibold sm:pt-1"
 									text={`${monthTotals.activities}`}
 								/>
 							</div>
 							<div>
 								<Text variant="description" text="Month total distance" />
 								<Text
-									className="pt-1 text-lg font-semibold"
+									className="pt-0.5 text-lg font-semibold sm:pt-1"
 									text={formatDistance(monthTotals.distance)}
 								/>
 							</div>
 							<div>
 								<Text variant="description" text="Month total time" />
 								<Text
-									className="pt-1 text-lg font-semibold"
+									className="pt-0.5 text-lg font-semibold sm:pt-1"
 									text={formatDurationClock(monthTotals.duration)}
 								/>
 							</div>
@@ -500,7 +500,7 @@ export function Calendar() {
 											colors.navSurface,
 										)}
 									>
-										<div className="space-y-3 text-sm">
+										<div className="space-y-2 text-sm">
 											<div>
 												<Text
 													className="text-xs uppercase tracking-wide"
@@ -508,7 +508,7 @@ export function Calendar() {
 													text="Activities"
 												/>
 												<Text
-													className="pt-1 text-lg font-semibold"
+													className="pt-0.5 text-lg font-semibold"
 													text={`${totals.activities}`}
 												/>
 											</div>
@@ -519,7 +519,7 @@ export function Calendar() {
 													text="Distance"
 												/>
 												<Text
-													className="pt-1 text-lg font-semibold"
+													className="pt-0.5 text-lg font-semibold"
 													text={formatDistance(totals.distance)}
 												/>
 											</div>
@@ -530,7 +530,7 @@ export function Calendar() {
 													text="Time"
 												/>
 												<Text
-													className="pt-1 text-lg font-semibold"
+													className="pt-0.5 text-lg font-semibold"
 													text={formatDurationClock(totals.duration)}
 												/>
 											</div>

@@ -18,8 +18,8 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
 	return (
 		<div
 			className={cn(
-				"space-y-4 pb-4",
-				hasBorder ? "mb-4 border-b" : "pb-0",
+				"space-y-3 pb-2 sm:space-y-4 sm:pb-4",
+				hasBorder ? "mb-2 border-b sm:mb-4" : "pb-0",
 				className,
 			)}
 		>

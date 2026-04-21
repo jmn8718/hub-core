@@ -6,6 +6,7 @@ import {
 	type IDbGear,
 } from "@repo/types";
 import { cn } from "@repo/ui";
+import { Clock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import {
@@ -28,6 +29,9 @@ interface OtherActivityCardProps {
 
 const subtypeOptions = ["", ...Object.values(ActivitySubType)];
 const supportsSubtype = (type: ActivityType) => type !== ActivityType.GYM;
+const DETAIL_ICON_SLOT_CLASS =
+	"flex w-5 shrink-0 items-center justify-start text-gray-500";
+const DETAIL_ICON_CLASS = "h-4 w-4";
 
 export function OtherActivityCard({
 	activity,
@@ -136,11 +140,18 @@ function OtherActivityBody({
 	return (
 		<>
 			<SectionContainer hasBorder>
-				<div className={cn("text-sm", colors.text)}>
-					{formatDateWithTime(
-						context.activityData.timestamp,
-						context.activityData.timezone,
-					)}
+				<div
+					className={cn("flex min-w-0 items-center gap-2 text-sm", colors.text)}
+				>
+					<span className={DETAIL_ICON_SLOT_CLASS}>
+						<Clock size={16} className={DETAIL_ICON_CLASS} />
+					</span>
+					<span className="min-w-0 break-words">
+						{formatDateWithTime(
+							context.activityData.timestamp,
+							context.activityData.timezone,
+						)}
+					</span>
 				</div>
 			</SectionContainer>
 			{showClassificationSection && (

@@ -45,14 +45,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 	};
 
 	return (
-		<div className="flex items-center gap-2 text-sm">
+		<div className="flex items-center gap-3 text-sm">
 			<button
 				type="button"
 				onClick={openEditor}
 				disabled={!isEditable}
 				aria-label={`Edit ${label}`}
 				className={cn(
-					"rounded p-1",
+					"flex size-6 shrink-0 items-center justify-center rounded",
 					isEditable && "cursor-pointer",
 					isDarkMode
 						? "text-white hover:bg-gray-700"
@@ -80,7 +80,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 					type="button"
 					onClick={openEditor}
 					disabled={!isEditable}
-					className={cn(isEditable && "cursor-pointer hover:text-blue-500")}
+					className={cn(
+						"text-left",
+						isEditable && "cursor-pointer hover:text-blue-500",
+					)}
 				>
 					{label}: {dateValue ? formatDate(dateValue) : "-"}
 				</button>

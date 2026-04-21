@@ -39,7 +39,7 @@ export function Sidebar({
 					aria-expanded={isOpen}
 					onClick={() => onOpenChange?.(!isOpen)}
 					className={cn(
-						"fixed left-3 top-3 z-50 grid size-11 place-items-center rounded-lg border shadow-sm transition-colors",
+						"fixed left-3 top-3 z-50 grid size-10 place-items-center rounded-lg border shadow-sm transition-colors min-[420px]:size-11",
 						colors.navSurface,
 						colors.navHover,
 					)}
@@ -54,16 +54,20 @@ export function Sidebar({
 
 			<aside
 				className={cn(
-					"fixed left-0 top-0 z-40 h-full shadow-lg flex flex-col py-6 transition-transform duration-200 ease-out",
+					"fixed left-0 top-0 z-40 shadow-lg flex flex-col transition-transform duration-200 ease-out",
 					colors.navSurface,
-					isWeb ? "w-56 px-3 pt-20" : "w-16 items-center",
+					isWeb
+						? "h-[100dvh] w-56 px-3 pb-3 pt-16 min-[420px]:pt-20"
+						: "h-full w-16 items-center py-6",
 					isWeb && !isExpanded && "-translate-x-full",
 				)}
 			>
 				<nav
 					className={cn(
 						"flex flex-col",
-						isWeb ? "gap-2" : "items-center gap-4",
+						isWeb
+							? "min-h-0 flex-1 gap-1 overflow-y-auto overscroll-contain pr-1 min-[420px]:gap-2"
+							: "items-center gap-4",
 					)}
 				>
 					{sidebarItems.map(({ icon: Icon, href, label, hideOnWeb }) => {
@@ -81,7 +85,7 @@ export function Sidebar({
 									"relative group flex items-center rounded-lg",
 									colors.navHover,
 									isWeb
-										? "h-11 gap-3 px-3 text-sm font-medium"
+										? "min-h-10 gap-3 px-3 text-sm font-medium min-[420px]:min-h-11"
 										: "h-12 w-12 justify-center",
 									isWeb && hideOnWeb && "hidden",
 									isActive && colors.navActive,

@@ -28,25 +28,40 @@ const DataDisplay = ({
 			units: "text-md",
 		},
 		lg: {
-			label: "text-2xl",
-			value: "text-6xl",
+			label: "text-xl sm:text-2xl",
+			value: "text-[clamp(2.5rem,18vw,4rem)] sm:text-6xl",
 			units: "text-md",
 		},
 	}[size];
 	return (
-		<div className="flex flex-col gap-2">
+		<div className="flex min-w-0 flex-col gap-2">
 			<span
 				className={cn(
-					"text-md uppercase tracking-wide",
+					"text-md overflow-wrap-anywhere uppercase tracking-wide",
 					fonts.label,
 					textClass,
 				)}
 			>
 				{label}
 			</span>
-			<div className="flex gap-x-1 items-end">
-				<span className={cn("italic font-bold", fonts.value)}>{value}</span>
-				<span className={cn("italic", fonts.units, textClass)}>{units}</span>
+			<div className="flex min-w-0 flex-wrap items-baseline gap-x-1">
+				<span
+					className={cn(
+						"min-w-0 max-w-full break-words font-bold italic leading-none",
+						fonts.value,
+					)}
+				>
+					{value}
+				</span>
+				<span
+					className={cn(
+						"shrink-0 align-baseline italic",
+						fonts.units,
+						textClass,
+					)}
+				>
+					{units}
+				</span>
 			</div>
 		</div>
 	);
@@ -61,7 +76,7 @@ export const DailyActivityStats: React.FC<DailyActivityStatsProps> = ({
 	const subtleTextClass = isDarkMode ? "text-gray-400" : "text-gray-500";
 
 	return (
-		<div className="flex flex-col gap-4 px-4 py-2">
+		<div className="flex min-w-0 flex-col gap-4 px-2 py-2 sm:px-4">
 			<DataDisplay
 				label="Distance"
 				textClass={subtleTextClass}
@@ -69,7 +84,7 @@ export const DailyActivityStats: React.FC<DailyActivityStatsProps> = ({
 				units="km"
 				size="lg"
 			/>
-			<div className="flex flex-col sm:gap-6 sm:flex-row">
+			<div className="grid min-w-0 gap-4 sm:grid-cols-2 sm:gap-6">
 				<DataDisplay
 					label="Time"
 					textClass={subtleTextClass}

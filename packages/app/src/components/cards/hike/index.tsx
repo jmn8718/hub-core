@@ -16,6 +16,10 @@ interface HikeCardProps {
 	onActivityRefresh?: () => Promise<void> | void;
 }
 
+const DETAIL_ICON_SLOT_CLASS =
+	"flex w-5 shrink-0 items-center justify-start text-gray-500";
+const DETAIL_ICON_CLASS = "h-4 w-4";
+
 export function HikeCard({
 	activity,
 	gears,
@@ -68,31 +72,39 @@ function HikeCardBody({
 	return (
 		<SectionContainer hasBorder>
 			<div className="space-y-2">
-				<div className="flex items-center gap-2 text-sm">
-					<Clock size={16} className="text-gray-500" />
-					<span className="pl-2">
+				<div className="flex min-w-0 items-center gap-2 text-sm">
+					<span className={DETAIL_ICON_SLOT_CLASS}>
+						<Clock size={16} className={DETAIL_ICON_CLASS} />
+					</span>
+					<span className="min-w-0 break-words">
 						{formatDateWithTime(activityData.timestamp, activityData.timezone)}
 					</span>
 				</div>
-				<div className="flex items-center gap-2 text-sm">
-					<MapPin size={16} className="text-gray-500 min-w-4" />
+				<div className="flex min-w-0 items-center gap-2 text-sm">
+					<span className={DETAIL_ICON_SLOT_CLASS}>
+						<MapPin size={16} className={DETAIL_ICON_CLASS} />
+					</span>
 					<EditableText
 						value={locationName}
 						onSave={handleLocationNameChange}
-						className="h-8"
+						className="min-w-0 flex-1"
 					/>
 				</div>
-				<div className="flex items-center gap-2 text-sm">
-					<MapIcon size={16} className="text-gray-500 min-w-4" />
+				<div className="flex min-w-0 items-center gap-2 text-sm">
+					<span className={DETAIL_ICON_SLOT_CLASS}>
+						<MapIcon size={16} className={DETAIL_ICON_CLASS} />
+					</span>
 					<EditableText
 						value={locationCountry}
 						onSave={handleLocationCountryChange}
-						className="h-8"
+						className="min-w-0 flex-1"
 					/>
 				</div>
-				<div className="flex items-center gap-2 text-sm">
-					<Route size={16} className="text-gray-500" />
-					<span className="pl-2">
+				<div className="flex min-w-0 items-center gap-2 text-sm">
+					<span className={DETAIL_ICON_SLOT_CLASS}>
+						<Route size={16} className={DETAIL_ICON_CLASS} />
+					</span>
+					<span className="min-w-0 break-words">
 						{formatDistance(activityData.distance)} •{" "}
 						{formatDuration(activityData.duration)}
 					</span>

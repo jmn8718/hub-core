@@ -94,51 +94,118 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 			) : displayRows.length === 0 ? (
 				<Text text="No weekly data available yet." />
 			) : (
-				<div className="overflow-x-auto">
-					<table className="min-w-full table-auto text-sm">
-						<thead
-							className={cn(
-								"text-xs uppercase tracking-wide",
-								isDarkMode ? "text-gray-400" : "text-gray-600",
-							)}
-						>
-							<tr className="border-b border-gray-200 dark:border-gray-700">
-								<th className="px-3 py-2 text-left">Week</th>
-								<th className="px-3 py-2 text-left">Distance</th>
-								<th className="px-3 py-2 text-left">Time</th>
-							</tr>
-						</thead>
-						<tbody>
-							{displayRows.map((week) => (
-								<tr
-									key={week.weekStart}
-									className="border-b border-gray-100 last:border-b-0 dark:border-gray-800"
-								>
-									<td className="px-3 py-2">
-										<span className="font-medium">
-											{formatWeekLabel(week.weekStart)}
+				<>
+					<div className="space-y-3 sm:hidden">
+						{displayRows.map((week) => (
+							<div
+								key={week.weekStart}
+								className="space-y-3 border-b border-gray-100 pb-3 last:border-b-0 last:pb-0 dark:border-gray-800"
+							>
+								<div>
+									<span
+										className={cn(
+											"text-xs font-semibold uppercase tracking-wide",
+											isDarkMode ? "text-gray-400" : "text-gray-600",
+										)}
+									>
+										Week
+									</span>
+									<p className="mt-1 text-sm font-medium">
+										{formatWeekLabel(week.weekStart)}
+									</p>
+								</div>
+								<div className="grid gap-4 min-[360px]:grid-cols-2">
+									<div>
+										<span
+											className={cn(
+												"text-xs font-semibold uppercase tracking-wide",
+												isDarkMode ? "text-gray-400" : "text-gray-600",
+											)}
+										>
+											Distance
 										</span>
-									</td>
-									<td className="px-3 py-2 text-left">
-										<ValueTrend
-											value={formatDistance(week.distance)}
-											formatter={formatDistance}
-											difference={week.distanceVariance}
-											showArrows
-										/>
-									</td>
-									<td className="px-3 py-2 text-left">
-										<ValueTrend
-											value={formatDuration(Math.round(week.duration))}
-											formatter={formatDuration}
-											difference={week.durationVariance}
-										/>
-									</td>
+										<div className="mt-1">
+											<ValueTrend
+												value={formatDistance(week.distance)}
+												formatter={formatDistance}
+												difference={week.distanceVariance}
+												className="flex-col items-start gap-1"
+												valueClassName="whitespace-nowrap"
+												trendClassName="whitespace-nowrap"
+												showArrows
+											/>
+										</div>
+									</div>
+									<div>
+										<span
+											className={cn(
+												"text-xs font-semibold uppercase tracking-wide",
+												isDarkMode ? "text-gray-400" : "text-gray-600",
+											)}
+										>
+											Time
+										</span>
+										<div className="mt-1">
+											<ValueTrend
+												value={formatDuration(Math.round(week.duration))}
+												formatter={formatDuration}
+												difference={week.durationVariance}
+												className="flex-col items-start gap-1"
+												valueClassName="whitespace-nowrap"
+												trendClassName="whitespace-nowrap"
+											/>
+										</div>
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+					<div className="hidden overflow-x-auto sm:block">
+						<table className="min-w-full table-auto text-sm">
+							<thead
+								className={cn(
+									"text-xs uppercase tracking-wide",
+									isDarkMode ? "text-gray-400" : "text-gray-600",
+								)}
+							>
+								<tr className="border-b border-gray-200 dark:border-gray-700">
+									<th className="px-3 py-2 text-left">Week</th>
+									<th className="px-3 py-2 text-left">Distance</th>
+									<th className="px-3 py-2 text-left">Time</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+							</thead>
+							<tbody>
+								{displayRows.map((week) => (
+									<tr
+										key={week.weekStart}
+										className="border-b border-gray-100 last:border-b-0 dark:border-gray-800"
+									>
+										<td className="px-3 py-2">
+											<span className="font-medium">
+												{formatWeekLabel(week.weekStart)}
+											</span>
+										</td>
+										<td className="px-3 py-2 text-left">
+											<ValueTrend
+												value={formatDistance(week.distance)}
+												formatter={formatDistance}
+												difference={week.distanceVariance}
+												showArrows
+											/>
+										</td>
+										<td className="px-3 py-2 text-left">
+											<ValueTrend
+												value={formatDuration(Math.round(week.duration))}
+												formatter={formatDuration}
+												difference={week.durationVariance}
+											/>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				</>
 			)}
 		</Box>
 	);

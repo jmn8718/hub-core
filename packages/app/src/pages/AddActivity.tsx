@@ -48,8 +48,16 @@ export function AddActivity() {
 		() => Intl.DateTimeFormat().resolvedOptions().timeZone,
 		[],
 	);
-	const inputClass = cn(inputBaseClass, "text-base", colors.input);
-	const labelClass = cn(formLabelClass, colors.text, "flex flex-col gap-1");
+	const inputClass = cn(
+		inputBaseClass,
+		"min-w-0 max-w-full w-full text-base",
+		colors.input,
+	);
+	const labelClass = cn(
+		formLabelClass,
+		colors.text,
+		"flex min-w-0 flex-col gap-1",
+	);
 
 	useEffect(() => {
 		if (!isNameDirty) {
@@ -151,16 +159,20 @@ export function AddActivity() {
 
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<Link
 					className={cn("text-sm font-medium", colors.text)}
 					to={Routes.DATA}
 				>
 					← Back to Activities
 				</Link>
-				<div className="flex items-center gap-3">
+				<div className="grid grid-cols-2 gap-3 sm:flex sm:items-center">
 					<Link
-						className={cn(pillButtonBaseClass, colors.buttonSecondary)}
+						className={cn(
+							pillButtonBaseClass,
+							"text-center whitespace-nowrap",
+							colors.buttonSecondary,
+						)}
 						to={Routes.DATA}
 					>
 						Cancel
@@ -170,7 +182,7 @@ export function AddActivity() {
 						disabled={isSubmitting}
 						className={cn(
 							pillButtonBaseClass,
-							"font-semibold",
+							"font-semibold whitespace-nowrap",
 							colors.buttonPrimary,
 						)}
 					>
@@ -188,7 +200,7 @@ export function AddActivity() {
 							{error}
 						</div>
 					) : null}
-					<div className="grid gap-4 md:grid-cols-2">
+					<div className="grid min-w-0 gap-4 md:grid-cols-2">
 						<label className={labelClass}>
 							<span>Name *</span>
 							<input
@@ -228,7 +240,7 @@ export function AddActivity() {
 								className={inputClass}
 							/>
 						</label>
-						<div className="grid gap-4 sm:grid-cols-2 md:col-span-2 md:grid-cols-4">
+						<div className="grid min-w-0 gap-4 sm:grid-cols-2 md:col-span-2 md:grid-cols-4">
 							<label className={labelClass}>
 								<span>Duration (minutes)</span>
 								<input

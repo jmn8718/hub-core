@@ -16,6 +16,7 @@ interface Props {
 	classes?: string;
 	darkModeColor?: string;
 	lightModeColor?: string;
+	size?: number;
 }
 
 const ActivityTypeIcon: React.FC<Props> = ({
@@ -23,6 +24,7 @@ const ActivityTypeIcon: React.FC<Props> = ({
 	classes = "",
 	darkModeColor = "text-white",
 	lightModeColor = "text-gray-800",
+	size = 14,
 }) => {
 	const { isDarkMode } = useTheme();
 
@@ -53,7 +55,7 @@ const ActivityTypeIcon: React.FC<Props> = ({
 	}
 	return (
 		<Icon
-			size={14}
+			size={size}
 			className={cn(isDarkMode ? darkModeColor : lightModeColor, classes)}
 		/>
 	);

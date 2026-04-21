@@ -143,11 +143,14 @@ export const GearCard: FC<GearCardProps> = ({
 						label="End Date"
 						isEditable={isEditable}
 					/>
-					<div className="flex items-center justify-between text-sm">
-						<span className="flex items-center gap-2">
+					<div className="flex items-center justify-between gap-3 text-sm">
+						<span className="flex items-center gap-3">
 							<Gauge
 								size={16}
-								className={isDarkMode ? "text-white" : "text-gray-500"}
+								className={cn(
+									"size-6 shrink-0 p-1",
+									isDarkMode ? "text-white" : "text-gray-500",
+								)}
 							/>
 							Usage
 						</span>
@@ -163,20 +166,22 @@ export const GearCard: FC<GearCardProps> = ({
 					</div>
 					<div
 						className={cn(
-							"flex justify-between items-center text-xs ",
+							"flex items-center justify-between gap-3 text-xs",
 							isDarkMode ? "text-white" : "text-gray-500",
 						)}
 					>
-						<span>{formatDistance(gearData.distance)}</span>
+						<span className="whitespace-nowrap">
+							{formatDistance(gearData.distance)}
+						</span>
 						{!gearData.dateEnd && allowMaxDistanceEdit ? (
 							<EditableNumber
 								value={maxDistanceValue}
 								onSave={handleMaxDistanceChange}
-								className="text-right"
+								className="whitespace-nowrap text-right"
 								formatValue={(value) => formatDistance(value * 1000)}
 							/>
 						) : (
-							<span className="px-2 py-1 -mx-2 text-right">
+							<span className="-mx-2 whitespace-nowrap px-2 py-1 text-right">
 								{formatDistance(gearData.maximumDistance)}
 							</span>
 						)}
@@ -185,17 +190,19 @@ export const GearCard: FC<GearCardProps> = ({
 			</SectionContainer>
 
 			<SectionContainer>
-				<div className="flex items-center gap-2">
-					<span className="text-sm">Code:</span>
+				<div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
+					<span className="text-sm font-medium">Code</span>
 					{!gearData.dateEnd && isEditable ? (
 						<EditableText
 							value={gearData.code}
 							onSave={handleCodeChange}
-							className="text-sm"
+							className="max-w-full break-words text-sm"
 							placeholder="Enter gear code..."
 						/>
 					) : (
-						<span className="text-sm">{gearData.code}</span>
+						<span className="max-w-full break-words text-sm">
+							{gearData.code}
+						</span>
 					)}
 				</div>
 			</SectionContainer>

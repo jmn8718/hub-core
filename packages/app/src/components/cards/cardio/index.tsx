@@ -17,6 +17,10 @@ interface CardioCardProps {
 	onActivityRefresh?: () => Promise<void> | void;
 }
 
+const DETAIL_ICON_SLOT_CLASS =
+	"flex w-5 shrink-0 items-center justify-start text-gray-500";
+const DETAIL_ICON_CLASS = "h-4 w-4";
+
 export function CardioCard({
 	activity,
 	gears,
@@ -95,23 +99,29 @@ function CardioCardBody({
 		<>
 			<SectionContainer hasBorder>
 				<div className="space-y-2">
-					<div className="flex items-center gap-2 text-sm">
-						<Clock size={16} className="text-gray-500" />
-						<span className="pl-2">
+					<div className="flex min-w-0 items-center gap-2 text-sm">
+						<span className={DETAIL_ICON_SLOT_CLASS}>
+							<Clock size={16} className={DETAIL_ICON_CLASS} />
+						</span>
+						<span className="min-w-0 break-words">
 							{formatDateWithTime(
 								activityData.timestamp,
 								activityData.timezone,
 							)}
 						</span>
 					</div>
-					<div className="flex items-center gap-2 text-sm">
-						<Timer size={16} className="text-gray-500" />
-						<span className="pl-2">
+					<div className="flex min-w-0 items-center gap-2 text-sm">
+						<span className={DETAIL_ICON_SLOT_CLASS}>
+							<Timer size={16} className={DETAIL_ICON_CLASS} />
+						</span>
+						<span className="min-w-0 break-words">
 							{formatDuration(activityData.duration)}
 						</span>
 					</div>
-					<div className="flex items-center gap-2 text-sm">
-						<MapPin size={16} className="text-gray-500 min-w-4" />
+					<div className="flex min-w-0 items-center gap-2 text-sm">
+						<span className={DETAIL_ICON_SLOT_CLASS}>
+							<MapPin size={16} className={DETAIL_ICON_CLASS} />
+						</span>
 						<EditableText
 							value={locationName}
 							onSave={(value) => {
@@ -120,7 +130,7 @@ function CardioCardBody({
 									void handleEditActivity("locationName", value);
 								}
 							}}
-							className="h-8"
+							className="min-w-0 flex-1"
 						/>
 					</div>
 				</div>
@@ -128,30 +138,30 @@ function CardioCardBody({
 			{isSwim && (
 				<SectionContainer hasBorder>
 					<div className="space-y-2">
-						<div className="flex items-center gap-2 text-sm">
-							<Waves size={16} className="text-gray-500" />
-							<span className="pl-2">Laps:</span>
+						<div className="flex min-w-0 items-center gap-2 text-sm">
+							<Waves size={16} className="shrink-0 text-gray-500" />
+							<span className="min-w-0 break-words">Laps:</span>
 							<EditableNumber
 								value={laps}
 								onSave={(value) => {
 									setLaps(value);
 									handleMetadataUpdate("laps", value);
 								}}
-								className="h-8"
+								className="min-w-0 flex-1"
 								min={0}
 								step={1}
 							/>
 						</div>
-						<div className="flex items-center gap-2 text-sm">
-							<Waves size={16} className="text-gray-500" />
-							<span className="pl-2">Pool Length (m):</span>
+						<div className="flex min-w-0 items-center gap-2 text-sm">
+							<Waves size={16} className="shrink-0 text-gray-500" />
+							<span className="min-w-0 break-words">Pool Length (m):</span>
 							<EditableNumber
 								value={poolLength}
 								onSave={(value) => {
 									setPoolLength(value);
 									handleMetadataUpdate("length", value);
 								}}
-								className="h-8"
+								className="min-w-0 flex-1"
 								min={0}
 								step={1}
 							/>

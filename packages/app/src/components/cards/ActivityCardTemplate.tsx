@@ -214,33 +214,44 @@ export function ActivityCardTemplate({
 	return (
 		<Box>
 			<SectionContainer hasBorder>
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-4">
-						<ActivityTypeIcon type={activityData.type} />
+				<div className="flex items-start justify-between gap-3 sm:items-center">
+					<div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
+						<span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center sm:mt-0 sm:h-auto sm:w-auto">
+							<ActivityTypeIcon
+								type={activityData.type}
+								size={22}
+								classes="h-5 w-5 sm:h-3.5 sm:w-3.5"
+							/>
+						</span>
 						{isRaceEligibleActivity && activityData.isEvent === 1 && (
-							<Medal size={16} className="text-yellow-500" />
+							<span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center sm:mt-0 sm:h-auto sm:w-auto">
+								<Medal
+									size={22}
+									className="h-5 w-5 text-yellow-500 sm:h-4 sm:w-4"
+								/>
+							</span>
 						)}
 						<EditableText
 							value={activityName}
 							onSave={handleNameChange}
-							className="text-xl font-semibold h-8"
+							className="min-w-0 whitespace-normal break-words px-0 text-lg font-semibold leading-tight sm:h-8 sm:text-xl"
 							placeholder="Enter activity name..."
 						/>
 					</div>
-					<div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+					<div className="flex shrink-0 items-start gap-2 text-sm text-gray-500 dark:text-gray-400 sm:items-center">
 						<span className="max-sm:hidden">
 							{activityData.manufacturer || "-"}
 						</span>
 						{showDetailsButton && (
 							<button
 								type="button"
-								className="flex items-center px-3 py-1"
+								className="flex h-9 w-9 items-center justify-center rounded-md sm:h-auto sm:w-auto sm:px-3 sm:py-1"
 								onClick={(event) => {
 									event.stopPropagation();
 									navigate(`${AppRoutes.DETAILS}/${activity.id}`);
 								}}
 							>
-								<Eye size={16} />
+								<Eye size={22} className="h-5 w-5 sm:h-4 sm:w-4" />
 							</button>
 						)}
 					</div>
@@ -254,7 +265,7 @@ export function ActivityCardTemplate({
 					{performanceMetrics.map((metric) => (
 						<div
 							key={metric.label}
-							className="flex items-center gap-2 text-sm leading-none"
+							className="flex flex-col gap-1 text-sm leading-tight sm:flex-row sm:items-center sm:gap-2 sm:leading-none"
 						>
 							<span
 								className={`inline-flex items-center ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
@@ -262,7 +273,7 @@ export function ActivityCardTemplate({
 								{metric.label}:
 							</span>
 							<span
-								className={`inline-flex items-center ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}
+								className={`inline-flex items-center font-medium ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}
 							>
 								{metric.value}
 							</span>
