@@ -12,7 +12,7 @@ import {
 import { createDbClient } from "./client";
 import { Db } from "./db";
 import { migrateDb } from "./migrations";
-import { clearData, importData } from "./seed/common";
+import { clearData, importData } from "./tests/utils";
 
 describe("db", () => {
 	const client = createDbClient({

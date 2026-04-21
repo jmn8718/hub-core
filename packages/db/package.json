@@ -17,15 +17,7 @@
     "clean": "rimraf .turbo node_modules dist",
     "db:schema": "drizzle-kit generate",
     "db:migrate": "tsx src/migrate.ts",
-    "db:seed:webhooks": "tsx src/seed/webhooks.ts",
-    "db:seed:activities": "tsx src/seed/activities.ts",
-    "db:seed:import": "tsx src/seed/import.ts",
-    "db:seed:health": "tsx src/seed/health.ts",
-    "db:seed:clear": "tsx src/seed/clear.ts",
-    "db:scripts:db": "tsx src/scripts/db.ts",
-    "db:scripts:gears": "tsx src/scripts/gears.ts",
-    "db:scripts:inbody": "tsx src/scripts/inbody.ts",
-    "db:scripts:webhooks": "tsx src/scripts/webhooks.ts",
+    "db:dump:local-to-turso": "tsx src/scripts/dump-local-to-turso.ts",
     "test": "vitest run"
   },
   "dependencies": {
