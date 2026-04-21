@@ -61,6 +61,10 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										element={<Pages.InbodyAddPage />}
 									/>
 									<Route
+										path={AppRoutes.INBODY_HISTORY}
+										element={<Pages.InbodyHistoryPage />}
+									/>
+									<Route
 										path={AppRoutes.INBODY_EDIT}
 										element={<Pages.InbodyEditPage />}
 									/>

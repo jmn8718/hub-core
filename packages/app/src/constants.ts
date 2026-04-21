@@ -12,6 +12,7 @@ export const Routes = {
 	INBODY: "/inbody",
 	INBODY_ADD: "/inbody/add",
 	INBODY_EDIT: "/inbody/:id/edit",
+	INBODY_HISTORY: "/inbody/history",
 	ADD: "/add",
 	SETTINGS: "/settings",
 	DEBUG: "/debug",
