@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "clean": "rimraf .turbo node_modules build dist",
-    "dev": "vite --port 3002",
+    "dev": "vite --port 3002 --host",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "check-types": "tsc --noEmit"

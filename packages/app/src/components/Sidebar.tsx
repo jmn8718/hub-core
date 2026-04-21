@@ -1,67 +1,117 @@
 import { AppType } from "@repo/types";
 import { cn } from "@repo/ui";
-import type { LucideProps } from "lucide-react";
+import { type LucideProps, Menu, PanelLeftClose } from "lucide-react";
 import type React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
 
+type SidebarItem = {
+	icon: React.ForwardRefExoticComponent<
+		Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+	>;
+	href: string;
+	label: string;
+	hideOnWeb?: boolean;
+};
+
 export function Sidebar({
 	sidebarItems,
+	isOpen = false,
+	onOpenChange,
 }: {
-	sidebarItems: {
-		icon: React.ForwardRefExoticComponent<
-			Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
-		>;
-		href: string;
-		label: string;
-		hideOnWeb?: boolean;
-	}[];
+	sidebarItems: SidebarItem[];
+	isOpen?: boolean;
+	onOpenChange?: (isOpen: boolean) => void;
 }) {
 	const { colors } = useTheme();
 	const { type } = useDataClient();
 	const location = useLocation();
+	const isWeb = type === AppType.WEB;
+	const isExpanded = !isWeb || isOpen;
+
 	return (
-		<aside
-			className={cn(
-				"fixed left-0 top-0 z-40 h-full shadow-lg flex flex-col items-center py-6 transition-colors duration-200",
-				colors.navSurface,
-				type === AppType.DESKTOP ? "w-16" : "w-12",
-			)}
-		>
-			<nav className="flex flex-col items-center space-y-4">
-				{sidebarItems.map(({ icon: Icon, href, label, hideOnWeb }) => (
-					<Link
-						key={href}
-						to={href}
-						className={cn(
-							"relative group flex items-center justify-center w-8 h-8 rounded-lg",
-							colors.navHover,
-							type === AppType.DESKTOP ? "w-12 h-12" : "w-8 h-8",
-							type === AppType.WEB && hideOnWeb && "hidden",
-							location.pathname === href && colors.navActive,
-						)}
-						aria-label={label}
-						title={label}
-					>
-						<Icon
-							size={24}
-							className={cn(
-								"h-6 w-6",
-								location.pathname === href ? "text-current" : colors.navIcon,
-							)}
-						/>
-						<span
-							className={cn(
-								"pointer-events-none absolute left-full z-50 ml-2 rounded px-2 py-1 text-sm whitespace-nowrap opacity-0 transition-opacity group-hover:opacity-100",
-								colors.tooltip,
-							)}
-						>
-							{label}
-						</span>
-					</Link>
-				))}
-			</nav>
-		</aside>
+		<>
+			{isWeb ? (
+				<button
+					type="button"
+					aria-label={isOpen ? "Collapse navigation" : "Open navigation"}
+					aria-expanded={isOpen}
+					onClick={() => onOpenChange?.(!isOpen)}
+					className={cn(
+						"fixed left-3 top-3 z-50 grid size-11 place-items-center rounded-lg border shadow-sm transition-colors",
+						colors.navSurface,
+						colors.navHover,
+					)}
+				>
+					{isOpen ? (
+						<PanelLeftClose className={cn("size-5", colors.navIcon)} />
+					) : (
+						<Menu className={cn("size-5", colors.navIcon)} />
+					)}
+				</button>
+			) : null}
+
+			<aside
+				className={cn(
+					"fixed left-0 top-0 z-40 h-full shadow-lg flex flex-col py-6 transition-transform duration-200 ease-out",
+					colors.navSurface,
+					isWeb ? "w-56 px-3 pt-20" : "w-16 items-center",
+					isWeb && !isExpanded && "-translate-x-full",
+				)}
+			>
+				<nav
+					className={cn(
+						"flex flex-col",
+						isWeb ? "gap-2" : "items-center gap-4",
+					)}
+				>
+					{sidebarItems.map(({ icon: Icon, href, label, hideOnWeb }) => {
+						const isActive = location.pathname === href;
+						return (
+							<Link
+								key={href}
+								to={href}
+								onClick={() => {
+									if (isWeb) {
+										onOpenChange?.(false);
+									}
+								}}
+								className={cn(
+									"relative group flex items-center rounded-lg",
+									colors.navHover,
+									isWeb
+										? "h-11 gap-3 px-3 text-sm font-medium"
+										: "h-12 w-12 justify-center",
+									isWeb && hideOnWeb && "hidden",
+									isActive && colors.navActive,
+								)}
+								aria-label={label}
+								title={label}
+							>
+								<Icon
+									size={24}
+									className={cn(
+										"size-6 shrink-0",
+										isActive ? "text-current" : colors.navIcon,
+									)}
+								/>
+								{isWeb ? <span className="truncate">{label}</span> : null}
+								{!isWeb ? (
+									<span
+										className={cn(
+											"pointer-events-none absolute left-full z-50 ml-2 rounded px-2 py-1 text-sm whitespace-nowrap opacity-0 transition-opacity group-hover:opacity-100",
+											colors.tooltip,
+										)}
+									>
+										{label}
+									</span>
+								) : null}
+							</Link>
+						);
+					})}
+				</nav>
+			</aside>
+		</>
 	);
 }

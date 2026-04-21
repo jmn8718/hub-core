@@ -12,7 +12,7 @@ import {
 	Settings,
 } from "lucide-react";
 import type React from "react";
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Bounce, ToastContainer, toast } from "react-toastify";
 import { Routes as AppRoutes } from "../constants.js";
@@ -34,6 +34,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 	const { type } = useDataClient();
 	const location = useLocation();
 	const isCalendarRoute = location.pathname === AppRoutes.CALENDAR;
+	const [isWebSidebarOpen, setIsWebSidebarOpen] = useState(false);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useLayoutEffect(() => {
@@ -94,6 +95,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 			)}
 		>
 			<Sidebar
+				isOpen={isWebSidebarOpen}
+				onOpenChange={setIsWebSidebarOpen}
 				sidebarItems={[
 					{ icon: Home, href: AppRoutes.HOME, label: "Home" },
 					{ icon: Database, href: AppRoutes.DATA, label: "Data" },
@@ -114,12 +117,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 			<div
 				className={cn(
 					"min-h-screen p-0",
-					type === AppType.DESKTOP ? "pl-16" : "pl-12",
+					type === AppType.DESKTOP ? "pl-16" : "pl-0",
 				)}
 			>
 				<div
 					className={cn(
-						"min-h-screen flex flex-col p-2 md:p-4",
+						"min-h-screen flex flex-col p-3 pt-16 md:p-4",
 						isCalendarRoute ? "mx-0 max-w-none" : "mx-auto max-w-4xl",
 					)}
 				>
