@@ -5,13 +5,13 @@ type FullPageLoaderProps = {
 export function FullPageLoader({ label = "Loading" }: FullPageLoaderProps) {
 	return (
 		<div
-			className="grid min-h-screen place-items-center overflow-hidden bg-[radial-gradient(circle_at_50%_22%,rgba(148,163,184,0.16),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] p-7 text-slate-900"
+			className="grid min-h-[100dvh] place-items-center overflow-hidden bg-[radial-gradient(circle_at_50%_22%,rgba(148,163,184,0.16),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] p-7 text-slate-900"
 			// biome-ignore lint/a11y/useSemanticElements: <explanation>
 			role="status"
 			aria-live="polite"
 			aria-label={label}
 		>
-			<div className="grid size-full max-h-80 max-w-80 place-items-center p-8">
+			<div className="grid aspect-square w-[min(20rem,calc(100vw-3.5rem),calc(100dvh-3.5rem))] place-items-center p-8">
 				<div className="flex size-full flex-col items-center justify-center gap-6">
 					<img
 						className="size-44 object-contain drop-shadow-[0_10px_22px_rgba(15,23,42,0.08)]"
