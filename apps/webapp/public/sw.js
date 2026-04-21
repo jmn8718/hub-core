@@ -37,10 +37,7 @@ const isCacheableAsset = (request, url) => {
 
 self.addEventListener("install", (event) => {
 	event.waitUntil(
-		caches
-			.open(APP_SHELL_CACHE)
-			.then((cache) => cache.addAll(APP_SHELL_URLS))
-			.then(() => self.skipWaiting()),
+		caches.open(APP_SHELL_CACHE).then((cache) => cache.addAll(APP_SHELL_URLS)),
 	);
 });
 
@@ -57,6 +54,12 @@ self.addEventListener("activate", (event) => {
 			)
 			.then(() => self.clients.claim()),
 	);
+});
+
+self.addEventListener("message", (event) => {
+	if (event.data?.type === "SKIP_WAITING") {
+		self.skipWaiting();
+	}
 });
 
 self.addEventListener("fetch", (event) => {
