@@ -1,22 +1,13 @@
 import { dayjs } from "@repo/dates";
 import type { IDailyOverviewData } from "@repo/types";
 import { cn } from "@repo/ui";
+import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bounce, toast } from "react-toastify";
-import {
-	Bar,
-	BarChart,
-	ResponsiveContainer,
-	Tooltip,
-	XAxis,
-	YAxis,
-} from "recharts";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
-import { formatDistance } from "../utils/formatters.js";
 import { Box } from "./Box.js";
 import { DailyActivityStats } from "./DailyActivityStats.js";
-import { H2 } from "./H2.js";
 import { DailyDistanceChart } from "./charts/DailyDistanceChart.js";
 
 type Mode = "relative" | "range";
@@ -28,7 +19,55 @@ const formatDateForInput = (value: string | Date): string => {
 
 const DEFAULT_PERIOD_COUNT = 30;
 
-export const DailyActivitySummary = () => {
+type DailyActivitySummaryProps = {
+	onLoadingChange?: (isLoading: boolean) => void;
+};
+
+const SkeletonBlock = ({
+	className,
+	isDarkMode,
+}: {
+	className: string;
+	isDarkMode: boolean;
+}) => (
+	<div
+		className={cn(
+			"animate-pulse rounded-md",
+			isDarkMode ? "bg-gray-700" : "bg-gray-200",
+			className,
+		)}
+	/>
+);
+
+const DailyActivitySummarySkeleton = ({
+	isDarkMode,
+}: {
+	isDarkMode: boolean;
+}) => (
+	<div
+		className="flex min-w-0 flex-col gap-4 px-2 py-2 sm:px-4"
+		aria-hidden="true"
+	>
+		<div className="flex min-w-0 flex-col gap-3">
+			<SkeletonBlock className="h-6 w-32" isDarkMode={isDarkMode} />
+			<SkeletonBlock className="h-16 w-full max-w-72" isDarkMode={isDarkMode} />
+		</div>
+		<div className="grid min-w-0 gap-4 sm:grid-cols-2 sm:gap-6">
+			<div className="flex flex-col gap-3">
+				<SkeletonBlock className="h-5 w-20" isDarkMode={isDarkMode} />
+				<SkeletonBlock className="h-8 w-36" isDarkMode={isDarkMode} />
+			</div>
+			<div className="flex flex-col gap-3">
+				<SkeletonBlock className="h-5 w-20" isDarkMode={isDarkMode} />
+				<SkeletonBlock className="h-8 w-20" isDarkMode={isDarkMode} />
+			</div>
+		</div>
+	</div>
+);
+
+export const DailyActivitySummary: React.FC<DailyActivitySummaryProps> = ({
+	onLoadingChange,
+}) => {
 	const { client } = useDataClient();
 	const { isDarkMode } = useTheme();
 	const [mode, setMode] = useState<Mode>("relative");
@@ -45,7 +84,7 @@ export const DailyActivitySummary = () => {
 		formatDateForInput(dayjs().toDate()),
 	);
 	const [data, setData] = useState<IDailyOverviewData[]>([]);
-	const [isLoading, setIsLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
 
 	const fetchData = useCallback(async () => {
 		if (mode === "range") {
@@ -61,6 +100,7 @@ export const DailyActivitySummary = () => {
 		}
 
 		setIsLoading(true);
+		onLoadingChange?.(true);
 
 		try {
 			const params =
@@ -92,8 +132,17 @@ export const DailyActivitySummary = () => {
 			});
 		} finally {
 			setIsLoading(false);
+			onLoadingChange?.(false);
 		}
-	}, [client, endDate, mode, periodCount, periodType, startDate]);
+	}, [
+		client,
+		endDate,
+		mode,
+		onLoadingChange,
+		periodCount,
+		periodType,
+		startDate,
+	]);
 
 	useEffect(() => {
 		fetchData();
@@ -202,16 +251,20 @@ export const DailyActivitySummary = () => {
 						</div>
 					)}
 				</div>
-				<DailyActivityStats
-					totalDistance={totals.totalDistance}
-					totalDuration={totals.totalDuration}
-					activeDays={totals.activeDays}
-				/>
+				{isLoading ? (
+					<DailyActivitySummarySkeleton isDarkMode={isDarkMode} />
+				) : (
+					<DailyActivityStats
+						totalDistance={totals.totalDistance}
+						totalDuration={totals.totalDuration}
+						activeDays={totals.activeDays}
+					/>
+				)}
 			</div>
 
 			<div
 				className={cn(
-					"rounded-lg p-4",
+					"hidden rounded-lg p-4 sm:block",
 					isDarkMode ? "bg-gray-800" : "bg-white",
 				)}
 			>

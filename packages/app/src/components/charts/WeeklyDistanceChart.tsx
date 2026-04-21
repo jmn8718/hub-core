@@ -22,6 +22,10 @@ type WeeklyDistanceData = IWeeklyOverviewData & {
 	label: string;
 };
 
+type WeeklyDistanceChartProps = {
+	onLoadingChange?: (isLoading: boolean) => void;
+};
+
 const formatWeekLabel = (weekStart: string) => {
 	const start = dayjs(weekStart);
 	if (!start.isValid()) return weekStart;
@@ -35,14 +39,19 @@ const formatWeekRange = (weekStart: string) => {
 	return `${start.format("MMM D")} - ${end.format("MMM D")}`;
 };
 
-export const WeeklyDistanceChart: React.FC = () => {
+export const WeeklyDistanceChart: React.FC<WeeklyDistanceChartProps> = ({
+	onLoadingChange,
+}) => {
 	const { isDarkMode } = useTheme();
 	const { client } = useDataClient();
 	const { setLocalLoading } = useLoading();
 	const [data, setData] = useState<WeeklyDistanceData[]>([]);
 
 	const fetchData = useCallback(async () => {
-		setLocalLoading(true);
+		if (!onLoadingChange) {
+			setLocalLoading(true);
+		}
+		onLoadingChange?.(true);
 		try {
 			const result = await client.getWeeklyOverview({ limit: 8 });
 			if (result.success) {
@@ -71,10 +80,13 @@ export const WeeklyDistanceChart: React.FC = () => {
 			});
 		} finally {
 			setTimeout(() => {
-				setLocalLoading(false);
+				if (!onLoadingChange) {
+					setLocalLoading(false);
+				}
+				onLoadingChange?.(false);
 			}, 500);
 		}
-	}, [client, setLocalLoading]);
+	}, [client, onLoadingChange, setLocalLoading]);
 
 	useEffect(() => {
 		fetchData();

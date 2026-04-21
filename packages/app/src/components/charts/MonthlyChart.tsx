@@ -22,14 +22,23 @@ type MonthlyData = {
 	distance: number;
 };
 
-export const MonthlyActivityChart: React.FC = () => {
+type MonthlyActivityChartProps = {
+	onLoadingChange?: (isLoading: boolean) => void;
+};
+
+export const MonthlyActivityChart: React.FC<MonthlyActivityChartProps> = ({
+	onLoadingChange,
+}) => {
 	const { isDarkMode } = useTheme();
 	const { client } = useDataClient();
 	const { setLocalLoading } = useLoading();
 	const [data, setData] = useState<MonthlyData[]>([]);
 
 	const fetchData = useCallback(async () => {
-		setLocalLoading(true);
+		if (!onLoadingChange) {
+			setLocalLoading(true);
+		}
+		onLoadingChange?.(true);
 		try {
 			const result = await client.getDataOverview({ limit: 12 });
 			if (result.success) {
@@ -49,10 +58,13 @@ export const MonthlyActivityChart: React.FC = () => {
 			});
 		} finally {
 			setTimeout(() => {
-				setLocalLoading(false);
+				if (!onLoadingChange) {
+					setLocalLoading(false);
+				}
+				onLoadingChange?.(false);
 			}, 500);
 		}
-	}, [client, setLocalLoading]);
+	}, [client, onLoadingChange, setLocalLoading]);
 
 	useEffect(() => {
 		fetchData();

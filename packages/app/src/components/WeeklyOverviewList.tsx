@@ -30,10 +30,12 @@ const formatWeekLabel = (start: string): string => {
 type WeeklyOverviewListProps = {
 	limit?: number;
 	refreshToken?: number;
+	onLoadingChange?: (isLoading: boolean) => void;
 };
 
 export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 	limit,
+	onLoadingChange,
 	refreshToken,
 }) => {
 	const { client } = useDataClient();
@@ -43,6 +45,7 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 
 	const fetchWeeklyData = useCallback(async () => {
 		setIsLoading(true);
+		onLoadingChange?.(true);
 		try {
 			const result = await client.getWeeklyOverview({ limit: limit ?? 4 });
 			if (result.success) {
@@ -62,8 +65,9 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 			});
 		} finally {
 			setIsLoading(false);
+			onLoadingChange?.(false);
 		}
-	}, [client, limit]);
+	}, [client, limit, onLoadingChange]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
