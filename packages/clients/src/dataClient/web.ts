@@ -32,6 +32,7 @@ const OFFLINE_WRITE_ERROR =
 	"You are offline. Connect to the internet before adding or changing data.";
 const OFFLINE_CACHE_HIT_EVENT = "hub-core:offline-cache-hit";
 const OFFLINE_CACHE_MISS_EVENT = "hub-core:offline-cache-miss";
+const PWA_CACHE_PREFIX = "hub-core-pwa-";
 
 interface WebClientConfig {
 	apiBaseUrl: string;
@@ -346,6 +347,7 @@ export class WebClient implements Client {
 		if (userId) {
 			await this._offlineCache.deleteUserData(userId).catch(() => undefined);
 		}
+		await this._clearPwaCaches();
 	}
 
 	getDebugInfo(): ProviderSuccessResponse<{ data: string[] }> {
@@ -566,6 +568,19 @@ export class WebClient implements Client {
 				},
 			}),
 		);
+	}
+
+	private async _clearPwaCaches(): Promise<void> {
+		if (!("caches" in globalThis)) {
+			return;
+		}
+
+		const cacheNames = await caches.keys().catch(() => []);
+		await Promise.all(
+			cacheNames
+				.filter((cacheName) => cacheName.startsWith(PWA_CACHE_PREFIX))
+				.map((cacheName) => caches.delete(cacheName)),
+		).catch(() => undefined);
 	}
 
 	private _readStoreValue<T>(key: StorageKeys): T | undefined {
