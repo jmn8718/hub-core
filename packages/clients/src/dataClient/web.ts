@@ -24,6 +24,14 @@ import type {
 } from "@repo/types";
 import type { SupabaseClient } from "../supabase.js";
 import type { Client } from "./Client.js";
+import { WebOfflineCache } from "./webOfflineCache.js";
+
+const OFFLINE_READ_ERROR =
+	"You are offline and no saved data is available for this view.";
+const OFFLINE_WRITE_ERROR =
+	"You are offline. Connect to the internet before adding or changing data.";
+const OFFLINE_CACHE_HIT_EVENT = "hub-core:offline-cache-hit";
+const OFFLINE_CACHE_MISS_EVENT = "hub-core:offline-cache-miss";
 
 interface WebClientConfig {
 	apiBaseUrl: string;
@@ -38,6 +46,7 @@ type StoredProviderConfig = {
 export class WebClient implements Client {
 	private readonly _supabase: SupabaseClient;
 	private readonly _apiBaseUrl: string;
+	private readonly _offlineCache = new WebOfflineCache();
 
 	constructor({ apiBaseUrl, supabase }: WebClientConfig) {
 		this._supabase = supabase;
@@ -49,7 +58,7 @@ export class WebClient implements Client {
 			data: IOverviewData[];
 		}>
 	> {
-		return this._execute<{ data: IOverviewData[] }>("getDataOverview", {
+		return this._executeCached<{ data: IOverviewData[] }>("getDataOverview", {
 			limit,
 		});
 	}
@@ -69,12 +78,15 @@ export class WebClient implements Client {
 			data: IDailyOverviewData[];
 		}>
 	> {
-		return this._execute<{ data: IDailyOverviewData[] }>("getDailyOverview", {
-			startDate,
-			endDate,
-			periodType,
-			periodCount,
-		});
+		return this._executeCached<{ data: IDailyOverviewData[] }>(
+			"getDailyOverview",
+			{
+				startDate,
+				endDate,
+				periodType,
+				periodCount,
+			},
+		);
 	}
 
 	async getWeeklyOverview({ limit }: { limit?: number }): Promise<
@@ -82,9 +94,12 @@ export class WebClient implements Client {
 			data: IWeeklyOverviewData[];
 		}>
 	> {
-		return this._execute<{ data: IWeeklyOverviewData[] }>("getWeeklyOverview", {
-			limit,
-		});
+		return this._executeCached<{ data: IWeeklyOverviewData[] }>(
+			"getWeeklyOverview",
+			{
+				limit,
+			},
+		);
 	}
 
 	async getActivities(params: {
@@ -103,7 +118,7 @@ export class WebClient implements Client {
 			data: ActivitiesData;
 		}>
 	> {
-		return this._execute<{ data: ActivitiesData }>(
+		return this._executeCached<{ data: ActivitiesData }>(
 			"getActivities",
 			params ?? {},
 		);
@@ -114,7 +129,7 @@ export class WebClient implements Client {
 			data?: DbActivityPopulated;
 		}>
 	> {
-		return this._execute<{ data?: DbActivityPopulated }>("getActivity", {
+		return this._executeCached<{ data?: DbActivityPopulated }>("getActivity", {
 			activityId,
 		});
 	}
@@ -176,7 +191,7 @@ export class WebClient implements Client {
 			data: GearsData;
 		}>
 	> {
-		return this._execute<{ data: GearsData }>("getGears", params ?? {});
+		return this._executeCached<{ data: GearsData }>("getGears", params ?? {});
 	}
 
 	async getGear(gearId: string): Promise<
@@ -184,7 +199,7 @@ export class WebClient implements Client {
 			data?: IDbGearWithDistance;
 		}>
 	> {
-		return this._execute<{ data?: IDbGearWithDistance }>("getGear", {
+		return this._executeCached<{ data?: IDbGearWithDistance }>("getGear", {
 			gearId,
 		});
 	}
@@ -292,7 +307,10 @@ export class WebClient implements Client {
 	async getInbodyData(params: {
 		type: string;
 	}): Promise<ProviderSuccessResponse<{ data: IInbodyData[] }>> {
-		return this._execute<{ data: IInbodyData[] }>("getInbodyData", params);
+		return this._executeCached<{ data: IInbodyData[] }>(
+			"getInbodyData",
+			params,
+		);
 	}
 
 	async createInbodyData(
@@ -320,9 +338,13 @@ export class WebClient implements Client {
 	}
 
 	async signout(): Promise<undefined> {
+		const userId = await this._getOfflineUserId();
 		const result = await this._supabase.auth.signOut();
 		if (result.error) {
 			throw result.error;
+		}
+		if (userId) {
+			await this._offlineCache.deleteUserData(userId).catch(() => undefined);
 		}
 	}
 
@@ -399,6 +421,13 @@ export class WebClient implements Client {
 		payload: Record<string, unknown> = {},
 	): Promise<ProviderSuccessResponse<TResponse>> {
 		try {
+			if (this._isOffline()) {
+				return {
+					success: false,
+					error: OFFLINE_WRITE_ERROR,
+				};
+			}
+
 			const accessToken = await this._getAccessToken();
 			const response = await fetch(`${this._apiBaseUrl}/${action}`, {
 				method: "POST",
@@ -426,12 +455,117 @@ export class WebClient implements Client {
 		}
 	}
 
+	private async _executeCached<TResponse>(
+		action: string,
+		payload: Record<string, unknown> = {},
+	): Promise<ProviderSuccessResponse<TResponse>> {
+		const userId = await this._getOfflineUserId();
+
+		if (this._isOffline()) {
+			const cachedResponse = userId
+				? await this._readCachedResponse<TResponse>(userId, action, payload)
+				: null;
+
+			if (cachedResponse) {
+				this._dispatchOfflineCacheHit();
+				return cachedResponse;
+			}
+
+			this._dispatchOfflineCacheMiss();
+			return {
+				success: false,
+				error: OFFLINE_READ_ERROR,
+			};
+		}
+
+		const response = await this._execute<TResponse>(action, payload);
+
+		if (!userId) {
+			return response;
+		}
+
+		if (response.success) {
+			await this._offlineCache
+				.write(userId, action, payload, response)
+				.catch(() => undefined);
+			return response;
+		}
+
+		const cachedResponse = await this._readCachedResponse<TResponse>(
+			userId,
+			action,
+			payload,
+		);
+		if (cachedResponse) {
+			this._dispatchOfflineCacheHit();
+			return cachedResponse;
+		}
+
+		if (this._isOfflineError(response.error)) {
+			this._dispatchOfflineCacheMiss();
+			return {
+				success: false,
+				error: OFFLINE_READ_ERROR,
+			};
+		}
+
+		return response;
+	}
+
 	private async _getAccessToken(): Promise<string> {
 		const { data, error } = await this._supabase.auth.getSession();
 		if (error || !data.session?.access_token) {
 			throw new Error("Missing Supabase session");
 		}
 		return data.session.access_token;
+	}
+
+	private async _getOfflineUserId(): Promise<string | null> {
+		const { data, error } = await this._supabase.auth.getSession();
+		if (error) {
+			return null;
+		}
+		return data.session?.user.id ?? null;
+	}
+
+	private _isOffline(): boolean {
+		return "navigator" in globalThis && navigator.onLine === false;
+	}
+
+	private _isOfflineError(error: string): boolean {
+		return /failed to fetch|networkerror|load failed|network request failed/i.test(
+			error,
+		);
+	}
+
+	private _readCachedResponse<TResponse>(
+		userId: string,
+		action: string,
+		payload: Record<string, unknown>,
+	): Promise<ProviderSuccessResponse<TResponse> | null> {
+		return this._offlineCache
+			.read<TResponse>(userId, action, payload)
+			.catch(() => null);
+	}
+
+	private _dispatchOfflineCacheHit(): void {
+		if (typeof CustomEvent === "undefined") {
+			return;
+		}
+		globalThis.dispatchEvent?.(new CustomEvent(OFFLINE_CACHE_HIT_EVENT));
+	}
+
+	private _dispatchOfflineCacheMiss(): void {
+		if (typeof CustomEvent === "undefined") {
+			return;
+		}
+		globalThis.dispatchEvent?.(
+			new CustomEvent(OFFLINE_CACHE_MISS_EVENT, {
+				detail: {
+					message: OFFLINE_READ_ERROR,
+				},
+			}),
+		);
 	}
 
 	private _readStoreValue<T>(key: StorageKeys): T | undefined {

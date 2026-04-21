@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-import { FullPageLoader } from "@/components/FullPageLoader.js";
 import { supabase } from "@/libs/supabase.js";
 import Login from "@/login.js";
 import { App } from "@repo/app";
@@ -16,30 +15,23 @@ const client = new WebClient({
 	supabase,
 });
 
-export default function WebApp() {
-	const [userSession, setUserSession] = useState<SupabaseUserSession | null>(
-		null,
-	);
-	const [ready, setReady] = useState(false);
-	useEffect(() => {
-		supabase.auth.getSession().then(({ data: { session } }) => {
-			setUserSession(session);
-			setReady(true);
-		});
+type WebAppProps = {
+	initialSession: SupabaseUserSession | null;
+};
 
+export default function WebApp({ initialSession }: WebAppProps) {
+	const [userSession, setUserSession] = useState<SupabaseUserSession | null>(
+		initialSession,
+	);
+	useEffect(() => {
 		const {
 			data: { subscription },
 		} = supabase.auth.onAuthStateChange((_event, session) => {
 			setUserSession(session);
-			setReady(true);
 		});
 
 		return () => subscription.unsubscribe();
 	}, []);
-
-	if (!ready) {
-		return <FullPageLoader />;
-	}
 
 	return userSession ? <App client={client} type={AppType.WEB} /> : <Login />;
 }

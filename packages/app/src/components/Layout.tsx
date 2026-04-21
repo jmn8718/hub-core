@@ -12,13 +12,18 @@ import {
 	Settings,
 } from "lucide-react";
 import type React from "react";
-import { useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
+import { Bounce, ToastContainer, toast } from "react-toastify";
 import { Routes as AppRoutes } from "../constants.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
 import { Sidebar } from "./Sidebar.js";
+
+const OFFLINE_CACHE_HIT_EVENT = "hub-core:offline-cache-hit";
+const OFFLINE_CACHE_MISS_EVENT = "hub-core:offline-cache-miss";
+const OFFLINE_CACHE_HIT_TOAST_ID = "hub-core-offline-cache-hit";
+const OFFLINE_CACHE_MISS_TOAST_ID = "hub-core-offline-cache-miss";
 
 interface LayoutProps {
 	children: React.ReactNode;
@@ -36,6 +41,50 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 			window.scrollTo(0, 0);
 		}
 	}, [location.pathname]);
+
+	useEffect(() => {
+		const handleOfflineCacheHit = () => {
+			toast.info("Showing saved data because this device is offline.", {
+				toastId: OFFLINE_CACHE_HIT_TOAST_ID,
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		};
+
+		const handleOfflineCacheMiss = (event: Event) => {
+			const message =
+				event instanceof CustomEvent &&
+				typeof event.detail?.message === "string"
+					? event.detail.message
+					: "You are offline and no saved data is available for this view.";
+
+			toast.error(message, {
+				toastId: OFFLINE_CACHE_MISS_TOAST_ID,
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+
+			window.setTimeout(() => {
+				toast.clearWaitingQueue();
+			}, 0);
+		};
+
+		window.addEventListener(OFFLINE_CACHE_HIT_EVENT, handleOfflineCacheHit);
+		window.addEventListener(OFFLINE_CACHE_MISS_EVENT, handleOfflineCacheMiss);
+
+		return () => {
+			window.removeEventListener(
+				OFFLINE_CACHE_HIT_EVENT,
+				handleOfflineCacheHit,
+			);
+			window.removeEventListener(
+				OFFLINE_CACHE_MISS_EVENT,
+				handleOfflineCacheMiss,
+			);
+		};
+	}, []);
 
 	return (
 		<div
@@ -76,7 +125,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 				>
 					{children}
 				</div>
-				<ToastContainer position="bottom-right" autoClose={3000} />
+				<ToastContainer position="bottom-right" autoClose={3000} limit={1} />
 			</div>
 		</div>
 	);
