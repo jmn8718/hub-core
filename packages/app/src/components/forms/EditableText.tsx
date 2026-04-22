@@ -69,7 +69,7 @@ export const EditableText: FC<EditableTextProps> = ({
 				onBlur={handleBlur}
 				onKeyDown={handleKeyDown}
 				className={cn(
-					"w-full px-2 py-1 rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500",
+					"w-full min-h-8 px-2 py-1 rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500",
 					isDarkMode
 						? "bg-gray-700 text-white border-gray-600"
 						: "bg-white text-gray-900 border-gray-300",
@@ -88,7 +88,7 @@ export const EditableText: FC<EditableTextProps> = ({
 			onClick={handleClick}
 			aria-label={placeholder ? `Edit ${placeholder}` : "Edit text"}
 			className={cn(
-				"w-full rounded flex items-center px-2 py-1 text-left",
+				"w-full min-h-8 rounded flex items-center px-2 py-1 text-left",
 				isDarkMode
 					? "hover:bg-gray-700 text-white"
 					: "hover:bg-gray-100 text-gray-900",
