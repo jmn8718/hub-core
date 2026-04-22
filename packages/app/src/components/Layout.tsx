@@ -122,7 +122,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 			>
 				<div
 					className={cn(
-						"min-h-screen flex flex-col p-3 pt-16 md:p-4",
+						"min-h-screen flex flex-col",
+						type === AppType.WEB
+							? "px-3 pb-3 pt-16 md:px-4 md:pb-4 md:pt-20"
+							: "p-3 pt-16 md:p-4",
 						isCalendarRoute ? "mx-0 max-w-none" : "mx-auto max-w-4xl",
 					)}
 				>
