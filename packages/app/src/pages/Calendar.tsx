@@ -1,10 +1,11 @@
 import {
 	ActivitySubType,
 	ActivityType,
+	AppType,
 	type DbActivityPopulated,
 } from "@repo/types";
 import { cn } from "@repo/ui";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
@@ -23,6 +24,7 @@ const DAY_LABELS = [
 	"Sunday",
 ] as const;
 
+const SHORT_DAY_LABEL_LENGTH = 3;
 const CALENDAR_FILTER_STORAGE_KEY = "calendar.selectedTypes";
 
 type CalendarWeek = {
@@ -77,6 +79,14 @@ const formatMonthLabel = (date: Date) =>
 		month: "long",
 	}).format(date);
 
+const formatCompactDateLabel = (date: Date) =>
+	new Intl.DateTimeFormat(undefined, {
+		weekday: "long",
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	}).format(date);
+
 const formatDurationClock = (seconds: number) => {
 	const hours = Math.floor(seconds / 3600);
 	const minutes = Math.floor((seconds % 3600) / 60);
@@ -107,6 +117,23 @@ const activityAccentClass = (type: ActivityType, isDarkMode: boolean) => {
 			return `border-emerald-500 ${baseClass}`;
 		default:
 			return `border-slate-400 ${baseClass}`;
+	}
+};
+
+const activityDotClass = (type: ActivityType) => {
+	switch (type) {
+		case ActivityType.RUN:
+			return "bg-amber-500";
+		case ActivityType.BIKE:
+			return "bg-sky-500";
+		case ActivityType.SWIM:
+			return "bg-cyan-500";
+		case ActivityType.GYM:
+			return "bg-violet-500";
+		case ActivityType.HIKE:
+			return "bg-emerald-500";
+		default:
+			return "bg-slate-500";
 	}
 };
 
@@ -148,6 +175,27 @@ const getWeekTotals = (activities: DbActivityPopulated[]) => ({
 	duration: activities.reduce((sum, activity) => sum + activity.duration, 0),
 });
 
+const CalendarTotalsSkeleton = ({ isDarkMode }: { isDarkMode: boolean }) => (
+	<div className="grid gap-3 sm:grid-cols-3 sm:gap-6" aria-hidden="true">
+		{["activities", "distance", "time"].map((item) => (
+			<div key={item} className="space-y-2">
+				<div
+					className={cn(
+						"h-4 w-32 animate-pulse rounded-md",
+						isDarkMode ? "bg-gray-700" : "bg-gray-200",
+					)}
+				/>
+				<div
+					className={cn(
+						"h-5 w-20 animate-pulse rounded-md",
+						isDarkMode ? "bg-gray-700" : "bg-gray-200",
+					)}
+				/>
+			</div>
+		))}
+	</div>
+);
+
 const normalizeStoredTypes = (value: string | null): ActivityType[] => {
 	if (!value) return [...ALL_TYPES];
 
@@ -165,9 +213,18 @@ const normalizeStoredTypes = (value: string | null): ActivityType[] => {
 
 export function Calendar() {
 	const navigate = useNavigate();
-	const { client } = useDataClient();
+	const { client, type } = useDataClient();
 	const { colors, isDarkMode } = useTheme();
 	const { setGlobalLoading } = useLoading();
+	const isWeb = type === AppType.WEB;
+	const calendarText = {
+		sectionLabel: isWeb ? "text-[11px]" : "text-xs",
+		body: isWeb ? "text-[11px]" : "text-xs",
+		bodyStrong: isWeb ? "text-xs" : "text-sm",
+		label: isWeb ? "text-xs" : "text-sm",
+		title: isWeb ? "text-sm" : "text-base",
+		value: isWeb ? "text-sm" : "text-lg",
+	};
 	const [cursorMonth, setCursorMonth] = useState(() =>
 		getMonthStart(new Date()),
 	);
@@ -179,6 +236,9 @@ export function Calendar() {
 	});
 	const [allActivities, setAllActivities] = useState<DbActivityPopulated[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [selectedCompactDate, setSelectedCompactDate] = useState(() =>
+		dateKey(new Date()),
+	);
 
 	const gridStart = useMemo(
 		() => startOfCalendarGrid(cursorMonth),
@@ -258,6 +318,16 @@ export function Calendar() {
 	}, [activityMap, gridStart]);
 
 	const monthTotals = useMemo(() => getWeekTotals(activities), [activities]);
+	const selectedCompactDay = useMemo(() => {
+		for (const week of weeks) {
+			const day = week.days.find(
+				(item) => dateKey(item) === selectedCompactDate,
+			);
+			if (day) return day;
+		}
+		return new Date(`${selectedCompactDate}T00:00:00`);
+	}, [selectedCompactDate, weeks]);
+	const selectedCompactActivities = activityMap.get(selectedCompactDate) ?? [];
 	const toggleType = (type: ActivityType) => {
 		setSelectedTypes((current) => {
 			const exists = current.includes(type);
@@ -272,11 +342,7 @@ export function Calendar() {
 	return (
 		<div className="space-y-4">
 			<div className="mx-auto flex max-w-4xl flex-col gap-4">
-				<Box
-					title="Calendar"
-					description="Review the month as a training calendar, with weekly totals and direct access to each workout."
-					icon={CalendarDays}
-				>
+				<Box description="Review the month as a training calendar, with weekly totals and direct access to each workout.">
 					<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
 						<div className="flex flex-wrap items-center gap-2">
 							<Button
@@ -305,7 +371,7 @@ export function Calendar() {
 							</Button>
 							<div className="min-w-0">
 								<Text
-									className="text-base font-semibold"
+									className={cn(calendarText.title, "font-semibold")}
 									text={formatMonthLabel(cursorMonth)}
 								/>
 							</div>
@@ -313,7 +379,7 @@ export function Calendar() {
 
 						<div className="flex max-w-full flex-col gap-2 xl:items-end">
 							<Text
-								className="text-sm font-medium"
+								className={cn(calendarText.body, "font-medium")}
 								variant="description"
 								text="Activity types"
 							/>
@@ -324,7 +390,8 @@ export function Calendar() {
 										<label
 											key={type}
 											className={cn(
-												"flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm capitalize",
+												"flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 capitalize",
+												calendarText.body,
 												isChecked
 													? colors.buttonPrimary
 													: colors.buttonSecondary,
@@ -347,41 +414,47 @@ export function Calendar() {
 
 				<Box>
 					<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-						<div className="grid gap-3 sm:grid-cols-3 sm:gap-6">
-							<div>
-								<Text variant="description" text="Month total activities" />
-								<Text
-									className="pt-0.5 text-lg font-semibold sm:pt-1"
-									text={`${monthTotals.activities}`}
-								/>
+						{isLoading ? (
+							<CalendarTotalsSkeleton isDarkMode={isDarkMode} />
+						) : (
+							<div className="grid gap-3 sm:grid-cols-3 sm:gap-6">
+								<div>
+									<Text variant="description" text="Month total activities" />
+									<Text
+										className={cn(
+											"pt-0.5 font-semibold sm:pt-1",
+											calendarText.value,
+										)}
+										text={`${monthTotals.activities}`}
+									/>
+								</div>
+								<div>
+									<Text variant="description" text="Month total distance" />
+									<Text
+										className={cn(
+											"pt-0.5 font-semibold sm:pt-1",
+											calendarText.value,
+										)}
+										text={formatDistance(monthTotals.distance)}
+									/>
+								</div>
+								<div>
+									<Text variant="description" text="Month total time" />
+									<Text
+										className={cn(
+											"pt-0.5 font-semibold sm:pt-1",
+											calendarText.value,
+										)}
+										text={formatDurationClock(monthTotals.duration)}
+									/>
+								</div>
 							</div>
-							<div>
-								<Text variant="description" text="Month total distance" />
-								<Text
-									className="pt-0.5 text-lg font-semibold sm:pt-1"
-									text={formatDistance(monthTotals.distance)}
-								/>
-							</div>
-							<div>
-								<Text variant="description" text="Month total time" />
-								<Text
-									className="pt-0.5 text-lg font-semibold sm:pt-1"
-									text={formatDurationClock(monthTotals.duration)}
-								/>
-							</div>
-						</div>
-						{isLoading && (
-							<Text
-								variant="description"
-								text="Refreshing calendar..."
-								className="text-sm"
-							/>
 						)}
 					</div>
 				</Box>
 			</div>
 
-			<Box classes="overflow-hidden p-0">
+			<Box classes="hidden overflow-hidden p-0 min-[993px]:block">
 				<div className="overflow-x-auto">
 					<div
 						className="grid min-w-[1180px]"
@@ -393,22 +466,28 @@ export function Calendar() {
 							<div
 								key={label}
 								className={cn(
-									"border-b px-4 py-3 text-sm font-semibold",
+									"border-b px-4 py-3 font-semibold max-[1199px]:px-2 max-[1199px]:py-2",
+									calendarText.label,
 									colors.border,
 									colors.panel,
 								)}
 							>
-								{label}
+								<span className="max-[1199px]:hidden">{label}</span>
+								<span className="hidden max-[1199px]:inline">
+									{label.slice(0, SHORT_DAY_LABEL_LENGTH)}
+								</span>
 							</div>
 						))}
 						<div
 							className={cn(
-								"border-b px-4 py-3 text-sm font-semibold",
+								"border-b px-4 py-3 font-semibold max-[1199px]:px-2 max-[1199px]:py-2",
+								calendarText.label,
 								colors.border,
 								colors.navSurface,
 							)}
 						>
-							Weekly totals
+							<span className="max-[1199px]:hidden">Weekly totals</span>
+							<span className="hidden max-[1199px]:inline">Totals</span>
 						</div>
 
 						{weeks.map((week, index) => {
@@ -429,17 +508,22 @@ export function Calendar() {
 											<div
 												key={dateKey(day)}
 												className={cn(
-													"min-h-[180px] border-b border-r px-3 py-3 align-top",
+													"min-h-[180px] border-b border-r px-3 py-3 align-top max-[1199px]:px-1.5 max-[1199px]:py-2",
 													colors.border,
 													!inCurrentMonth && "opacity-55",
 												)}
 											>
-												<div className="mb-3 flex items-center justify-between gap-2">
-													<span className="text-sm font-semibold">
+												<div className="mb-3 flex items-center justify-between gap-2 max-[1199px]:mb-1.5">
+													<span
+														className={cn(
+															calendarText.bodyStrong,
+															"font-semibold",
+														)}
+													>
 														{day.getDate()}
 													</span>
 												</div>
-												<div className="space-y-2">
+												<div className="space-y-2 max-[1199px]:space-y-1.5">
 													{dayActivities.map((activity) => {
 														const metrics = getActivityMetrics(activity);
 														return (
@@ -450,7 +534,8 @@ export function Calendar() {
 																	navigate(`${Routes.DETAILS}/${activity.id}`)
 																}
 																className={cn(
-																	"w-full rounded-md border-l-4 px-3 py-2 text-left text-sm shadow-sm transition-colors hover:brightness-95",
+																	"w-full rounded-md border-l-4 px-3 py-2 text-left shadow-sm transition-colors hover:brightness-95 max-[1199px]:px-2 max-[1199px]:py-1.5",
+																	calendarText.body,
 																	activityAccentClass(
 																		activity.type,
 																		isDarkMode,
@@ -469,7 +554,8 @@ export function Calendar() {
 																</span>
 																<div
 																	className={cn(
-																		"mt-1 space-y-0.5 text-xs",
+																		"mt-1 space-y-0.5",
+																		calendarText.sectionLabel,
 																		isDarkMode
 																			? "text-slate-100/80"
 																			: "text-slate-900/85",
@@ -495,42 +581,60 @@ export function Calendar() {
 									})}
 									<div
 										className={cn(
-											"min-h-[180px] border-b px-4 py-4",
+											"min-h-[180px] border-b px-4 py-4 max-[1199px]:px-2 max-[1199px]:py-2",
 											colors.border,
 											colors.navSurface,
 										)}
 									>
-										<div className="space-y-2 text-sm">
+										<div className={cn("space-y-2", calendarText.body)}>
 											<div>
 												<Text
-													className="text-xs uppercase tracking-wide"
+													className={cn(
+														"uppercase tracking-wide max-[1199px]:text-[10px]",
+														calendarText.sectionLabel,
+													)}
 													variant="description"
 													text="Activities"
 												/>
 												<Text
-													className="pt-0.5 text-lg font-semibold"
+													className={cn(
+														"pt-0.5 font-semibold max-[1199px]:text-xs",
+														calendarText.value,
+													)}
 													text={`${totals.activities}`}
 												/>
 											</div>
 											<div>
 												<Text
-													className="text-xs uppercase tracking-wide"
+													className={cn(
+														"uppercase tracking-wide max-[1199px]:text-[10px]",
+														calendarText.sectionLabel,
+													)}
 													variant="description"
 													text="Distance"
 												/>
 												<Text
-													className="pt-0.5 text-lg font-semibold"
+													className={cn(
+														"pt-0.5 font-semibold max-[1199px]:text-xs",
+														calendarText.value,
+													)}
 													text={formatDistance(totals.distance)}
 												/>
 											</div>
 											<div>
 												<Text
-													className="text-xs uppercase tracking-wide"
+													className={cn(
+														"uppercase tracking-wide max-[1199px]:text-[10px]",
+														calendarText.sectionLabel,
+													)}
 													variant="description"
 													text="Time"
 												/>
 												<Text
-													className="pt-0.5 text-lg font-semibold"
+													className={cn(
+														"pt-0.5 font-semibold max-[1199px]:text-xs",
+														calendarText.value,
+													)}
 													text={formatDurationClock(totals.duration)}
 												/>
 											</div>
@@ -540,6 +644,147 @@ export function Calendar() {
 							);
 						})}
 					</div>
+				</div>
+			</Box>
+
+			<Box classes="p-3 min-[993px]:hidden">
+				<div className="grid grid-cols-7 gap-y-4">
+					{DAY_LABELS.map((label) => (
+						<div
+							key={label}
+							className={cn(
+								"text-center text-xs font-semibold",
+								isDarkMode ? "text-slate-300" : "text-slate-700",
+							)}
+						>
+							{label.charAt(0)}
+						</div>
+					))}
+
+					{weeks.flatMap((week) =>
+						week.days.map((day, dayIndex) => {
+							const dayActivities = week.activities[dayIndex] ?? [];
+							const inCurrentMonth = day.getMonth() === cursorMonth.getMonth();
+							const isSelected = dateKey(day) === selectedCompactDate;
+							const hasActivities = dayActivities.length > 0;
+							const visibleActivities = dayActivities.slice(0, 3);
+
+							return (
+								<button
+									key={dateKey(day)}
+									type="button"
+									onClick={() => setSelectedCompactDate(dateKey(day))}
+									aria-label={`${day.getDate()} ${formatMonthLabel(day)}`}
+									aria-pressed={isSelected}
+									className={cn(
+										"group flex min-h-14 flex-col items-center justify-start gap-1 rounded-md px-1 py-1.5",
+										!inCurrentMonth && "opacity-45",
+									)}
+								>
+									<span
+										className={cn(
+											"grid place-items-center text-sm font-medium transition-shadow",
+											hasActivities ? "size-9 rounded-full" : "h-9 min-w-9",
+											hasActivities &&
+												"group-hover:ring-2 group-hover:ring-sky-400",
+											hasActivities && isSelected
+												? isDarkMode
+													? "bg-sky-300 text-slate-950 ring-2 ring-sky-500"
+													: "bg-slate-900 text-white ring-2 ring-sky-500"
+												: hasActivities
+													? isDarkMode
+														? "bg-slate-700 text-slate-100"
+														: "bg-slate-100 text-slate-900"
+													: isDarkMode
+														? "text-slate-300"
+														: "text-slate-700",
+										)}
+									>
+										{day.getDate()}
+									</span>
+									<span className="flex h-2 items-center justify-center gap-0.5">
+										{visibleActivities.map((activity) => (
+											<span
+												key={activity.id}
+												className={cn(
+													"block size-1.5 rounded-full",
+													activityDotClass(activity.type),
+												)}
+											/>
+										))}
+										{dayActivities.length > visibleActivities.length && (
+											<span
+												className={cn(
+													"text-[9px] font-semibold leading-none",
+													isDarkMode ? "text-slate-300" : "text-slate-700",
+												)}
+											>
+												+
+											</span>
+										)}
+									</span>
+								</button>
+							);
+						}),
+					)}
+				</div>
+
+				<div className={cn("mt-5 border-t pt-4", colors.border)}>
+					<div className="mb-3 flex items-baseline justify-between gap-3">
+						<Text
+							className="text-sm font-semibold"
+							text={formatCompactDateLabel(selectedCompactDay)}
+						/>
+						<Text
+							className="shrink-0 text-xs"
+							variant="description"
+							text={`${selectedCompactActivities.length} ${selectedCompactActivities.length === 1 ? "activity" : "activities"}`}
+						/>
+					</div>
+
+					{selectedCompactActivities.length > 0 ? (
+						<div className="space-y-2">
+							{selectedCompactActivities.map((activity) => {
+								const metrics = getActivityMetrics(activity);
+								return (
+									<button
+										key={activity.id}
+										type="button"
+										onClick={() => navigate(`${Routes.DETAILS}/${activity.id}`)}
+										className={cn(
+											"w-full rounded-md border-l-4 px-3 py-2 text-left shadow-sm transition-colors hover:brightness-95",
+											activityAccentClass(activity.type, isDarkMode),
+										)}
+									>
+										<span
+											className={cn(
+												"block truncate text-sm font-medium",
+												isDarkMode ? "text-slate-100" : "text-slate-900",
+											)}
+										>
+											{activity.name || getActivityHeader(activity)}
+										</span>
+										<span
+											className={cn(
+												"mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-xs",
+												isDarkMode ? "text-slate-100/75" : "text-slate-900/70",
+											)}
+										>
+											<span>{getActivityHeader(activity)}</span>
+											{metrics.distance && <span>{metrics.distance}</span>}
+											{metrics.duration && <span>{metrics.duration}</span>}
+										</span>
+									</button>
+								);
+							})}
+						</div>
+					) : (
+						<Text
+							className="text-xs"
+							variant="description"
+							text="No activities for this day."
+						/>
+					)}
 				</div>
 			</Box>
 		</div>

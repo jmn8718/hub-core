@@ -30,7 +30,7 @@ const headerIconActionClass =
 	"absolute grid size-10 place-items-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500";
 
 const getPageTitle = (pathname: string) => {
-	if (pathname === AppRoutes.HOME) return "Home";
+	if (pathname === AppRoutes.HOME) return "";
 	if (pathname === AppRoutes.DATA) return "Data";
 	if (pathname === AppRoutes.CALENDAR) return "Calendar";
 	if (pathname === AppRoutes.ADD) return "Add Activity";
@@ -169,7 +169,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 				isOpen={isWebSidebarOpen}
 				onOpenChange={setIsWebSidebarOpen}
 				sidebarItems={[
-					{ icon: Home, href: AppRoutes.HOME, label: "Home" },
+					{ icon: Home, href: AppRoutes.HOME, label: "Dashboard" },
 					{ icon: Database, href: AppRoutes.DATA, label: "Data" },
 					{ icon: CalendarDays, href: AppRoutes.CALENDAR, label: "Calendar" },
 					{ icon: PlusSquare, href: AppRoutes.ADD, label: "Add Activity" },
