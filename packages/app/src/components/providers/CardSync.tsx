@@ -24,10 +24,11 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 	provider,
 	onSyncDone,
 }) => {
-	const { colors } = useTheme();
+	const { colors, isDarkMode } = useTheme();
 	const { client } = useDataClient();
 	const { getValue, setValue } = useStore();
 	const { setLocalLoading } = useLoading();
+	const [isLoading, setIsLoading] = useState(true);
 	const [data, setData] = useState<{
 		hasValidData: boolean;
 		lastSync: string;
@@ -40,10 +41,15 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 		error: "",
 	});
 
+	const skeletonClass = cn(
+		"animate-pulse rounded-md",
+		isDarkMode ? "bg-gray-700" : "bg-gray-200",
+	);
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		const getFromStore = async () => {
-			setLocalLoading(true);
+			setIsLoading(true);
 			try {
 				const [storeLastSync, storeValidated] = await Promise.all([
 					getValue<string>(StorageKeys[`${provider}_LAST_SYNC`]),
@@ -68,11 +74,9 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 					error: message,
 				}));
 			}
-			setTimeout(() => {
-				setLocalLoading(false);
-			}, 300);
+			setIsLoading(false);
 		};
-		getFromStore();
+		void getFromStore();
 	}, [provider]);
 
 	const onSync = async () => {
@@ -112,6 +116,21 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 			}
 		}, 500);
 	};
+
+	if (isLoading) {
+		return (
+			<Box>
+				<div className="flex items-center justify-between">
+					<div className="flex-1 space-y-3">
+						<div className={cn("h-7 w-24", skeletonClass)} />
+						<div className={cn("h-6 w-40", skeletonClass)} />
+					</div>
+					<div className={cn("h-11 w-11 rounded-lg", skeletonClass)} />
+				</div>
+			</Box>
+		);
+	}
+
 	return (
 		<Box>
 			<div className="flex items-center justify-between">

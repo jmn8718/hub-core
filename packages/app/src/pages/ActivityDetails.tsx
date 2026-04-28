@@ -20,6 +20,7 @@ import { useDataClient } from "../contexts/DataClientContext.js";
 import { useLoading } from "../contexts/LoadingContext.js";
 import { useStore } from "../contexts/StoreContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
+import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
 import {
 	actionButtonBaseClass,
 	inputBaseClass,
@@ -40,57 +41,78 @@ export function ActivityDetails() {
 	const MAX_RETRIES = 3;
 	const RETRY_DELAY_MS = 1000;
 
-	const loadActivity = useCallback(async () => {
-		if (!activityId) {
-			const message = "Missing activity id";
-			toast.error(message, { transition: Bounce });
-			setLoadError(message);
-			setIsLoading(false);
-			return;
-		}
-		setIsLoading(true);
-		setLoadError(null);
-
-		for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
-			try {
-				const [activityResult, gearsResult] = await Promise.all([
-					client.getActivity(activityId),
-					client.getGears({ limit: 100 }),
-				]);
-
-				if (activityResult.success && activityResult.data) {
-					setActivity(activityResult.data);
-					if (gearsResult.success) {
-						setGears(gearsResult.data.data);
-					}
-					setIsLoading(false);
-					setLoadError(null);
-					return;
+	const loadActivity = useCallback(
+		async ({
+			showLoading = true,
+			showErrors = true,
+		}: {
+			showLoading?: boolean;
+			showErrors?: boolean;
+		} = {}) => {
+			if (!activityId) {
+				const message = "Missing activity id";
+				if (showErrors) {
+					toast.error(message, { transition: Bounce });
 				}
-
-				if (attempt < MAX_RETRIES) {
-					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-					continue;
-				}
-
-				throw new Error("Activity not found");
-			} catch (err) {
-				if (attempt < MAX_RETRIES) {
-					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-					continue;
-				}
-				const message = (err as Error).message;
-				toast.error(message, { transition: Bounce });
 				setLoadError(message);
 				setIsLoading(false);
 				return;
 			}
-		}
-	}, [activityId, client]);
+			if (showLoading) {
+				setIsLoading(true);
+			}
+			setLoadError(null);
+
+			for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+				try {
+					const [activityResult, gearsResult] = await Promise.all([
+						client.getActivity(activityId),
+						client.getGears({ limit: 100 }),
+					]);
+
+					if (activityResult.success && activityResult.data) {
+						setActivity(activityResult.data);
+						if (gearsResult.success) {
+							setGears(gearsResult.data.data);
+						}
+						setIsLoading(false);
+						setLoadError(null);
+						return;
+					}
+
+					if (attempt < MAX_RETRIES) {
+						await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+						continue;
+					}
+
+					throw new Error("Activity not found");
+				} catch (err) {
+					if (attempt < MAX_RETRIES) {
+						await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+						continue;
+					}
+					const message = (err as Error).message;
+					if (showErrors) {
+						toast.error(message, { transition: Bounce });
+					}
+					setLoadError(message);
+					if (showLoading) {
+						setIsLoading(false);
+					}
+					return;
+				}
+			}
+		},
+		[activityId, client],
+	);
 
 	useEffect(() => {
-		loadActivity();
+		void loadActivity();
 	}, [loadActivity]);
+
+	useWebCachedReadRefresh(["getActivity", "getGears"], () =>
+		loadActivity({ showLoading: false, showErrors: false }),
+	);
 
 	if (isLoading) {
 		return (

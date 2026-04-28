@@ -24,7 +24,7 @@ import type {
 } from "@repo/types";
 import type { SupabaseClient } from "../supabase.js";
 import type { Client } from "./Client.js";
-import { WebOfflineCache } from "./webOfflineCache.js";
+import { WebOfflineCache, stableStringify } from "./webOfflineCache.js";
 
 const OFFLINE_READ_ERROR =
 	"You are offline and no saved data is available for this view.";
@@ -32,6 +32,7 @@ const OFFLINE_WRITE_ERROR =
 	"You are offline. Connect to the internet before adding or changing data.";
 const OFFLINE_CACHE_HIT_EVENT = "hub-core:offline-cache-hit";
 const OFFLINE_CACHE_MISS_EVENT = "hub-core:offline-cache-miss";
+const CACHED_READ_REFRESH_EVENT = "hub-core:cached-read-refresh";
 const PWA_CACHE_PREFIX = "hub-core-pwa-";
 
 interface WebClientConfig {
@@ -480,17 +481,8 @@ export class WebClient implements Client {
 			};
 		}
 
-		const response = await this._execute<TResponse>(action, payload);
-
 		if (!userId) {
-			return response;
-		}
-
-		if (response.success) {
-			await this._offlineCache
-				.write(userId, action, payload, response)
-				.catch(() => undefined);
-			return response;
+			return this._execute<TResponse>(action, payload);
 		}
 
 		const cachedResponse = await this._readCachedResponse<TResponse>(
@@ -499,8 +491,16 @@ export class WebClient implements Client {
 			payload,
 		);
 		if (cachedResponse) {
-			this._dispatchOfflineCacheHit();
+			void this._refreshCachedResponse(userId, action, payload, cachedResponse);
 			return cachedResponse;
+		}
+
+		const response = await this._execute<TResponse>(action, payload);
+		if (response.success) {
+			await this._offlineCache
+				.write(userId, action, payload, response)
+				.catch(() => undefined);
+			return response;
 		}
 
 		if (this._isOfflineError(response.error)) {
@@ -512,6 +512,28 @@ export class WebClient implements Client {
 		}
 
 		return response;
+	}
+
+	private async _refreshCachedResponse<TResponse>(
+		userId: string,
+		action: string,
+		payload: Record<string, unknown>,
+		cachedResponse: ProviderSuccessResponse<TResponse>,
+	): Promise<void> {
+		const response = await this._execute<TResponse>(action, payload);
+		if (!response.success) {
+			return;
+		}
+
+		try {
+			await this._offlineCache.write(userId, action, payload, response);
+		} catch {
+			return;
+		}
+
+		if (this._responsesDiffer(cachedResponse, response)) {
+			this._dispatchCachedReadRefresh(action);
+		}
 	}
 
 	private async _getAccessToken(): Promise<string> {
@@ -568,6 +590,24 @@ export class WebClient implements Client {
 				},
 			}),
 		);
+	}
+
+	private _dispatchCachedReadRefresh(action: string): void {
+		if (typeof CustomEvent === "undefined") {
+			return;
+		}
+		globalThis.dispatchEvent?.(
+			new CustomEvent(CACHED_READ_REFRESH_EVENT, {
+				detail: { action },
+			}),
+		);
+	}
+
+	private _responsesDiffer<TResponse>(
+		current: ProviderSuccessResponse<TResponse>,
+		next: ProviderSuccessResponse<TResponse>,
+	): boolean {
+		return stableStringify(current) !== stableStringify(next);
 	}
 
 	private async _clearPwaCaches(): Promise<void> {

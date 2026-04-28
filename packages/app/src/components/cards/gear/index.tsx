@@ -1,4 +1,4 @@
-import type { IDbGearWithDistance } from "@repo/types";
+import { AppType, type IDbGearWithDistance } from "@repo/types";
 import { cn } from "@repo/ui";
 import { Gauge } from "lucide-react";
 import { type FC, useState } from "react";
@@ -38,12 +38,16 @@ export const GearCard: FC<GearCardProps> = ({
 }) => {
 	const { isDarkMode } = useTheme();
 	const { setLocalLoading } = useLoading();
-	const { client } = useDataClient();
+	const { client, type } = useDataClient();
 	const [gearData, setGearData] = useState<IDbGearWithDistance>(data);
 	const usagePercentage = gearData.maximumDistance
 		? (gearData.distance / gearData.maximumDistance) * 100
 		: 0;
 	const isRetired = !!gearData.dateEnd;
+	const isWeb = type === AppType.WEB;
+	const titleClassName = isWeb ? "text-[19px]" : "text-xl";
+	const detailTextClassName = isWeb ? "text-[13px]" : "text-sm";
+	const usageMetaTextClassName = isWeb ? "text-[11px]" : "text-xs";
 
 	const refreshGear = async () => {
 		const result = await client.getGear(gearData.id);
@@ -94,20 +98,21 @@ export const GearCard: FC<GearCardProps> = ({
 	const allowMaxDistanceEdit = maxDistanceEditable ?? isEditable;
 
 	return (
-		<Box>
-			<div className="relative flex justify-between items-center mb-4">
+		<Box classes="flex h-full flex-col">
+			<div className="relative mb-4 flex items-start justify-between gap-3">
 				{isEditable ? (
 					<EditableText
 						value={gearData.name}
 						onSave={handleNameChange}
-						className="text-xl font-semibold"
+						className={cn(titleClassName, "font-semibold")}
 						placeholder="Enter gear name..."
 					/>
 				) : titleLink ? (
 					<Link
 						to={titleLink}
 						className={cn(
-							"text-xl font-semibold hover:underline",
+							titleClassName,
+							"font-semibold hover:underline",
 							isDarkMode ? "text-white" : "text-gray-900",
 						)}
 					>
@@ -116,7 +121,8 @@ export const GearCard: FC<GearCardProps> = ({
 				) : (
 					<span
 						className={cn(
-							"text-xl font-semibold",
+							titleClassName,
+							"font-semibold",
 							isDarkMode ? "text-white" : "text-gray-900",
 						)}
 					>
@@ -130,82 +136,102 @@ export const GearCard: FC<GearCardProps> = ({
 				)}
 			</div>
 
-			<SectionContainer hasBorder>
-				<div className="space-y-2">
-					<DatePicker
-						date={gearData.dateBegin}
-						label="Start Date"
-						isEditable={false}
-					/>
-					<DatePicker
-						date={gearData.dateEnd}
-						onSave={handleEndDateChange}
-						label="End Date"
-						isEditable={isEditable}
-					/>
-					<div className="flex items-center justify-between gap-3 text-sm">
-						<span className="flex items-center gap-3">
-							<Gauge
-								size={16}
-								className={cn(
-									"size-6 shrink-0 p-1",
-									isDarkMode ? "text-white" : "text-gray-500",
-								)}
-							/>
-							Usage
-						</span>
-						<span>{Math.round(usagePercentage)}%</span>
-					</div>
-					<div className="w-full rounded-full h-2.5 bg-gray-200">
-						<div
-							className={`h-2.5 rounded-full ${getPercentageColor(
-								usagePercentage,
-							)}`}
-							style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+			<div className="mt-auto">
+				<SectionContainer hasBorder>
+					<div className="space-y-2">
+						<DatePicker
+							date={gearData.dateBegin}
+							label="Start Date"
+							isEditable={false}
+							className={detailTextClassName}
+							inputClassName={detailTextClassName}
 						/>
+						<DatePicker
+							date={gearData.dateEnd}
+							onSave={handleEndDateChange}
+							label="End Date"
+							isEditable={isEditable}
+							className={detailTextClassName}
+							inputClassName={detailTextClassName}
+						/>
+						<div
+							className={cn(
+								"flex items-center justify-between gap-3",
+								detailTextClassName,
+							)}
+						>
+							<span className="flex items-center gap-3">
+								<Gauge
+									size={16}
+									className={cn(
+										"size-6 shrink-0 p-1",
+										isDarkMode ? "text-white" : "text-gray-500",
+									)}
+								/>
+								Usage
+							</span>
+							<span>{Math.round(usagePercentage)}%</span>
+						</div>
+						<div className="w-full rounded-full h-2.5 bg-gray-200">
+							<div
+								className={`h-2.5 rounded-full ${getPercentageColor(
+									usagePercentage,
+								)}`}
+								style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+							/>
+						</div>
+						<div
+							className={cn(
+								"flex items-center justify-between gap-3",
+								usageMetaTextClassName,
+								isDarkMode ? "text-white" : "text-gray-500",
+							)}
+						>
+							<span className="whitespace-nowrap">
+								{formatDistance(gearData.distance)}
+							</span>
+							{!gearData.dateEnd && allowMaxDistanceEdit ? (
+								<EditableNumber
+									value={maxDistanceValue}
+									onSave={handleMaxDistanceChange}
+									className={cn(
+										"whitespace-nowrap text-right",
+										usageMetaTextClassName,
+									)}
+									formatValue={(value) => formatDistance(value * 1000)}
+								/>
+							) : (
+								<span
+									className={cn(
+										"-mx-2 whitespace-nowrap px-2 py-1 text-right",
+										usageMetaTextClassName,
+									)}
+								>
+									{formatDistance(gearData.maximumDistance)}
+								</span>
+							)}
+						</div>
 					</div>
-					<div
-						className={cn(
-							"flex items-center justify-between gap-3 text-xs",
-							isDarkMode ? "text-white" : "text-gray-500",
-						)}
-					>
-						<span className="whitespace-nowrap">
-							{formatDistance(gearData.distance)}
-						</span>
-						{!gearData.dateEnd && allowMaxDistanceEdit ? (
-							<EditableNumber
-								value={maxDistanceValue}
-								onSave={handleMaxDistanceChange}
-								className="whitespace-nowrap text-right"
-								formatValue={(value) => formatDistance(value * 1000)}
+				</SectionContainer>
+
+				<SectionContainer>
+					<div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
+						<span className="text-sm font-medium">Code</span>
+						{!gearData.dateEnd && isEditable ? (
+							<EditableText
+								value={gearData.code}
+								onSave={handleCodeChange}
+								className="max-w-full break-words text-sm"
+								placeholder="Enter gear code..."
 							/>
 						) : (
-							<span className="-mx-2 whitespace-nowrap px-2 py-1 text-right">
-								{formatDistance(gearData.maximumDistance)}
+							<span className="max-w-full break-words text-sm">
+								{gearData.code}
 							</span>
 						)}
 					</div>
-				</div>
-			</SectionContainer>
-
-			<SectionContainer>
-				<div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
-					<span className="text-sm font-medium">Code</span>
-					{!gearData.dateEnd && isEditable ? (
-						<EditableText
-							value={gearData.code}
-							onSave={handleCodeChange}
-							className="max-w-full break-words text-sm"
-							placeholder="Enter gear code..."
-						/>
-					) : (
-						<span className="max-w-full break-words text-sm">
-							{gearData.code}
-						</span>
-					)}
-				</div>
-			</SectionContainer>
+				</SectionContainer>
+			</div>
 		</Box>
 	);
 };

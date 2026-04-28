@@ -12,6 +12,7 @@ import { Bounce, toast } from "react-toastify";
 import { Box, Button, Text } from "../components/index.js";
 import { Routes } from "../constants.js";
 import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
+import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
 import { formatDistance } from "../utils/formatters.js";
 
 const DAY_LABELS = [
@@ -254,39 +255,60 @@ export function Calendar() {
 		);
 	}, [selectedTypes]);
 
-	const fetchActivities = useCallback(async () => {
-		setGlobalLoading(true);
-		setIsLoading(true);
-		const result = await client.getActivities({
-			limit: 500,
-			startDate: formatDateParam(gridStart),
-			endDate: formatDateParam(gridEnd),
-		});
-
-		if (!result.success) {
-			toast.error(result.error, {
-				hideProgressBar: false,
-				closeOnClick: false,
-				transition: Bounce,
+	const fetchActivities = useCallback(
+		async ({
+			showLoading = true,
+			showErrors = true,
+		}: {
+			showLoading?: boolean;
+			showErrors?: boolean;
+		} = {}) => {
+			if (showLoading) {
+				setGlobalLoading(true);
+				setIsLoading(true);
+			}
+			const result = await client.getActivities({
+				limit: 500,
+				startDate: formatDateParam(gridStart),
+				endDate: formatDateParam(gridEnd),
 			});
-			setAllActivities([]);
-			setIsLoading(false);
-			setGlobalLoading(false);
-			return;
-		}
 
-		const sorted = [...result.data.data].sort(
-			(a, b) =>
-				new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-		);
-		setAllActivities(sorted);
-		setIsLoading(false);
-		setGlobalLoading(false);
-	}, [client, gridEnd, gridStart, setGlobalLoading]);
+			if (!result.success) {
+				if (showErrors) {
+					toast.error(result.error, {
+						hideProgressBar: false,
+						closeOnClick: false,
+						transition: Bounce,
+					});
+				}
+				setAllActivities([]);
+				if (showLoading) {
+					setIsLoading(false);
+					setGlobalLoading(false);
+				}
+				return;
+			}
+
+			const sorted = [...result.data.data].sort(
+				(a, b) =>
+					new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+			);
+			setAllActivities(sorted);
+			if (showLoading) {
+				setIsLoading(false);
+				setGlobalLoading(false);
+			}
+		},
+		[client, gridEnd, gridStart, setGlobalLoading],
+	);
 
 	useEffect(() => {
 		void fetchActivities();
 	}, [fetchActivities]);
+
+	useWebCachedReadRefresh(["getActivities"], () =>
+		fetchActivities({ showLoading: false, showErrors: false }),
+	);
 
 	const activities = useMemo(
 		() =>
@@ -341,7 +363,7 @@ export function Calendar() {
 
 	return (
 		<div className="space-y-4">
-			<div className="mx-auto flex max-w-4xl flex-col gap-4">
+			<div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4">
 				<Box description="Review the month as a training calendar, with weekly totals and direct access to each workout.">
 					<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
 						<div className="flex flex-wrap items-center gap-2">

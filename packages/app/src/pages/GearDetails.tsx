@@ -7,6 +7,7 @@ import { Box } from "../components/Box.js";
 import { Text } from "../components/Text.js";
 import { GearCard } from "../components/index.js";
 import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
+import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
 import { generateExternalGearLink } from "../utils/providers.js";
 import { actionButtonBaseClass } from "../utils/style.js";
 
@@ -24,36 +25,59 @@ export function GearDetails() {
 		null,
 	);
 
-	const loadGear = useCallback(async () => {
-		if (!gearId) {
-			const message = "Missing gear ID.";
-			toast.error(message, { transition: Bounce });
-			setLoadError(message);
-			setIsLoading(false);
-			return null;
-		}
-		setIsLoading(true);
-		setLoadError(null);
-		const result = await client.getGear(gearId);
-		if (!result.success || !result.data) {
-			const message = result.success
-				? "We couldn't find that gear."
-				: result.error;
-			toast.error(message, { transition: Bounce });
-			setGear(null);
-			setLoadError(message);
-			setIsLoading(false);
-			return null;
-		}
-		setGear(result.data);
-		setLoadError(null);
-		setIsLoading(false);
-		return result.data;
-	}, [client, gearId]);
+	const loadGear = useCallback(
+		async ({
+			showLoading = true,
+			showErrors = true,
+		}: {
+			showLoading?: boolean;
+			showErrors?: boolean;
+		} = {}) => {
+			if (!gearId) {
+				const message = "Missing gear ID.";
+				if (showErrors) {
+					toast.error(message, { transition: Bounce });
+				}
+				setLoadError(message);
+				setIsLoading(false);
+				return null;
+			}
+			if (showLoading) {
+				setIsLoading(true);
+			}
+			setLoadError(null);
+			const result = await client.getGear(gearId);
+			if (!result.success || !result.data) {
+				const message = result.success
+					? "We couldn't find that gear."
+					: result.error;
+				if (showErrors) {
+					toast.error(message, { transition: Bounce });
+				}
+				setGear(null);
+				setLoadError(message);
+				if (showLoading) {
+					setIsLoading(false);
+				}
+				return null;
+			}
+			setGear(result.data);
+			setLoadError(null);
+			if (showLoading) {
+				setIsLoading(false);
+			}
+			return result.data;
+		},
+		[client, gearId],
+	);
 
 	useEffect(() => {
-		loadGear();
+		void loadGear();
 	}, [loadGear]);
+
+	useWebCachedReadRefresh(["getGear"], async () => {
+		await loadGear({ showLoading: false, showErrors: false });
+	});
 
 	const connectionMap = useMemo(() => {
 		if (!gear?.providerConnections) return new Map<Providers, string>();

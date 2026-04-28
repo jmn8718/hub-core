@@ -55,60 +55,70 @@ export function Settings() {
 	const { type } = useDataClient();
 	return (
 		<div className="flex flex-col justify-between flex-1">
-			<Box>
-				<SectionContainer title="Theme Settings" hasBorder>
-					<ThemeSection />
-				</SectionContainer>
-				{type === AppType.DESKTOP && (
+			<div className="space-y-4">
+				<Box>
 					<SectionContainer
-						title="Downloads"
-						hasBorder={!store[StorageKeys.OBSIDIAN_DISABLED]}
+						title="Theme Settings"
+						hasBorder={type !== AppType.WEB}
 					>
-						<FolderPathSection
-							id="download-path"
-							storeKey={StorageKeys.DOWNLOAD_FOLDER}
-							text="Choose where downloaded activity files should be saved."
-							popupTitle="Choose a folder for downloaded activity files"
-							placeholder="Choose a download folder"
-						/>
+						<ThemeSection />
 					</SectionContainer>
-				)}
-				{type === AppType.DESKTOP && (
-					<SectionContainer title="Cache" hasBorder>
-						<FolderPathSection
-							id="cache-path"
-							storeKey={StorageKeys.CACHE_FOLDER}
-							text="Optional. Save provider activity data as JSON files for debugging."
-							popupTitle="Choose a folder for cached activity data"
-							placeholder="Choose a cache folder"
-						/>
-					</SectionContainer>
-				)}
-				{type === AppType.DESKTOP && !store[StorageKeys.OBSIDIAN_DISABLED] && (
-					<SectionContainer title="Obsidian">
-						<FolderPathSection
-							id="obsidian-path"
-							storeKey={StorageKeys.OBSIDIAN_FOLDER}
-							text="Choose the Obsidian vault where activity notes should be exported."
-							popupTitle="Choose an Obsidian vault folder"
-							placeholder="Choose an Obsidian vault"
-						/>
-						<div className="mt-4 grid gap-3 md:grid-cols-2">
-							<StoreTextField
-								storeKey={StorageKeys.DEFAULT_CITY}
-								label="Default city"
-								placeholder="Used when an activity has no city"
+					{type === AppType.DESKTOP && (
+						<SectionContainer
+							title="Downloads"
+							hasBorder={!store[StorageKeys.OBSIDIAN_DISABLED]}
+						>
+							<FolderPathSection
+								id="download-path"
+								storeKey={StorageKeys.DOWNLOAD_FOLDER}
+								text="Choose where downloaded activity files should be saved."
+								popupTitle="Choose a folder for downloaded activity files"
+								placeholder="Choose a download folder"
 							/>
-							<StoreTextField
-								storeKey={StorageKeys.DEFAULT_COUNTRY}
-								label="Default country"
-								placeholder="Used when an activity has no country"
+						</SectionContainer>
+					)}
+					{type === AppType.DESKTOP && (
+						<SectionContainer title="Cache" hasBorder>
+							<FolderPathSection
+								id="cache-path"
+								storeKey={StorageKeys.CACHE_FOLDER}
+								text="Optional. Save provider activity data as JSON files for debugging."
+								popupTitle="Choose a folder for cached activity data"
+								placeholder="Choose a cache folder"
 							/>
-						</div>
-					</SectionContainer>
+						</SectionContainer>
+					)}
+					{type === AppType.DESKTOP &&
+						!store[StorageKeys.OBSIDIAN_DISABLED] && (
+							<SectionContainer title="Obsidian">
+								<FolderPathSection
+									id="obsidian-path"
+									storeKey={StorageKeys.OBSIDIAN_FOLDER}
+									text="Choose the Obsidian vault where activity notes should be exported."
+									popupTitle="Choose an Obsidian vault folder"
+									placeholder="Choose an Obsidian vault"
+								/>
+								<div className="mt-4 grid gap-3 md:grid-cols-2">
+									<StoreTextField
+										storeKey={StorageKeys.DEFAULT_CITY}
+										label="Default city"
+										placeholder="Used when an activity has no city"
+									/>
+									<StoreTextField
+										storeKey={StorageKeys.DEFAULT_COUNTRY}
+										label="Default country"
+										placeholder="Used when an activity has no country"
+									/>
+								</div>
+							</SectionContainer>
+						)}
+				</Box>
+				{type === AppType.WEB && (
+					<Box>
+						<SignOutSection />
+					</Box>
 				)}
-				{type === AppType.WEB && <SignOutSection />}
-			</Box>
+			</div>
 			<div className="flex flex-row-reverse">
 				<Link
 					to={Routes.DEBUG}

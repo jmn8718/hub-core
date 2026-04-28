@@ -9,6 +9,8 @@ interface DatePickerProps {
 	onSave?: (_date: string) => void;
 	isEditable?: boolean;
 	label: string;
+	className?: string;
+	inputClassName?: string;
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -16,6 +18,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 	onSave,
 	label,
 	isEditable = true,
+	className,
+	inputClassName,
 }) => {
 	const [isEditing, setIsEditing] = useState(false);
 	const { isDarkMode } = useTheme();
@@ -45,7 +49,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 	};
 
 	return (
-		<div className="flex items-center gap-3 text-sm">
+		<div className={cn("flex items-center gap-3 text-sm", className)}>
 			<button
 				type="button"
 				onClick={openEditor}
@@ -69,11 +73,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 					value={dateValue}
 					onChange={handleChange}
 					onBlur={onBlur}
-					className={`px-2 py-1 rounded-md ${
+					className={cn(
+						"px-2 py-1 rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500",
 						isDarkMode
 							? "bg-gray-700 text-white border-gray-600"
-							: "bg-white text-gray-900 border-gray-300"
-					} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
+							: "bg-white text-gray-900 border-gray-300",
+						inputClassName,
+					)}
 				/>
 			) : (
 				<button

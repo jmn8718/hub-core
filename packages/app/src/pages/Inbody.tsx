@@ -13,6 +13,7 @@ import {
 } from "../components/index.js";
 import { Routes } from "../constants.js";
 import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
+import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
 import { formatMeasurement } from "../utils/formatters.js";
 import { formLabelClass, inputBaseClass } from "../utils/style.js";
 
@@ -133,11 +134,21 @@ export function Inbody() {
 	const inputClass = cn(inputBaseClass, colors.input);
 	const labelClass = cn(formLabelClass, colors.text, "flex flex-col gap-1");
 
-	const fetchInbodyData = async (isMainLoading: boolean) => {
-		setIsLoading(true);
-		if (isMainLoading) {
+	const fetchInbodyData = async ({
+		isMainLoading,
+		showLoading = true,
+		showErrors = true,
+	}: {
+		isMainLoading: boolean;
+		showLoading?: boolean;
+		showErrors?: boolean;
+	}) => {
+		if (showLoading) {
+			setIsLoading(true);
+		}
+		if (showLoading && isMainLoading) {
 			setGlobalLoading(true);
-		} else {
+		} else if (showLoading) {
 			setLocalLoading(true);
 		}
 		try {
@@ -146,28 +157,44 @@ export function Inbody() {
 			});
 			if (result.success) {
 				setData(result.data);
+			} else if (showErrors) {
+				toast.error(result.error, {
+					hideProgressBar: false,
+					closeOnClick: false,
+				});
 			}
 		} catch (err) {
-			// Handle error if needed
-			toast.error((err as Error).message, {
-				hideProgressBar: false,
-				closeOnClick: false,
-			});
+			if (showErrors) {
+				toast.error((err as Error).message, {
+					hideProgressBar: false,
+					closeOnClick: false,
+				});
+			}
 		} finally {
-			if (isMainLoading) {
+			if (showLoading && isMainLoading) {
 				setGlobalLoading(false);
-			} else {
+			} else if (showLoading) {
 				setLocalLoading(false);
 			}
-			setIsLoading(false);
+			if (showLoading) {
+				setIsLoading(false);
+			}
 			setHasLoadedOnce(true);
 		}
 	};
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
-		fetchInbodyData(!hasLoadedOnce);
+		void fetchInbodyData({ isMainLoading: !hasLoadedOnce });
 	}, [selectedType]);
+
+	useWebCachedReadRefresh(["getInbodyData"], () =>
+		fetchInbodyData({
+			isMainLoading: false,
+			showLoading: false,
+			showErrors: false,
+		}),
+	);
 
 	const filteredData = data.filter((item) =>
 		isWithinDateRange(item.timestamp, fromDate, toDate),

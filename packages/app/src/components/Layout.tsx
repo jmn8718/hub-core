@@ -60,13 +60,16 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
+	const largeWebViewportQuery = "(min-width: 1200px)";
 	const { colors, isDarkMode } = useTheme();
 	const { type } = useDataClient();
 	const location = useLocation();
 	const isCalendarRoute = location.pathname === AppRoutes.CALENDAR;
 	const isWeb = type === AppType.WEB;
 	const pageTitle = getPageTitle(location.pathname);
+	const [isLargeWebViewport, setIsLargeWebViewport] = useState(false);
 	const [isWebSidebarOpen, setIsWebSidebarOpen] = useState(false);
+	const useFixedWebSidebar = isWeb && isLargeWebViewport;
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useLayoutEffect(() => {
@@ -74,6 +77,29 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 			window.scrollTo(0, 0);
 		}
 	}, [location.pathname]);
+
+	useEffect(() => {
+		if (!isWeb || typeof window === "undefined") {
+			return;
+		}
+
+		const mediaQuery = window.matchMedia(largeWebViewportQuery);
+		const syncViewport = (matches: boolean) => {
+			setIsLargeWebViewport(matches);
+			setIsWebSidebarOpen(matches);
+		};
+
+		syncViewport(mediaQuery.matches);
+
+		const handleChange = (event: MediaQueryListEvent) => {
+			syncViewport(event.matches);
+		};
+
+		mediaQuery.addEventListener("change", handleChange);
+		return () => {
+			mediaQuery.removeEventListener("change", handleChange);
+		};
+	}, [isWeb]);
 
 	useEffect(() => {
 		const handleOfflineCacheHit = () => {
@@ -135,7 +161,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 				)}
 			>
 				<div className="relative flex h-full items-center justify-center px-16">
-					{isWeb ? (
+					{isWeb && !useFixedWebSidebar ? (
 						<button
 							type="button"
 							aria-label={
@@ -168,6 +194,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 			<Sidebar
 				isOpen={isWebSidebarOpen}
 				onOpenChange={setIsWebSidebarOpen}
+				keepOpenOnNavigate={isLargeWebViewport}
+				fixedDesktopStyle={useFixedWebSidebar}
 				sidebarItems={[
 					{ icon: Home, href: AppRoutes.HOME, label: "Dashboard" },
 					{ icon: Database, href: AppRoutes.DATA, label: "Data" },
@@ -185,13 +213,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 				]}
 			/>
 			<div
-				className={cn("p-0 pt-14", type === AppType.DESKTOP ? "pl-16" : "pl-0")}
+				className={cn(
+					"p-0 pt-14",
+					type === AppType.DESKTOP || useFixedWebSidebar ? "pl-16" : "pl-0",
+				)}
 			>
 				<div
 					className={cn(
 						"box-border min-h-[calc(100dvh-3.5rem)] flex flex-col",
 						"p-3 md:p-4",
-						isCalendarRoute ? "mx-0 max-w-none" : "mx-auto max-w-4xl",
+						isCalendarRoute
+							? "mx-auto w-full max-w-[1400px]"
+							: "mx-auto max-w-4xl",
 					)}
 				>
 					{children}

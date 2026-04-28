@@ -1,10 +1,11 @@
 import type { IDailyOverviewData } from "@repo/types";
 import { cn } from "@repo/ui";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { Box, DailyActivityStats, Text } from "../components/index.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/index.js";
+import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
 
 type DailyStats = {
 	distance: number;
@@ -60,10 +61,17 @@ export function HomeStatsSection({
 	const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-	useEffect(() => {
-		const loadStats = async () => {
-			setIsLoading(true);
+	const loadStats = useCallback(
+		async ({
+			showLoading = true,
+			showErrors = true,
+		}: {
+			showLoading?: boolean;
+			showErrors?: boolean;
+		} = {}) => {
+			if (showLoading) {
+				setIsLoading(true);
+			}
 			try {
 				const result = await client.getDailyOverview({
 					periodType: "days",
@@ -80,7 +88,7 @@ export function HomeStatsSection({
 						{ distance: 0, duration: 0, activeDays: 0 },
 					);
 					setDailyStats(aggregated);
-				} else {
+				} else if (showErrors) {
 					toast.error(result.error, {
 						hideProgressBar: false,
 						closeOnClick: false,
@@ -88,18 +96,31 @@ export function HomeStatsSection({
 					});
 				}
 			} catch (err) {
+				if (!showErrors) {
+					return;
+				}
 				toast.error((err as Error).message, {
 					hideProgressBar: false,
 					closeOnClick: false,
 					transition: Bounce,
 				});
 			} finally {
-				setIsLoading(false);
+				if (showLoading) {
+					setIsLoading(false);
+				}
 			}
-		};
+		},
+		[client],
+	);
 
-		loadStats();
-	}, [client, refreshToken]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(() => {
+		void loadStats();
+	}, [loadStats, refreshToken]);
+
+	useWebCachedReadRefresh(["getDailyOverview"], () =>
+		loadStats({ showLoading: false, showErrors: false }),
+	);
 
 	return (
 		<Box>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
+import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
 import { formatDistance, formatDuration } from "../utils/formatters.js";
 import { Box } from "./Box.js";
 import { Text } from "./Text.js";
@@ -129,36 +130,56 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 	const [weeks, setWeeks] = useState<IWeeklyOverviewData[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
-	const fetchWeeklyData = useCallback(async () => {
-		setIsLoading(true);
-		onLoadingChange?.(true);
-		try {
-			const result = await client.getWeeklyOverview({ limit: limit ?? 4 });
-			if (result.success) {
-				setWeeks(result.data);
-			} else {
-				toast.error(result.error, {
+	const fetchWeeklyData = useCallback(
+		async ({
+			showLoading = true,
+			showErrors = true,
+		}: {
+			showLoading?: boolean;
+			showErrors?: boolean;
+		} = {}) => {
+			if (showLoading) {
+				setIsLoading(true);
+				onLoadingChange?.(true);
+			}
+			try {
+				const result = await client.getWeeklyOverview({ limit: limit ?? 4 });
+				if (result.success) {
+					setWeeks(result.data);
+				} else if (showErrors) {
+					toast.error(result.error, {
+						hideProgressBar: false,
+						closeOnClick: false,
+						transition: Bounce,
+					});
+				}
+			} catch (err) {
+				if (!showErrors) {
+					return;
+				}
+				toast.error((err as Error).message, {
 					hideProgressBar: false,
 					closeOnClick: false,
 					transition: Bounce,
 				});
+			} finally {
+				if (showLoading) {
+					setIsLoading(false);
+					onLoadingChange?.(false);
+				}
 			}
-		} catch (err) {
-			toast.error((err as Error).message, {
-				hideProgressBar: false,
-				closeOnClick: false,
-				transition: Bounce,
-			});
-		} finally {
-			setIsLoading(false);
-			onLoadingChange?.(false);
-		}
-	}, [client, limit, onLoadingChange]);
+		},
+		[client, limit, onLoadingChange],
+	);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		fetchWeeklyData();
 	}, [fetchWeeklyData, refreshToken]);
+
+	useWebCachedReadRefresh(["getWeeklyOverview"], () =>
+		fetchWeeklyData({ showLoading: false, showErrors: false }),
+	);
 
 	const displayRows = useMemo(() => {
 		const sortedAsc = [...weeks].sort(

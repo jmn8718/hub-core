@@ -13,7 +13,7 @@ type CacheRecord<TResponse> = {
 	updatedAt: string;
 };
 
-const stableStringify = (value: unknown): string => {
+export const stableStringify = (value: unknown): string => {
 	if (value === null || typeof value !== "object") {
 		return JSON.stringify(value);
 	}

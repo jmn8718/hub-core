@@ -10,6 +10,7 @@ import { Bounce, toast } from "react-toastify";
 import { GearCard, GearFilters, H2 } from "../components/index.js";
 import { Routes } from "../constants.js";
 import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
+import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
 
 export function Gears() {
 	const { client } = useDataClient();
@@ -24,40 +25,56 @@ export function Gears() {
 		cursor: "",
 	});
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	const fetchData = useCallback(
 		async ({
 			cursor,
 			limit,
+			showLoading = true,
+			showErrors = true,
 		}: {
 			cursor?: string;
 			limit: number;
+			showLoading?: boolean;
+			showErrors?: boolean;
 		}) => {
-			setGlobalLoading(true);
+			if (showLoading) {
+				setGlobalLoading(true);
+			}
 			const result = await client.getGears({ cursor, limit });
 			if (result.success) {
 				setGears(result.data);
-			} else {
+			} else if (showErrors) {
 				toast.error(result.error, {
 					hideProgressBar: false,
 					closeOnClick: false,
 					transition: Bounce,
 				});
 			}
-			setTimeout(() => {
-				setGlobalLoading(false);
-			}, 500);
+			if (showLoading) {
+				setTimeout(() => {
+					setGlobalLoading(false);
+				}, 500);
+			}
 		},
-		[setGears, setGlobalLoading],
+		[client, setGlobalLoading],
 	);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
-		fetchData({
+		void fetchData({
 			limit: 50,
 			cursor: gears.cursor,
 		});
 	}, []);
+
+	useWebCachedReadRefresh(["getGears"], () =>
+		fetchData({
+			limit: 50,
+			cursor: gears.cursor,
+			showLoading: false,
+			showErrors: false,
+		}),
+	);
 
 	const filteredGear = useMemo(() => {
 		const filteredGears = gears.data

@@ -14,6 +14,7 @@ import {
 import { useDataClient } from "../../contexts/DataClientContext.js";
 import { useLoading } from "../../contexts/LoadingContext.js";
 import { useTheme } from "../../contexts/ThemeContext.js";
+import { useWebCachedReadRefresh } from "../../hooks/useWebCachedReadRefresh.js";
 import { formatDistance } from "../../utils/formatters.js";
 import { Box } from "../Box.js";
 import { H2 } from "../H2.js";
@@ -47,50 +48,70 @@ export const WeeklyDistanceChart: React.FC<WeeklyDistanceChartProps> = ({
 	const { setLocalLoading } = useLoading();
 	const [data, setData] = useState<WeeklyDistanceData[]>([]);
 
-	const fetchData = useCallback(async () => {
-		if (!onLoadingChange) {
-			setLocalLoading(true);
-		}
-		onLoadingChange?.(true);
-		try {
-			const result = await client.getWeeklyOverview({ limit: 8 });
-			if (result.success) {
-				const normalized = [...result.data]
-					.sort(
-						(a, b) =>
-							dayjs(a.weekStart).valueOf() - dayjs(b.weekStart).valueOf(),
-					)
-					.map((entry) => ({
-						...entry,
-						label: formatWeekLabel(entry.weekStart),
-					}));
-				setData(normalized);
-			} else {
-				toast.error(result.error, {
+	const fetchData = useCallback(
+		async ({
+			showLoading = true,
+			showErrors = true,
+		}: {
+			showLoading?: boolean;
+			showErrors?: boolean;
+		} = {}) => {
+			if (showLoading && !onLoadingChange) {
+				setLocalLoading(true);
+			}
+			if (showLoading) {
+				onLoadingChange?.(true);
+			}
+			try {
+				const result = await client.getWeeklyOverview({ limit: 8 });
+				if (result.success) {
+					const normalized = [...result.data]
+						.sort(
+							(a, b) =>
+								dayjs(a.weekStart).valueOf() - dayjs(b.weekStart).valueOf(),
+						)
+						.map((entry) => ({
+							...entry,
+							label: formatWeekLabel(entry.weekStart),
+						}));
+					setData(normalized);
+				} else if (showErrors) {
+					toast.error(result.error, {
+						hideProgressBar: false,
+						closeOnClick: false,
+						transition: Bounce,
+					});
+				}
+			} catch (err) {
+				if (!showErrors) {
+					return;
+				}
+				toast.error((err as Error).message, {
 					hideProgressBar: false,
 					closeOnClick: false,
 					transition: Bounce,
 				});
-			}
-		} catch (err) {
-			toast.error((err as Error).message, {
-				hideProgressBar: false,
-				closeOnClick: false,
-				transition: Bounce,
-			});
-		} finally {
-			setTimeout(() => {
-				if (!onLoadingChange) {
-					setLocalLoading(false);
+			} finally {
+				if (showLoading) {
+					setTimeout(() => {
+						if (!onLoadingChange) {
+							setLocalLoading(false);
+						}
+						onLoadingChange?.(false);
+					}, 500);
 				}
-				onLoadingChange?.(false);
-			}, 500);
-		}
-	}, [client, onLoadingChange, setLocalLoading]);
+			}
+		},
+		[client, onLoadingChange, setLocalLoading],
+	);
 
 	useEffect(() => {
 		fetchData();
 	}, [fetchData]);
+
+	useWebCachedReadRefresh(["getWeeklyOverview"], () =>
+		fetchData({ showLoading: false, showErrors: false }),
+	);
 
 	const chartData = useMemo(() => data, [data]);
 

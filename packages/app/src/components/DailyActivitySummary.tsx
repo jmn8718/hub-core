@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
+import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
 import { Box } from "./Box.js";
 import { DailyActivityStats } from "./DailyActivityStats.js";
 import { DailyDistanceChart } from "./charts/DailyDistanceChart.js";
@@ -86,67 +87,89 @@ export const DailyActivitySummary: React.FC<DailyActivitySummaryProps> = ({
 	const [data, setData] = useState<IDailyOverviewData[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
-	const fetchData = useCallback(async () => {
-		if (mode === "range") {
-			if (!startDate || !endDate) return;
-			if (dayjs(startDate).isAfter(dayjs(endDate))) {
-				toast.error("Start date must be before end date", {
+	const fetchData = useCallback(
+		async ({
+			showLoading = true,
+			showErrors = true,
+		}: {
+			showLoading?: boolean;
+			showErrors?: boolean;
+		} = {}) => {
+			if (mode === "range") {
+				if (!startDate || !endDate) return;
+				if (dayjs(startDate).isAfter(dayjs(endDate))) {
+					if (showErrors) {
+						toast.error("Start date must be before end date", {
+							hideProgressBar: false,
+							closeOnClick: false,
+							transition: Bounce,
+						});
+					}
+					return;
+				}
+			}
+
+			if (showLoading) {
+				setIsLoading(true);
+				onLoadingChange?.(true);
+			}
+
+			try {
+				const params =
+					mode === "range"
+						? {
+								startDate,
+								endDate,
+							}
+						: {
+								periodType,
+								periodCount,
+							};
+
+				const result = await client.getDailyOverview(params);
+				if (result.success) {
+					setData(result.data);
+				} else if (showErrors) {
+					toast.error(result.error, {
+						hideProgressBar: false,
+						closeOnClick: false,
+						transition: Bounce,
+					});
+				}
+			} catch (err) {
+				if (!showErrors) {
+					return;
+				}
+				toast.error((err as Error).message, {
 					hideProgressBar: false,
 					closeOnClick: false,
 					transition: Bounce,
 				});
-				return;
+			} finally {
+				if (showLoading) {
+					setIsLoading(false);
+					onLoadingChange?.(false);
+				}
 			}
-		}
-
-		setIsLoading(true);
-		onLoadingChange?.(true);
-
-		try {
-			const params =
-				mode === "range"
-					? {
-							startDate,
-							endDate,
-						}
-					: {
-							periodType,
-							periodCount,
-						};
-
-			const result = await client.getDailyOverview(params);
-			if (result.success) {
-				setData(result.data);
-			} else {
-				toast.error(result.error, {
-					hideProgressBar: false,
-					closeOnClick: false,
-					transition: Bounce,
-				});
-			}
-		} catch (err) {
-			toast.error((err as Error).message, {
-				hideProgressBar: false,
-				closeOnClick: false,
-				transition: Bounce,
-			});
-		} finally {
-			setIsLoading(false);
-			onLoadingChange?.(false);
-		}
-	}, [
-		client,
-		endDate,
-		mode,
-		onLoadingChange,
-		periodCount,
-		periodType,
-		startDate,
-	]);
+		},
+		[
+			client,
+			endDate,
+			mode,
+			onLoadingChange,
+			periodCount,
+			periodType,
+			startDate,
+		],
+	);
 
 	useEffect(() => {
 		fetchData();
 	}, [fetchData]);
+
+	useWebCachedReadRefresh(["getDailyOverview"], () =>
+		fetchData({ showLoading: false, showErrors: false }),
+	);
 
 	const totals = useMemo(() => {
 		const totalDistance = data.reduce((sum, entry) => sum + entry.distance, 0);

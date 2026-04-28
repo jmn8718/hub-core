@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { ActivityCard, ActivityFilters } from "../components/index.js";
 import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
+import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
 
 export function DataList() {
 	const { isDarkMode } = useTheme();
@@ -57,14 +58,16 @@ export function DataList() {
 		async ({
 			cursor,
 			limit,
+			showErrors = true,
 		}: {
 			cursor?: string;
 			limit: number;
+			showErrors?: boolean;
 		}) => {
 			const result = await client.getGears({ cursor, limit });
 			if (result.success) {
 				setGears(result.data);
-			} else {
+			} else if (showErrors) {
 				toast.error(result.error, {
 					hideProgressBar: false,
 					closeOnClick: false,
@@ -80,10 +83,14 @@ export function DataList() {
 			cursor,
 			limit,
 			reset = false,
+			showLoading = true,
+			showErrors = true,
 		}: {
 			cursor?: string;
 			limit: number;
 			reset?: boolean;
+			showLoading?: boolean;
+			showErrors?: boolean;
 		}) => {
 			const result = await client.getActivities({
 				limit,
@@ -109,17 +116,19 @@ export function DataList() {
 						: current.data.concat(result.data.data),
 					cursor: result.data.cursor,
 				}));
-			} else {
+			} else if (showErrors) {
 				toast.error(result.error, {
 					hideProgressBar: false,
 					closeOnClick: false,
 					transition: Bounce,
 				});
 			}
-			setTimeout(() => {
-				if (!cursor || reset) setGlobalLoading(false);
-				else setLocalLoading(false);
-			}, 250);
+			if (showLoading) {
+				setTimeout(() => {
+					if (!cursor || reset) setGlobalLoading(false);
+					else setLocalLoading(false);
+				}, 250);
+			}
 		},
 		[appliedFilters, client, setGlobalLoading, setLocalLoading],
 	);
@@ -132,17 +141,32 @@ export function DataList() {
 			data: [],
 			cursor: "",
 		});
-		fetchData({
+		void fetchData({
 			limit: 20,
 			reset: true,
 		});
 	}, [fetchData]);
 
 	useEffect(() => {
-		fetchGears({
+		void fetchGears({
 			limit: 50,
 		});
 	}, [fetchGears]);
+
+	useWebCachedReadRefresh(["getActivities", "getGears"], async () => {
+		await Promise.all([
+			fetchData({
+				limit: 20,
+				reset: true,
+				showLoading: false,
+				showErrors: false,
+			}),
+			fetchGears({
+				limit: 50,
+				showErrors: false,
+			}),
+		]);
+	});
 
 	const loadMoreClick = () => {
 		setLocalLoading(true);
