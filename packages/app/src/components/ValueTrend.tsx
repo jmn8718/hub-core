@@ -6,6 +6,7 @@ import { getVarianceClass } from "../utils/style.js";
 interface ValueTrendProps {
 	value: string;
 	difference?: number | null;
+	percentageBase?: number | null;
 	goodWhenNegative?: boolean;
 	formatter?: (value: number) => string;
 	className?: string;
@@ -19,6 +20,7 @@ interface ValueTrendProps {
 export const ValueTrend: React.FC<ValueTrendProps> = ({
 	value,
 	difference,
+	percentageBase,
 	goodWhenNegative = false,
 	formatter,
 	className,
@@ -33,6 +35,12 @@ export const ValueTrend: React.FC<ValueTrendProps> = ({
 		typeof difference === "number" && !Number.isNaN(difference)
 			? difference
 			: null;
+	const percentBase =
+		typeof percentageBase === "number" &&
+		!Number.isNaN(percentageBase) &&
+		percentageBase !== 0
+			? Math.abs(percentageBase)
+			: null;
 
 	let trendText = neutralFallback;
 	let trendClass = neutralClassName || "text-gray-400";
@@ -44,9 +52,13 @@ export const ValueTrend: React.FC<ValueTrendProps> = ({
 
 		if (diff !== 0) {
 			const sign = diff > 0 ? "+" : "-";
+			const percentageText =
+				percentBase !== null
+					? ` (${((Math.abs(diff) / percentBase) * 100).toFixed(1)}%)`
+					: "";
 			trendText = showArrows
-				? `${diff > 0 ? "▲" : "▼"} ${magnitude}`
-				: `${sign}${magnitude}`;
+				? `${diff > 0 ? "▲" : "▼"} ${magnitude}${percentageText}`
+				: `${sign}${magnitude}${percentageText}`;
 			trendClass = getVarianceClass(diff, goodWhenNegative, isDarkMode);
 		}
 	}

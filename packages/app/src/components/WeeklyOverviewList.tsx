@@ -190,6 +190,8 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 			const previous = index > 0 ? sortedAsc[index - 1] : undefined;
 			return {
 				...entry,
+				previousDistance: previous?.distance ?? null,
+				previousDuration: previous?.duration ?? null,
 				distanceVariance: previous ? entry.distance - previous.distance : null,
 				durationVariance: previous ? entry.duration - previous.duration : null,
 			};
@@ -243,6 +245,7 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 												value={formatDistance(week.distance)}
 												formatter={formatDistance}
 												difference={week.distanceVariance}
+												percentageBase={week.previousDistance}
 												className="flex-col items-start gap-1"
 												valueClassName="whitespace-nowrap"
 												trendClassName="whitespace-nowrap"
@@ -264,6 +267,7 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 												value={formatDuration(Math.round(week.duration))}
 												formatter={formatDuration}
 												difference={week.durationVariance}
+												percentageBase={week.previousDuration}
 												className="flex-col items-start gap-1"
 												valueClassName="whitespace-nowrap"
 												trendClassName="whitespace-nowrap"
@@ -304,6 +308,7 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 												value={formatDistance(week.distance)}
 												formatter={formatDistance}
 												difference={week.distanceVariance}
+												percentageBase={week.previousDistance}
 												showArrows
 											/>
 										</td>
@@ -312,6 +317,7 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 												value={formatDuration(Math.round(week.duration))}
 												formatter={formatDuration}
 												difference={week.durationVariance}
+												percentageBase={week.previousDuration}
 											/>
 										</td>
 									</tr>
