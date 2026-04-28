@@ -18,6 +18,64 @@ import { formLabelClass, inputBaseClass } from "../utils/style.js";
 
 const inbodyTypes = Object.values(InbodyType);
 const LAST_FOUR_WEEKS_DAYS = 27;
+const summarySkeletonIds = ["current", "change", "trend", "baseline"] as const;
+const tableSkeletonIds = ["one", "two", "three", "four", "five"] as const;
+
+const SkeletonBlock = ({
+	className,
+	isDarkMode,
+}: {
+	className: string;
+	isDarkMode: boolean;
+}) => (
+	<div
+		className={cn(
+			"animate-pulse rounded-md",
+			isDarkMode ? "bg-gray-700" : "bg-gray-200",
+			className,
+		)}
+	/>
+);
+
+const InbodyPageSkeleton = ({ isDarkMode }: { isDarkMode: boolean }) => (
+	<div className="grid grid-cols-1 gap-4" aria-hidden="true">
+		<Box>
+			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+				{summarySkeletonIds.map((id) => (
+					<div key={id} className="flex flex-col gap-3">
+						<SkeletonBlock className="h-4 w-20" isDarkMode={isDarkMode} />
+						<SkeletonBlock className="h-8 w-24" isDarkMode={isDarkMode} />
+						<SkeletonBlock className="h-3 w-16" isDarkMode={isDarkMode} />
+					</div>
+				))}
+			</div>
+		</Box>
+		<Box>
+			<div className="space-y-4">
+				<SkeletonBlock className="h-5 w-24" isDarkMode={isDarkMode} />
+				<SkeletonBlock className="h-64 w-full" isDarkMode={isDarkMode} />
+			</div>
+		</Box>
+		<Box>
+			<div className="space-y-4">
+				<SkeletonBlock className="h-5 w-20" isDarkMode={isDarkMode} />
+				<SkeletonBlock className="h-64 w-full" isDarkMode={isDarkMode} />
+			</div>
+		</Box>
+		<Box>
+			<div className="space-y-3">
+				<SkeletonBlock className="h-5 w-28" isDarkMode={isDarkMode} />
+				{tableSkeletonIds.map((id) => (
+					<SkeletonBlock
+						key={id}
+						className="h-14 w-full"
+						isDarkMode={isDarkMode}
+					/>
+				))}
+			</div>
+		</Box>
+	</div>
+);
 
 const toDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
 
@@ -51,8 +109,9 @@ const isWithinDateRange = (
 export function Inbody() {
 	const { client } = useDataClient();
 	const { setGlobalLoading, setLocalLoading } = useLoading();
-	const { colors } = useTheme();
+	const { colors, isDarkMode } = useTheme();
 	const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
 	const navigate = useNavigate();
 	const location = useLocation();
 	const locationState = location.state as {
@@ -75,6 +134,7 @@ export function Inbody() {
 	const labelClass = cn(formLabelClass, colors.text, "flex flex-col gap-1");
 
 	const fetchInbodyData = async (isMainLoading: boolean) => {
+		setIsLoading(true);
 		if (isMainLoading) {
 			setGlobalLoading(true);
 		} else {
@@ -99,6 +159,7 @@ export function Inbody() {
 			} else {
 				setLocalLoading(false);
 			}
+			setIsLoading(false);
 			setHasLoadedOnce(true);
 		}
 	};
@@ -210,7 +271,9 @@ export function Inbody() {
 				</div>
 			</Box>
 
-			{currentData ? (
+			{isLoading ? (
+				<InbodyPageSkeleton isDarkMode={isDarkMode} />
+			) : currentData ? (
 				<div className="grid grid-cols-1 gap-4">
 					<InbodySummary current={currentData} previous={previousData} />
 					<LineChart unit="kg" data={chartData} property="weight" />

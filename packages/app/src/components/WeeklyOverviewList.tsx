@@ -10,6 +10,92 @@ import { Box } from "./Box.js";
 import { Text } from "./Text.js";
 import { ValueTrend } from "./ValueTrend.js";
 
+const weeklyOverviewSkeletonIds = ["one", "two"] as const;
+
+const SkeletonBlock = ({
+	className,
+	isDarkMode,
+}: {
+	className: string;
+	isDarkMode: boolean;
+}) => (
+	<div
+		className={cn(
+			"animate-pulse rounded-md",
+			isDarkMode ? "bg-gray-700" : "bg-gray-200",
+			className,
+		)}
+	/>
+);
+
+const WeeklyOverviewSkeleton = ({
+	isDarkMode,
+	rows,
+}: {
+	isDarkMode: boolean;
+	rows: readonly string[];
+}) => (
+	<>
+		<div className="space-y-3 sm:hidden" aria-hidden="true">
+			{rows.map((id) => (
+				<div
+					key={id}
+					className="space-y-3 border-b border-gray-100 pb-3 last:border-b-0 last:pb-0 dark:border-gray-800"
+				>
+					<div className="space-y-2">
+						<SkeletonBlock className="h-3 w-14" isDarkMode={isDarkMode} />
+						<SkeletonBlock className="h-5 w-40" isDarkMode={isDarkMode} />
+					</div>
+					<div className="grid gap-4 min-[360px]:grid-cols-2">
+						<div className="space-y-2">
+							<SkeletonBlock className="h-3 w-16" isDarkMode={isDarkMode} />
+							<SkeletonBlock className="h-7 w-24" isDarkMode={isDarkMode} />
+						</div>
+						<div className="space-y-2">
+							<SkeletonBlock className="h-3 w-10" isDarkMode={isDarkMode} />
+							<SkeletonBlock className="h-7 w-24" isDarkMode={isDarkMode} />
+						</div>
+					</div>
+				</div>
+			))}
+		</div>
+		<div className="hidden overflow-x-auto sm:block" aria-hidden="true">
+			<table className="min-w-full table-auto text-sm">
+				<thead
+					className={cn(
+						"text-xs uppercase tracking-wide",
+						isDarkMode ? "text-gray-400" : "text-gray-600",
+					)}
+				>
+					<tr className="border-b border-gray-200 dark:border-gray-700">
+						<th className="px-3 py-2 text-left">Week</th>
+						<th className="px-3 py-2 text-left">Distance</th>
+						<th className="px-3 py-2 text-left">Time</th>
+					</tr>
+				</thead>
+				<tbody>
+					{rows.map((id) => (
+						<tr
+							key={id}
+							className="border-b border-gray-100 last:border-b-0 dark:border-gray-800"
+						>
+							<td className="px-3 py-3">
+								<SkeletonBlock className="h-5 w-40" isDarkMode={isDarkMode} />
+							</td>
+							<td className="px-3 py-3">
+								<SkeletonBlock className="h-5 w-24" isDarkMode={isDarkMode} />
+							</td>
+							<td className="px-3 py-3">
+								<SkeletonBlock className="h-5 w-24" isDarkMode={isDarkMode} />
+							</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+	</>
+);
+
 const formatWeekLabel = (start: string): string => {
 	const startDate = dayjs(start);
 	const endDate = startDate.add(6, "day");
@@ -41,7 +127,7 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 	const { client } = useDataClient();
 	const { isDarkMode } = useTheme();
 	const [weeks, setWeeks] = useState<IWeeklyOverviewData[]>([]);
-	const [isLoading, setIsLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
 
 	const fetchWeeklyData = useCallback(async () => {
 		setIsLoading(true);
@@ -94,7 +180,10 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 	return (
 		<Box classes="space-y-4">
 			{isLoading ? (
-				<Text text="Loading weekly overview…" />
+				<WeeklyOverviewSkeleton
+					isDarkMode={isDarkMode}
+					rows={weeklyOverviewSkeletonIds}
+				/>
 			) : displayRows.length === 0 ? (
 				<Text text="No weekly data available yet." />
 			) : (

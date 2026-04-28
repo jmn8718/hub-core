@@ -9,12 +9,49 @@ import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
 import { formatMeasurement } from "../utils/formatters.js";
 
 const inbodyTypes = Object.values(InbodyType);
+const historySkeletonIds = ["one", "two", "three", "four", "five"] as const;
+
+const SkeletonBlock = ({
+	className,
+	isDarkMode,
+}: {
+	className: string;
+	isDarkMode: boolean;
+}) => (
+	<div
+		className={cn(
+			"animate-pulse rounded-md",
+			isDarkMode ? "bg-gray-700" : "bg-gray-200",
+			className,
+		)}
+	/>
+);
+
+const InbodyHistorySkeleton = ({
+	isDarkMode,
+}: {
+	isDarkMode: boolean;
+}) => (
+	<Box>
+		<div className="space-y-3" aria-hidden="true">
+			<SkeletonBlock className="h-5 w-28" isDarkMode={isDarkMode} />
+			{historySkeletonIds.map((id) => (
+				<SkeletonBlock
+					key={id}
+					className="h-14 w-full"
+					isDarkMode={isDarkMode}
+				/>
+			))}
+		</div>
+	</Box>
+);
 
 export function InbodyHistory() {
 	const { client } = useDataClient();
 	const { setGlobalLoading, setLocalLoading } = useLoading();
-	const { colors } = useTheme();
+	const { colors, isDarkMode } = useTheme();
 	const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
 	const [data, setData] = useState<IInbodyData[]>([]);
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -33,6 +70,7 @@ export function InbodyHistory() {
 	);
 
 	const fetchInbodyData = async (isMainLoading: boolean) => {
+		setIsLoading(true);
 		if (isMainLoading) {
 			setGlobalLoading(true);
 		} else {
@@ -56,6 +94,7 @@ export function InbodyHistory() {
 			} else {
 				setLocalLoading(false);
 			}
+			setIsLoading(false);
 			setHasLoadedOnce(true);
 		}
 	};
@@ -117,7 +156,9 @@ export function InbodyHistory() {
 				</Button>
 			</div>
 
-			{data.length ? (
+			{isLoading ? (
+				<InbodyHistorySkeleton isDarkMode={isDarkMode} />
+			) : data.length ? (
 				<InbodyHistoryTable
 					data={data}
 					formatMeasurement={formatMeasurement}
