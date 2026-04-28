@@ -91,7 +91,9 @@ export const EditableNumber: React.FC<EditableNumberProps> = ({
 			type="button"
 			onClick={handleClick}
 			aria-label={placeholder ? `Edit ${placeholder}` : "Edit number"}
-			className={`w-full cursor-pointer rounded px-2 py-1 -mx-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${className}`}
+			className={`w-full cursor-pointer rounded px-2 py-1 -mx-2 text-left ${
+				isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+			} ${className}`}
 		>
 			{formattedValue}
 		</button>

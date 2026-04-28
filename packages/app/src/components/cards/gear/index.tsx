@@ -45,7 +45,7 @@ export const GearCard: FC<GearCardProps> = ({
 		: 0;
 	const isRetired = !!gearData.dateEnd;
 	const isWeb = type === AppType.WEB;
-	const titleClassName = isWeb ? "text-[19px]" : "text-xl";
+	const titleClassName = isWeb ? "text-[18px]" : "text-xl";
 	const detailTextClassName = isWeb ? "text-[13px]" : "text-sm";
 	const usageMetaTextClassName = isWeb ? "text-[11px]" : "text-xs";
 
@@ -98,8 +98,8 @@ export const GearCard: FC<GearCardProps> = ({
 	const allowMaxDistanceEdit = maxDistanceEditable ?? isEditable;
 
 	return (
-		<Box classes="flex h-full flex-col">
-			<div className="relative mb-4 flex items-start justify-between gap-3">
+		<Box classes="flex h-full flex-col justify-between">
+			<div className="relative flex items-start justify-between gap-3">
 				{isEditable ? (
 					<EditableText
 						value={gearData.name}
@@ -112,7 +112,7 @@ export const GearCard: FC<GearCardProps> = ({
 						to={titleLink}
 						className={cn(
 							titleClassName,
-							"font-semibold hover:underline",
+							"font-semibold",
 							isDarkMode ? "text-white" : "text-gray-900",
 						)}
 					>
@@ -135,15 +135,14 @@ export const GearCard: FC<GearCardProps> = ({
 					</div>
 				)}
 			</div>
-
-			<div className="mt-auto">
+			<div>
 				<SectionContainer hasBorder>
-					<div className="space-y-2">
+					<div className="space-y-1">
 						<DatePicker
 							date={gearData.dateBegin}
 							label="Start Date"
 							isEditable={false}
-							className={detailTextClassName}
+							className={cn("gap-2", detailTextClassName)}
 							inputClassName={detailTextClassName}
 						/>
 						<DatePicker
@@ -151,7 +150,7 @@ export const GearCard: FC<GearCardProps> = ({
 							onSave={handleEndDateChange}
 							label="End Date"
 							isEditable={isEditable}
-							className={detailTextClassName}
+							className={cn("gap-2", detailTextClassName)}
 							inputClassName={detailTextClassName}
 						/>
 						<div
@@ -160,14 +159,13 @@ export const GearCard: FC<GearCardProps> = ({
 								detailTextClassName,
 							)}
 						>
-							<span className="flex items-center gap-3">
-								<Gauge
-									size={16}
-									className={cn(
-										"size-6 shrink-0 p-1",
-										isDarkMode ? "text-white" : "text-gray-500",
-									)}
-								/>
+							<span className="flex items-center gap-2">
+								<span className="flex size-6 shrink-0 items-center justify-center">
+									<Gauge
+										size={16}
+										className={cn(isDarkMode ? "text-white" : "text-gray-500")}
+									/>
+								</span>
 								Usage
 							</span>
 							<span>{Math.round(usagePercentage)}%</span>
