@@ -1,3 +1,4 @@
+import { dayjs } from "@repo/dates";
 import type { IDailyOverviewData } from "@repo/types";
 import { cn } from "@repo/ui";
 import { useCallback, useEffect, useState } from "react";
@@ -122,6 +123,10 @@ export function HomeStatsSection({
 		loadStats({ showLoading: false, showErrors: false }),
 	);
 
+	const periodStart = dayjs().subtract(29, "day");
+	const periodEnd = dayjs();
+	const periodLabel = `Last 30 days: ${periodStart.format("MMM D")} - ${periodEnd.format("MMM D, YYYY")}`;
+
 	return (
 		<Box>
 			{isLoading ? (
@@ -133,6 +138,7 @@ export function HomeStatsSection({
 					totalDistance={dailyStats.distance}
 					totalDuration={dailyStats.duration}
 					activeDays={dailyStats.activeDays}
+					periodLabel={periodLabel}
 				/>
 			)}
 		</Box>

@@ -6,6 +6,7 @@ interface DailyActivityStatsProps {
 	totalDistance: number;
 	totalDuration: number;
 	activeDays: number;
+	periodLabel?: string;
 }
 
 const DataDisplay = ({
@@ -71,6 +72,7 @@ export const DailyActivityStats: React.FC<DailyActivityStatsProps> = ({
 	totalDistance,
 	totalDuration,
 	activeDays,
+	periodLabel,
 }) => {
 	const { isDarkMode } = useTheme();
 	const subtleTextClass = isDarkMode ? "text-gray-400" : "text-gray-500";
@@ -96,6 +98,9 @@ export const DailyActivityStats: React.FC<DailyActivityStatsProps> = ({
 					value={activeDays.toFixed()}
 				/>
 			</div>
+			{periodLabel ? (
+				<span className={cn("text-sm", subtleTextClass)}>{periodLabel}</span>
+			) : null}
 		</div>
 	);
 };
