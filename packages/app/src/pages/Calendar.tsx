@@ -174,11 +174,14 @@ const getWeekTotals = (activities: DbActivityPopulated[]) => ({
 	activities: activities.length,
 	distance: activities.reduce((sum, activity) => sum + activity.distance, 0),
 	duration: activities.reduce((sum, activity) => sum + activity.duration, 0),
+	activeDays: new Set(
+		activities.map((activity) => dateKey(new Date(activity.timestamp))),
+	).size,
 });
 
 const CalendarTotalsSkeleton = ({ isDarkMode }: { isDarkMode: boolean }) => (
-	<div className="grid gap-3 sm:grid-cols-3 sm:gap-6" aria-hidden="true">
-		{["activities", "distance", "time"].map((item) => (
+	<div className="grid gap-3 sm:grid-cols-4 sm:gap-6" aria-hidden="true">
+		{["activities", "distance", "time", "days"].map((item) => (
 			<div key={item} className="space-y-2">
 				<div
 					className={cn(
@@ -194,6 +197,24 @@ const CalendarTotalsSkeleton = ({ isDarkMode }: { isDarkMode: boolean }) => (
 				/>
 			</div>
 		))}
+	</div>
+);
+
+const CalendarTotalItem = ({
+	label,
+	value,
+	valueClassName,
+}: {
+	label: string;
+	value: string;
+	valueClassName: string;
+}) => (
+	<div>
+		<Text variant="description" text={label} />
+		<Text
+			className={cn("pt-0.5 font-semibold sm:pt-1", valueClassName)}
+			text={value}
+		/>
 	</div>
 );
 
@@ -339,7 +360,22 @@ export function Calendar() {
 		});
 	}, [activityMap, gridStart]);
 
-	const monthTotals = useMemo(() => getWeekTotals(activities), [activities]);
+	const monthActivities = useMemo(
+		() =>
+			activities.filter((activity) => {
+				const activityDate = new Date(activity.timestamp);
+				return (
+					activityDate.getFullYear() === cursorMonth.getFullYear() &&
+					activityDate.getMonth() === cursorMonth.getMonth()
+				);
+			}),
+		[activities, cursorMonth],
+	);
+
+	const monthTotals = useMemo(
+		() => getWeekTotals(monthActivities),
+		[monthActivities],
+	);
 	const selectedCompactDay = useMemo(() => {
 		for (const week of weeks) {
 			const day = week.days.find(
@@ -366,37 +402,39 @@ export function Calendar() {
 			<div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4">
 				<Box description="Review the month as a training calendar, with weekly totals and direct access to each workout.">
 					<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-						<div className="flex flex-wrap items-center gap-2">
+						<div className="flex flex-wrap items-center justify-between gap-3">
+							<div className="flex min-w-0 items-center gap-2">
+								<Button
+									variant="ghost"
+									onClick={() =>
+										setCursorMonth((current) => addMonths(current, -1))
+									}
+									aria-label="Previous month"
+								>
+									<ChevronLeft size={16} />
+								</Button>
+								<div className="min-w-0">
+									<Text
+										className={cn(calendarText.title, "font-semibold")}
+										text={formatMonthLabel(cursorMonth)}
+									/>
+								</div>
+								<Button
+									variant="ghost"
+									onClick={() =>
+										setCursorMonth((current) => addMonths(current, 1))
+									}
+									aria-label="Next month"
+								>
+									<ChevronRight size={16} />
+								</Button>
+							</div>
 							<Button
 								variant="secondary"
 								onClick={() => setCursorMonth(getMonthStart(new Date()))}
 							>
 								Today
 							</Button>
-							<Button
-								variant="ghost"
-								onClick={() =>
-									setCursorMonth((current) => addMonths(current, -1))
-								}
-								aria-label="Previous month"
-							>
-								<ChevronLeft size={16} />
-							</Button>
-							<Button
-								variant="ghost"
-								onClick={() =>
-									setCursorMonth((current) => addMonths(current, 1))
-								}
-								aria-label="Next month"
-							>
-								<ChevronRight size={16} />
-							</Button>
-							<div className="min-w-0">
-								<Text
-									className={cn(calendarText.title, "font-semibold")}
-									text={formatMonthLabel(cursorMonth)}
-								/>
-							</div>
 						</div>
 
 						<div className="flex max-w-full flex-col gap-2 xl:items-end">
@@ -439,37 +477,27 @@ export function Calendar() {
 						{isLoading ? (
 							<CalendarTotalsSkeleton isDarkMode={isDarkMode} />
 						) : (
-							<div className="grid gap-3 sm:grid-cols-3 sm:gap-6">
-								<div>
-									<Text variant="description" text="Month total activities" />
-									<Text
-										className={cn(
-											"pt-0.5 font-semibold sm:pt-1",
-											calendarText.value,
-										)}
-										text={`${monthTotals.activities}`}
-									/>
-								</div>
-								<div>
-									<Text variant="description" text="Month total distance" />
-									<Text
-										className={cn(
-											"pt-0.5 font-semibold sm:pt-1",
-											calendarText.value,
-										)}
-										text={formatDistance(monthTotals.distance)}
-									/>
-								</div>
-								<div>
-									<Text variant="description" text="Month total time" />
-									<Text
-										className={cn(
-											"pt-0.5 font-semibold sm:pt-1",
-											calendarText.value,
-										)}
-										text={formatDurationClock(monthTotals.duration)}
-									/>
-								</div>
+							<div className="grid gap-3 sm:grid-cols-4 sm:gap-6">
+								<CalendarTotalItem
+									label="Month active days"
+									value={`${monthTotals.activeDays}`}
+									valueClassName={calendarText.value}
+								/>
+								<CalendarTotalItem
+									label="Month total activities"
+									value={`${monthTotals.activities}`}
+									valueClassName={calendarText.value}
+								/>
+								<CalendarTotalItem
+									label="Month total distance"
+									value={formatDistance(monthTotals.distance)}
+									valueClassName={calendarText.value}
+								/>
+								<CalendarTotalItem
+									label="Month total time"
+									value={formatDurationClock(monthTotals.duration)}
+									valueClassName={calendarText.value}
+								/>
 							</div>
 						)}
 					</div>
