@@ -6,7 +6,6 @@ import {
 	type NodePgDatabase,
 	drizzle as drizzlePg,
 } from "drizzle-orm/node-postgres";
-import type { PoolConfig } from "pg";
 import { Pool } from "pg";
 import * as sqliteSchema from "./schemas/index.js";
 import * as postgresSchema from "./schemas/postgres/index.js";
@@ -36,7 +35,6 @@ type PostgresDbClientConfig = {
 	url: string;
 	logger?: boolean;
 	max?: number;
-	ssl?: PoolConfig["ssl"];
 };
 
 export type DbClientConfig = SqliteDbClientConfig | PostgresDbClientConfig;
@@ -58,22 +56,6 @@ function setDbClientDialect<T extends object>(
 	return client;
 }
 
-function parsePostgresSsl(
-	value: string | undefined,
-): PoolConfig["ssl"] | undefined {
-	if (!value) return undefined;
-	const normalized = value.toLowerCase();
-	if (["0", "false", "disable", "off"].includes(normalized)) {
-		return false;
-	}
-	if (["1", "true", "require", "on"].includes(normalized)) {
-		return {
-			rejectUnauthorized: false,
-		};
-	}
-	return undefined;
-}
-
 export function getDbClientDialect(client: DbClient): DbDialect {
 	return dbClientMetadata.get(client as object)?.dialect ?? "sqlite";
 }
@@ -85,7 +67,6 @@ export function getDbClientConfigFromEnv(
 		return {
 			dialect: "postgres",
 			url: env.POSTGRES_URL,
-			ssl: parsePostgresSsl(env.POSTGRES_SSL),
 		};
 	}
 
@@ -115,7 +96,6 @@ export function createDbClient(config: DbClientConfig): DbClient {
 			client: new Pool({
 				connectionString: config.url,
 				max: config.max,
-				ssl: config.ssl,
 			}),
 			logger: config.logger ?? true,
 			schema: postgresSchema,
