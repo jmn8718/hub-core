@@ -4,7 +4,7 @@
   "exclude": ["dist", "node_modules"],
   "compilerOptions": {
     "types": ["node"],
-    "module": "es2022",
+    "module": "esnext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,

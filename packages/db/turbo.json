@@ -2,7 +2,7 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "passThroughEnv": ["LOCAL_DB", "TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"]
+      "passThroughEnv": ["POSTGRES_URL", "POSTGRES_SSL", "LOCAL_DB", "TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN"]
     }
   }
 }

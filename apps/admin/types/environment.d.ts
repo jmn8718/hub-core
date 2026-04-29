@@ -6,8 +6,11 @@ namespace NodeJS {
 		STRAVA_CLIENT_SECRET: string;
 		STRAVA_VERIFY_TOKEN: string;
 		NEXT_PUBLIC_DOMAIN: string;
-		TURSO_DATABASE_URL: string;
-		TURSO_AUTH_TOKEN: string;
+		POSTGRES_URL?: string;
+		POSTGRES_SSL?: string;
+		TURSO_DATABASE_URL?: string;
+		TURSO_AUTH_TOKEN?: string;
+		LOCAL_DB?: string;
 		STRAVA_TO_DISK: string;
 	}
 }

@@ -39,7 +39,7 @@ import {
 } from "drizzle-orm";
 import pMap from "p-map";
 import { uuidv7 } from "uuidv7";
-import type { DbClient } from "./client";
+import { type DbClient, type DbDialect, getDbClientDialect } from "./client";
 import { inbody, profiles } from "./schemas";
 import {
 	activities,
@@ -253,13 +253,52 @@ const fillEmptyDays = (
 
 export class Db {
 	private _client: DbClient;
+	private _dialect: DbDialect;
 
 	constructor(client: DbClient) {
 		this._client = client;
+		this._dialect = getDbClientDialect(client);
 	}
 
 	setClient(client: DbClient) {
 		this._client = client;
+		this._dialect = getDbClientDialect(client);
+	}
+
+	private _monthIdentifier() {
+		return this._dialect === "postgres"
+			? sql<string>`to_char(to_timestamp(${activities.timestamp} / 1000.0), 'YYYY MM')`
+			: sql<string>`strftime('%Y %m', ${activities.timestamp} / 1000, 'unixepoch')`;
+	}
+
+	private _weekIdentifier() {
+		return this._dialect === "postgres"
+			? sql<string>`to_char(date_trunc('week', to_timestamp(${activities.timestamp} / 1000.0)), 'IYYY-IW')`
+			: sql<string>`strftime('%Y-%W', ${activities.timestamp} / 1000, 'unixepoch')`;
+	}
+
+	private _dayIdentifier() {
+		return this._dialect === "postgres"
+			? sql<string>`to_char(to_timestamp(${activities.timestamp} / 1000.0), 'YYYY-MM-DD')`
+			: sql<string>`strftime('%Y-%m-%d', ${activities.timestamp} / 1000, 'unixepoch')`;
+	}
+
+	private _activityConnectionsJson() {
+		return this._dialect === "postgres"
+			? sql<string>`coalesce(json_agg(json_build_object('id', ${providerActivities.id}, 'provider', ${providerActivities.provider}, 'original', ${providerActivities.original})) filter (where ${providerActivities.id} is not null), '[]'::json)::text`
+			: sql<string>`json_group_array(json_object('id', ${providerActivities.id}, 'provider', ${providerActivities.provider}, 'original', ${providerActivities.original}))`;
+	}
+
+	private _activityGearsJson() {
+		return this._dialect === "postgres"
+			? sql<string>`coalesce(json_agg(json_build_object('id', ${gears.id}, 'type', ${gears.type})) filter (where ${gears.id} is not null), '[]'::json)::text`
+			: sql<string>`json_group_array(json_object('id', ${gears.id}, 'type', ${gears.type}))`;
+	}
+
+	private _gearConnectionsJson() {
+		return this._dialect === "postgres"
+			? sql<string>`coalesce(json_agg(json_build_object('provider', ${providerGears.provider}, 'providerId', ${providerGears.providerId})) filter (where ${providerGears.id} is not null), '[]'::json)::text`
+			: sql<string>`json_group_array(json_object('provider', ${providerGears.provider}, 'providerId', ${providerGears.providerId}))`;
 	}
 
 	async findNearestLocationByCoordinates({
@@ -319,13 +358,12 @@ export class Db {
 	}
 
 	async getActivitiesOverview(limit = 12): Promise<IOverviewData[]> {
+		const monthIdentifier = this._monthIdentifier();
 		const subquery = this._client
 			.select({
 				distance: min(activities.distance).as("distance"),
 				timestamp: activities.timestamp,
-				month: sql`strftime('%Y %m', timestamp / 1000, 'unixepoch')`.as(
-					"month",
-				),
+				month: monthIdentifier.as("month"),
 			})
 			.from(activities)
 			.where(gte(activities.timestamp, monthsBefore(limit).getTime()))
@@ -340,14 +378,13 @@ export class Db {
 				month: subquery.month,
 			})
 			.from(subquery)
-			.groupBy(subquery.month.sql)
+			.groupBy(({ month }) => month)
 			.orderBy(desc(subquery.timestamp));
 		return fillEmptyMonths(result, limit);
 	}
 
 	async getWeeklyActivitiesOverview(limit = 4): Promise<IWeeklyOverviewData[]> {
-		const weekIdentifier =
-			sql`strftime('%Y-%W', timestamp / 1000, 'unixepoch')`.as("week");
+		const weekIdentifier = this._weekIdentifier().as("week");
 
 		const subquery = this._client
 			.select({
@@ -375,7 +412,7 @@ export class Db {
 				week: subquery.week,
 			})
 			.from(subquery)
-			.groupBy(subquery.week.sql)
+			.groupBy(({ week }) => week)
 			.orderBy(desc(subquery.timestamp));
 
 		return fillEmptyWeeks(result, limit);
@@ -427,8 +464,7 @@ export class Db {
 		const startDateValue = startBoundary.startOf("day").toDate();
 		const endDateValue = endBoundary.endOf("day").toDate();
 
-		const dayIdentifier =
-			sql`strftime('%Y-%m-%d', timestamp / 1000, 'unixepoch')`.as("day");
+		const dayIdentifier = this._dayIdentifier().as("day");
 
 		const subquery = this._client
 			.select({
@@ -457,7 +493,7 @@ export class Db {
 				count: count(),
 			})
 			.from(subquery)
-			.groupBy(subquery.day.sql)
+			.groupBy(({ date }) => date)
 			.orderBy(asc(subquery.day));
 
 		return fillEmptyDays(result, startDateValue, endDateValue);
@@ -468,13 +504,7 @@ export class Db {
 			this._client
 				.select({
 					activityId: activitiesConnection.activityId,
-					connections: sql`json_group_array(
-					json_object(
-						'id', provider_activities.id,
-						'provider', provider_activities.provider,
-						'original', provider_activities.original
-					)
-				)`.as("connections"),
+					connections: this._activityConnectionsJson().as("connections"),
 				})
 				.from(activitiesConnection)
 				.leftJoin(
@@ -488,13 +518,7 @@ export class Db {
 			this._client
 				.select({
 					activityId: activityGears.activityId,
-					gears: sql`json_group_array(
-						json_object(
-						'id', gears.id,
-						'type', gears.type
-					)
-						
-					)`.as("gears"),
+					gears: this._activityGearsJson().as("gears"),
 				})
 				.from(activityGears)
 				.leftJoin(gears, eq(activityGears.gearId, gears.id))
@@ -546,13 +570,7 @@ export class Db {
 			this._client
 				.select({
 					activityId: activitiesConnection.activityId,
-					connections: sql`json_group_array(
-					json_object(
-						'id', provider_activities.id,
-						'provider', provider_activities.provider,
-						'original', provider_activities.original
-					)
-				)`.as("connections"),
+					connections: this._activityConnectionsJson().as("connections"),
 				})
 				.from(activitiesConnection)
 				.leftJoin(
@@ -566,13 +584,7 @@ export class Db {
 			this._client
 				.select({
 					activityId: activityGears.activityId,
-					gears: sql`json_group_array(
-						json_object(
-						'id', gears.id,
-						'type', gears.type
-					)
-						
-					)`.as("gears"),
+					gears: this._activityGearsJson().as("gears"),
 				})
 				.from(activityGears)
 				.leftJoin(gears, eq(activityGears.gearId, gears.id))
@@ -651,7 +663,7 @@ export class Db {
 		const dataQuery = combinedCondition
 			? select.where(combinedCondition)
 			: select;
-		const result = await this._client.batch([
+		const [countRows, dataRows] = await Promise.all([
 			baseWhere
 				? this._client
 						.select({ count: count() })
@@ -661,8 +673,8 @@ export class Db {
 			dataQuery.limit(limit),
 		]);
 
-		const dataCount = result[0][0]?.count || 0;
-		const data = result[1].map(mapActivityRow);
+		const dataCount = countRows[0]?.count || 0;
+		const data = dataRows.map(mapActivityRow);
 		return {
 			count: dataCount,
 			data,
@@ -685,12 +697,7 @@ export class Db {
 		const gearConnections = await this._client
 			.select({
 				gearId: gearsConnection.gearId,
-				connections: sql`json_group_array(
-						json_object(
-							'provider', ${providerGears.provider},
-							'providerId', ${providerGears.providerId}
-						)
-					)`.as("connections"),
+				connections: this._gearConnectionsJson().as("connections"),
 			})
 			.from(gearsConnection)
 			.leftJoin(
@@ -732,15 +739,15 @@ export class Db {
 					.leftJoin(subquery, eq(gears.id, subquery.gearId))
 					.leftJoin(gearConnections, eq(gears.id, gearConnections.gearId));
 
-		const result = await this._client.batch([
+		const [countRows, dataRows] = await Promise.all([
 			this._client.select({ count: count() }).from(gears),
 			dataQuery.limit(limit).offset(offset),
 		]);
-		const dataCount = result[0][0]?.count || 0;
+		const dataCount = countRows[0]?.count || 0;
 		const parseConnections = (value?: unknown) =>
 			(value ? JSON.parse(value as string) : []) as IGearConnection[];
-		const data = result[1].map((record) => {
-			const parsedRecord = record as {
+		const data = dataRows.map((record) => {
+			const parsedRecord = record as unknown as {
 				distance: string | number | null;
 				providerConnections?: unknown;
 			} & IDbGearWithDistance;
@@ -761,12 +768,7 @@ export class Db {
 		const gearConnections = await this._client
 			.select({
 				gearId: gearsConnection.gearId,
-				connections: sql`json_group_array(
-						json_object(
-							'provider', ${providerGears.provider},
-							'providerId', ${providerGears.providerId}
-						)
-					)`.as("connections"),
+				connections: this._gearConnectionsJson().as("connections"),
 			})
 			.from(gearsConnection)
 			.leftJoin(
