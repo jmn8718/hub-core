@@ -27,3 +27,13 @@ Anti-direction:
 3. Keep the tone technical and precise, but never harsh or overly corporate.
 4. Use athletic cues sparingly and purposefully to support recognition, not decoration.
 5. Default to light, readable surfaces and avoid trend-driven palettes or glossy social-fitness styling.
+
+## Database Notes
+
+- The database layer supports both SQLite/libSQL and Postgres.
+- When changing a database model, table definition, or Drizzle schema, update both schema trees:
+  - `packages/db/src/schemas/*` for SQLite/libSQL
+  - `packages/db/src/schemas/postgres/*` for Postgres
+- Keep the matching Drizzle migration outputs in sync as well:
+  - `packages/db/drizzle/*` for SQLite/libSQL
+  - `packages/db/drizzle-postgres/*` for Postgres
