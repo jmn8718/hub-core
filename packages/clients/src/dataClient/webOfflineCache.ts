@@ -40,6 +40,34 @@ const createCacheKey = (
 export class WebOfflineCache {
 	private _dbPromise?: Promise<IDBDatabase | null>;
 
+	async clear(): Promise<void> {
+		const db = await this._open();
+		if (!db) {
+			return;
+		}
+
+		await this._request(
+			db
+				.transaction(RESPONSE_STORE, "readwrite")
+				.objectStore(RESPONSE_STORE)
+				.clear(),
+		);
+	}
+
+	async hasUserData(userId: string): Promise<boolean> {
+		const db = await this._open();
+		if (!db) {
+			return false;
+		}
+
+		const index = db
+			.transaction(RESPONSE_STORE, "readonly")
+			.objectStore(RESPONSE_STORE)
+			.index("userId");
+		const count = await this._request(index.count(userId));
+		return count > 0;
+	}
+
 	async read<TResponse>(
 		userId: string,
 		action: string,

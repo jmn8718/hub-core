@@ -23,6 +23,7 @@ import type {
 	Value,
 } from "@repo/types";
 import type { SupabaseClient } from "../supabase.js";
+import { resolveSupabaseSession } from "../supabase.js";
 import type { Client } from "./Client.js";
 import { WebOfflineCache, stableStringify } from "./webOfflineCache.js";
 
@@ -38,6 +39,7 @@ const PWA_CACHE_PREFIX = "hub-core-pwa-";
 interface WebClientConfig {
 	apiBaseUrl: string;
 	supabase: SupabaseClient;
+	supabaseUrl: string;
 }
 
 type StoredProviderConfig = {
@@ -48,11 +50,13 @@ type StoredProviderConfig = {
 export class WebClient implements Client {
 	private readonly _supabase: SupabaseClient;
 	private readonly _apiBaseUrl: string;
+	private readonly _supabaseUrl: string;
 	private readonly _offlineCache = new WebOfflineCache();
 
-	constructor({ apiBaseUrl, supabase }: WebClientConfig) {
+	constructor({ apiBaseUrl, supabase, supabaseUrl }: WebClientConfig) {
 		this._supabase = supabase;
 		this._apiBaseUrl = `${apiBaseUrl.replace(/\/$/, "")}/api/client`;
+		this._supabaseUrl = supabaseUrl;
 	}
 
 	async getDataOverview({ limit }: { limit?: number }): Promise<
@@ -537,19 +541,22 @@ export class WebClient implements Client {
 	}
 
 	private async _getAccessToken(): Promise<string> {
-		const { data, error } = await this._supabase.auth.getSession();
-		if (error || !data.session?.access_token) {
+		const session = await resolveSupabaseSession({
+			supabase: this._supabase,
+			supabaseUrl: this._supabaseUrl,
+		});
+		if (!session?.access_token) {
 			throw new Error("Missing Supabase session");
 		}
-		return data.session.access_token;
+		return session.access_token;
 	}
 
 	private async _getOfflineUserId(): Promise<string | null> {
-		const { data, error } = await this._supabase.auth.getSession();
-		if (error) {
-			return null;
-		}
-		return data.session?.user.id ?? null;
+		const session = await resolveSupabaseSession({
+			supabase: this._supabase,
+			supabaseUrl: this._supabaseUrl,
+		});
+		return session?.user.id ?? null;
 	}
 
 	private _isOffline(): boolean {
