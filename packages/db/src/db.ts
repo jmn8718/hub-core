@@ -376,10 +376,11 @@ export class Db {
 				distance: sum(subquery.distance),
 				count: count(),
 				month: subquery.month,
+				minTimestamp: min(subquery.timestamp),
 			})
 			.from(subquery)
 			.groupBy(({ month }) => month)
-			.orderBy(desc(subquery.timestamp));
+			.orderBy(desc(min(subquery.timestamp)));
 		return fillEmptyMonths(result, limit);
 	}
 
@@ -413,7 +414,7 @@ export class Db {
 			})
 			.from(subquery)
 			.groupBy(({ week }) => week)
-			.orderBy(desc(subquery.timestamp));
+			.orderBy(desc(min(subquery.timestamp)));
 
 		return fillEmptyWeeks(result, limit);
 	}
