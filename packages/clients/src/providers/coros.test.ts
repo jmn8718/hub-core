@@ -32,7 +32,7 @@ const corosMock = vi.hoisted(() => ({
 
 const downloadFileMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
-vi.mock(import("coros-connect"), () => {
+vi.mock(import("@nyt87/crs-connect"), () => {
 	return {
 		CorosApi: vi.fn().mockReturnValue(corosMock),
 		downloadFile: downloadFileMock,

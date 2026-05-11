@@ -3,6 +3,7 @@ import {
 	type ActivityRegenerationSummary,
 	ActivityType,
 	type ConnectCredentials,
+	GearType,
 	type IDbGearWithDistance,
 	Providers,
 	type StravaClientOptions,
@@ -25,7 +26,16 @@ type ProviderOptions =
 
 type ProviderGearCreator = {
 	createGear?: (gear: IDbGearWithDistance) => Promise<string>;
+	deleteGear?: (
+		providerGearId: string,
+		gear: IDbGearWithDistance,
+	) => Promise<void>;
 };
+
+function shouldSyncGearToProvider(provider: Providers, gearType: GearType) {
+	if (provider !== Providers.STRAVA) return true;
+	return gearType === GearType.BIKE || gearType === GearType.SHOES;
+}
 
 function initializeProviderClient(
 	db: Db,
@@ -116,6 +126,9 @@ export class ProviderManager {
 		if (!gear) {
 			throw new Error("Missing gear");
 		}
+		if (!shouldSyncGearToProvider(provider, gear.type)) {
+			throw new Error(`${provider} supports only bike and shoes gear sync`);
+		}
 		if (
 			gear.providerConnections?.some(
 				(connection) => connection.provider === provider,
@@ -126,6 +139,34 @@ export class ProviderManager {
 		const providerGearId = await client.createGear(gear);
 		await this.syncGears(provider);
 		return providerGearId;
+	}
+
+	public async deleteGearOnProvider({
+		provider,
+		gearId,
+	}: {
+		provider: Providers;
+		gearId: string;
+	}) {
+		const client = this._getProvider(provider) as Client & ProviderGearCreator;
+		if (!client.deleteGear) {
+			throw new Error(`${provider} does not support gear deletion`);
+		}
+		const gear = await this._db.getGear(gearId);
+		if (!gear) {
+			throw new Error("Missing gear");
+		}
+		const providerConnection = gear.providerConnections?.find(
+			(connection) => connection.provider === provider,
+		);
+		if (!providerConnection?.providerId) {
+			throw new Error("Gear is not connected to provider");
+		}
+		if (!shouldSyncGearToProvider(provider, gear.type)) {
+			throw new Error(`${provider} supports only bike and shoes gear sync`);
+		}
+		await client.deleteGear(providerConnection.providerId, gear);
+		await this._db.deleteGearConnection({ gearId, provider });
 	}
 
 	private insertInDatabase(payload: IInsertActivityPayload) {
@@ -191,14 +232,27 @@ export class ProviderManager {
 		return (
 			this._db
 				.linkActivityGear(activityId, gearId)
+				.then(async () => {
+					const gear = await this._db.getGear(gearId);
+					if (!gear) throw new Error("Missing gear");
+					return gear;
+				})
 				// fetch providers data
-				.then(() => this._db.getGearConnections(gearId))
+				.then((gear) =>
+					this._db.getGearConnections(gearId).then((connections) => ({
+						gear,
+						connections,
+					})),
+				)
 				// link on provider
-				.then((connections) => {
+				.then(({ gear, connections }) => {
 					return pMap(
 						connections,
 						async ({ provider, providerId }) => {
 							if (!provider || !this._clients[provider as Providers]) return;
+							if (!shouldSyncGearToProvider(provider as Providers, gear.type)) {
+								return;
+							}
 							// biome-ignore lint/style/noNonNullAssertion: <explanation>
 							const client = this._clients[provider as Providers]!;
 							const activityProvider = await this._db.getActivityProvider(
@@ -234,14 +288,27 @@ export class ProviderManager {
 		return (
 			this._db
 				.unlinkActivityGear(activityId, gearId)
+				.then(async () => {
+					const gear = await this._db.getGear(gearId);
+					if (!gear) throw new Error("Missing gear");
+					return gear;
+				})
 				// fetch providers data
-				.then(() => this._db.getGearConnections(gearId))
+				.then((gear) =>
+					this._db.getGearConnections(gearId).then((connections) => ({
+						gear,
+						connections,
+					})),
+				)
 				// unlink on provider
-				.then((connections) => {
+				.then(({ gear, connections }) => {
 					return pMap(
 						connections,
 						async ({ provider, providerId }) => {
 							if (!provider || !this._clients[provider as Providers]) return;
+							if (!shouldSyncGearToProvider(provider as Providers, gear.type)) {
+								return;
+							}
 							// biome-ignore lint/style/noNonNullAssertion: <explanation>
 							const client = this._clients[provider as Providers]!;
 							const activityProvider = await this._db.getActivityProvider(

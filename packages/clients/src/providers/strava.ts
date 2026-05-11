@@ -13,9 +13,12 @@ import {
 	type ApiCredentials,
 	type DbActivityPopulated,
 	FileExtensions,
+	GearType,
 	type IDbActivity,
+	type IDbGearWithDistance,
 	Providers,
 	type StravaActivity,
+	type StravaAthlete,
 	type StravaClientOptions,
 } from "@repo/types";
 import strava from "strava-v3/index.js";
@@ -23,6 +26,7 @@ import { type Client, generateActivityFilePath } from "./Client.js";
 import { Base } from "./base.js";
 
 const API_URL = "https://www.strava.com/api/v3";
+const STRAVA_WEB_URL = "https://www.strava.com";
 
 type StravaStream<T> = {
 	data: T[];
@@ -41,6 +45,26 @@ type StravaActivityStreams = Partial<{
 	watts: StravaStream<number>;
 	temp: StravaStream<number>;
 }>;
+
+type StravaWebShoe = {
+	id: number | string;
+	default?: boolean;
+	active?: boolean;
+	display_name?: string;
+	model_name?: string;
+	brand_name?: string;
+	name?: string;
+	total_distance?: string | number;
+	description?: string;
+	notification_distance?: number;
+};
+
+type StravaWebCreateGearResponse = {
+	success?: boolean;
+	id?: number | string;
+};
+
+const STRAVA_BIKE_FRAME_TYPE_ROAD = "3";
 
 function normalizeTimezone(timezone?: string | null): string {
 	if (!timezone) return "Etc/UTC";
@@ -312,6 +336,85 @@ function mapActivity(activity: StravaActivity): IDbActivity {
 	};
 }
 
+function slugifyGearCode(value: string): string {
+	return value
+		.toLowerCase()
+		.replaceAll(/[^a-z0-9]+/g, "-")
+		.replaceAll(/^-+|-+$/g, "");
+}
+
+function mapAthleteGear(params: {
+	id: string;
+	name: string;
+	nickname?: string;
+	distance: number;
+	type: GearType;
+	raw: unknown;
+}): IInsertGearPayload {
+	const displayName =
+		params.nickname?.trim() || params.name.trim() || params.id;
+	const code = slugifyGearCode(displayName) || params.id.toLowerCase();
+
+	return {
+		providerGear: {
+			id: params.id,
+			provider: StravaClient.PROVIDER,
+			data: JSON.stringify(params.raw),
+		},
+		data: {
+			name: displayName,
+			code,
+			dateBegin: undefined,
+			dateEnd: undefined,
+			maximumDistance: Math.round(params.distance || 0),
+			type: params.type,
+			brand: "strava",
+		},
+	};
+}
+
+function normalizeWebDistance(value: string | number | undefined): number {
+	if (typeof value === "number") return value;
+	if (!value) return 0;
+	const parsed = Number.parseFloat(value);
+	if (Number.isNaN(parsed)) return 0;
+	return Math.round(parsed * 1609.34);
+}
+
+function mapWebShoe(shoe: StravaWebShoe): IInsertGearPayload {
+	const id = shoe.id.toString();
+	const displayName =
+		shoe.name?.trim() ||
+		shoe.display_name?.trim() ||
+		shoe.model_name?.trim() ||
+		id;
+	const brand = shoe.brand_name?.trim() || "strava";
+	const code = slugifyGearCode(displayName) || id.toLowerCase();
+
+	return {
+		providerGear: {
+			id,
+			provider: StravaClient.PROVIDER,
+			data: JSON.stringify(shoe),
+		},
+		data: {
+			name: displayName,
+			code,
+			dateBegin: undefined,
+			dateEnd:
+				shoe.active === false
+					? new Date().toISOString().slice(0, 10)
+					: undefined,
+			maximumDistance:
+				typeof shoe.notification_distance === "number"
+					? shoe.notification_distance
+					: normalizeWebDistance(shoe.total_distance),
+			type: GearType.SHOES,
+			brand,
+		},
+	};
+}
+
 export class StravaClient extends Base implements Client {
 	private readonly _provider = Providers.STRAVA;
 
@@ -403,6 +506,25 @@ export class StravaClient extends Base implements Client {
 			.then((res) => {
 				if (!res.ok) {
 					console.error(res);
+					throw new Error("Failed to fetch");
+				}
+				return res.json();
+			});
+	}
+
+	private _requestWeb<T>(url: string, options: RequestInit = {}): Promise<T> {
+		return this.getAccessToken()
+			.then((accessToken) =>
+				fetch(`${STRAVA_WEB_URL}${url}`, {
+					...options,
+					headers: {
+						...(options.headers ?? {}),
+						Authorization: accessToken,
+					},
+				}),
+			)
+			.then((res) => {
+				if (!res.ok) {
 					throw new Error("Failed to fetch");
 				}
 				return res.json();
@@ -535,18 +657,133 @@ export class StravaClient extends Base implements Client {
 	}
 
 	async syncGears(): Promise<IInsertGearPayload[]> {
-		this._notImplemented();
+		const athlete = await this._request<StravaAthlete>("/athlete");
+		const bikePayloads = (athlete.bikes ?? []).map((bike) =>
+			mapAthleteGear({
+				id: bike.id,
+				name: bike.name,
+				nickname: bike.nickname,
+				distance: bike.distance,
+				type: GearType.BIKE,
+				raw: bike,
+			}),
+		);
+		const shoePayloads = (athlete.shoes ?? []).map((shoe) =>
+			mapAthleteGear({
+				id: shoe.id,
+				name: shoe.name,
+				nickname: shoe.nickname,
+				distance: shoe.distance,
+				type: GearType.SHOES,
+				raw: shoe,
+			}),
+		);
+		const webShoes = await this._requestWeb<StravaWebShoe[]>(
+			`/athletes/${athlete.id}/gear/shoes`,
+		).catch(() => []);
+		const mergedShoes = new Map<string, IInsertGearPayload>();
+		for (const shoe of shoePayloads) {
+			mergedShoes.set(shoe.providerGear.id, shoe);
+		}
+		for (const shoe of webShoes.map(mapWebShoe)) {
+			mergedShoes.set(shoe.providerGear.id, shoe);
+		}
+
+		return [...bikePayloads, ...mergedShoes.values()];
 	}
 
-	async linkActivityGear(_activityId: string, _gearId: string): Promise<void> {
-		this._notImplemented();
+	async createGear(gear: IDbGearWithDistance): Promise<string> {
+		if (gear.type !== GearType.BIKE && gear.type !== GearType.SHOES) {
+			throw new Error("Strava supports only bike and shoes gear creation");
+		}
+
+		const accessToken = await this.getAccessToken();
+		const brand = gear.brand || gear.name.split(" ")[0] || gear.name;
+		const response =
+			gear.type === GearType.BIKE
+				? await fetch(`${STRAVA_WEB_URL}/bikes`, {
+						method: "POST",
+						headers: {
+							Authorization: accessToken,
+							"Content-Type":
+								"application/x-www-form-urlencoded; charset=UTF-8",
+						},
+						body: new URLSearchParams({
+							name: gear.code || slugifyGearCode(gear.name) || gear.name,
+							frame_type: STRAVA_BIKE_FRAME_TYPE_ROAD,
+							weight: "0",
+							brand_name: brand,
+							model_name: gear.name,
+							notes: "",
+						}).toString(),
+					})
+				: await (async () => {
+						const athlete = await this._request<StravaAthlete>("/athlete");
+						return fetch(`${STRAVA_WEB_URL}/athletes/${athlete.id}/gear`, {
+							method: "POST",
+							headers: {
+								Authorization: accessToken,
+								"Content-Type":
+									"application/x-www-form-urlencoded; charset=UTF-8",
+							},
+							body: new URLSearchParams({
+								brandName: brand,
+								modelName: gear.name,
+								name: gear.code || slugifyGearCode(gear.name) || gear.name,
+								description: "",
+								notification_distance: Math.max(
+									0,
+									Math.round(gear.maximumDistance || 0),
+								).toString(),
+							}).toString(),
+						});
+					})();
+
+		if (!response.ok) {
+			throw new Error("Failed to create Strava gear");
+		}
+
+		const json = (await response.json()) as StravaWebCreateGearResponse;
+
+		if (!json.success || !json.id) {
+			throw new Error("Strava gear creation returned no id");
+		}
+
+		return json.id.toString();
 	}
 
-	async unlinkActivityGear(
-		_activityId: string,
-		_gearId: string,
+	async deleteGear(
+		providerGearId: string,
+		gear: IDbGearWithDistance,
 	): Promise<void> {
-		this._notImplemented();
+		if (gear.type !== GearType.BIKE && gear.type !== GearType.SHOES) {
+			throw new Error("Strava supports only bike and shoes gear deletion");
+		}
+
+		const path =
+			gear.type === GearType.BIKE
+				? `/bikes/${providerGearId}`
+				: `/athletes/${(await this._request<StravaAthlete>("/athlete")).id}/gear/${providerGearId}`;
+
+		const result = await this._requestWeb<{ success?: boolean }>(path, {
+			method: "DELETE",
+		});
+
+		if (!result.success) {
+			throw new Error("Failed to delete Strava gear");
+		}
+	}
+
+	async linkActivityGear(activityId: string, gearId: string): Promise<void> {
+		return this.updateActivity(activityId, {
+			gear_id: gearId,
+		});
+	}
+
+	async unlinkActivityGear(activityId: string, _gearId: string): Promise<void> {
+		return this.updateActivity(activityId, {
+			gear_id: "none",
+		});
 	}
 
 	async getActivity(id: string, options?: { force?: boolean }) {
@@ -644,7 +881,7 @@ export class StravaClient extends Base implements Client {
 
 	private updateActivity(
 		activityId: string,
-		body: { description?: string; name?: string },
+		body: { description?: string; name?: string; gear_id?: string },
 	): Promise<void> {
 		return this._request<StravaActivity>(`/activities/${activityId}`, {
 			method: "PUT",

@@ -5,6 +5,7 @@ import type {
 	ConnectCredentials,
 	DbActivityPopulated,
 	FileExtensions,
+	IDbGearWithDistance,
 } from "@repo/types";
 
 export function generateActivityFilePath(
@@ -31,6 +32,10 @@ export abstract class Client {
 	abstract syncActivity(activityId: string): Promise<IInsertActivityPayload>;
 
 	abstract syncGears(): Promise<IInsertGearPayload[]>;
+	abstract deleteGear(
+		providerGearId: string,
+		gear: IDbGearWithDistance,
+	): Promise<void>;
 	abstract linkActivityGear(activityId: string, gearId: string): Promise<void>;
 	abstract unlinkActivityGear(
 		activityId: string,

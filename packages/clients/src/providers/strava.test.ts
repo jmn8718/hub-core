@@ -3,7 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Db } from "@repo/db";
 import { createTestCacheDb, createTestDb } from "@repo/db/utils";
-import { ActivitySubType, ActivityType, Providers } from "@repo/types";
+import {
+	ActivitySubType,
+	ActivityType,
+	GearType,
+	Providers,
+} from "@repo/types";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { activities, activitiesData } from "../mocks/strava.js";
 import { StravaClient } from "./strava.js";
@@ -68,6 +73,135 @@ describe.sequential("strava client connect()", () => {
 				return Promise.resolve({
 					ok: true,
 					json: () => Promise.resolve(activities),
+				} as Response);
+			}
+			if (urlStr.endsWith("/athlete")) {
+				return Promise.resolve({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							id: 5533532,
+							username: "tester",
+							resource_state: 3,
+							firstname: "Test",
+							lastname: "User",
+							bio: "",
+							city: "",
+							state: "",
+							country: "",
+							sex: "M",
+							premium: false,
+							summit: false,
+							created_at: "",
+							updated_at: "",
+							badge_type_id: 0,
+							weight: 0,
+							profile_medium: "",
+							profile: "",
+							friend: null,
+							follower: null,
+							blocked: false,
+							can_follow: false,
+							follower_count: 0,
+							friend_count: 0,
+							mutual_friend_count: 0,
+							athlete_type: 0,
+							date_preference: "",
+							measurement_preference: "",
+							clubs: [],
+							postable_clubs_count: 0,
+							ftp: null,
+							bikes: [
+								{
+									id: "b5079135",
+									primary: true,
+									name: "TCR",
+									nickname: "Giant TCR",
+									resource_state: 2,
+									retired: false,
+									distance: 12345,
+									converted_distance: 12.3,
+								},
+							],
+							shoes: [
+								{
+									id: "g15141752",
+									primary: true,
+									name: "Alphafly",
+									nickname: "Nike Alphafly",
+									resource_state: 2,
+									retired: false,
+									distance: 54321,
+									converted_distance: 54.3,
+								},
+							],
+						}),
+				} as Response);
+			}
+			if (urlStr.includes("/athletes/5533532/gear/shoes")) {
+				return Promise.resolve({
+					ok: true,
+					json: () =>
+						Promise.resolve([
+							{
+								id: 1072381,
+								default: false,
+								active: true,
+								display_name: "Adidas adizero adios 2 adios 2 blue",
+								model_name: "adizero adios 2",
+								brand_name: "Adidas",
+								name: "adios 2 blue",
+								total_distance: "40.1",
+								description: "",
+								notification_distance: 500000,
+							},
+							{
+								id: "g15141752",
+								default: true,
+								active: true,
+								display_name: "Nike Alphafly 3",
+								model_name: "Alphafly 3",
+								brand_name: "Nike",
+								name: "Nike Alphafly",
+								total_distance: "54.3",
+								description: "",
+								notification_distance: 700000,
+							},
+						]),
+				} as Response);
+			}
+			if (urlStr.includes("/athletes/5533532/gear")) {
+				return Promise.resolve({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							success: true,
+							id: 30735448,
+							display_name: "Nike Pegasus Shield peg-shield",
+						}),
+				} as Response);
+			}
+			if (urlStr.endsWith("/bikes")) {
+				return Promise.resolve({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							success: true,
+							id: 17858335,
+							display_name: "tarungi",
+						}),
+				} as Response);
+			}
+			if (urlStr.includes("/bikes/17858335")) {
+				return Promise.resolve({
+					ok: true,
+					json: () => Promise.resolve({ success: true }),
+				} as Response);
+			}
+			if (urlStr.includes("/athletes/5533532/gear/30735448")) {
+				return Promise.resolve({
+					ok: true,
+					json: () => Promise.resolve({ success: true }),
 				} as Response);
 			}
 			if (urlStr.includes("/activities/")) {
@@ -151,6 +285,133 @@ describe.sequential("strava client connect()", () => {
 		await client.connect({ refreshToken: "token" });
 		const result = await client.sync({});
 		expect(result).toHaveLength(activities.length);
+	});
+
+	test("sync gears fetches bikes and shoes from logged in athlete", async () => {
+		await client.connect({ refreshToken: "token" });
+		const result = await client.syncGears();
+
+		expect(result).toHaveLength(3);
+		expect(result[0]?.providerGear.id).toBe("b5079135");
+		expect(result[0]?.data.type).toBe(GearType.BIKE);
+		expect(result[1]?.providerGear.id).toBe("g15141752");
+		expect(result[1]?.data.type).toBe(GearType.SHOES);
+		expect(result[1]?.data.maximumDistance).toBe(700000);
+		expect(result[2]?.providerGear.id).toBe("1072381");
+		expect(result[2]?.data.type).toBe(GearType.SHOES);
+		expect(result[2]?.data.brand).toBe("Adidas");
+	});
+
+	test("creates strava shoes through athlete gear endpoint", async () => {
+		await client.connect({ refreshToken: "token" });
+		const id = await client.createGear({
+			id: "local-gear",
+			name: "Pegasus Shield",
+			code: "peg-shield",
+			brand: "Nike",
+			type: GearType.SHOES,
+			maximumDistance: 650000,
+			distance: 0,
+			dateBegin: undefined,
+			dateEnd: undefined,
+			providerConnections: [],
+		});
+
+		expect(id).toBe("30735448");
+
+		const matchingCall = mockFetch.mock.calls.find(
+			([url, init]) =>
+				(typeof url === "string" ? url : url.url).includes(
+					"/athletes/5533532/gear",
+				) && init?.method === "POST",
+		);
+
+		expect(matchingCall).toBeTruthy();
+		expect(matchingCall?.[1]?.body).toBe(
+			"brandName=Nike&modelName=Pegasus+Shield&name=peg-shield&description=&notification_distance=650000",
+		);
+	});
+
+	test("creates strava bike through bikes endpoint", async () => {
+		await client.connect({ refreshToken: "token" });
+		const id = await client.createGear({
+			id: "local-bike",
+			name: "tarungi",
+			code: "tarungi",
+			brand: "seoul",
+			type: GearType.BIKE,
+			maximumDistance: 0,
+			distance: 0,
+			dateBegin: undefined,
+			dateEnd: undefined,
+			providerConnections: [],
+		});
+
+		expect(id).toBe("17858335");
+
+		const matchingCall = mockFetch.mock.calls.find(
+			([url, init]) =>
+				(typeof url === "string" ? url : url.url).endsWith("/bikes") &&
+				init?.method === "POST",
+		);
+
+		expect(matchingCall).toBeTruthy();
+		expect(matchingCall?.[1]?.body).toBe(
+			"name=tarungi&frame_type=3&weight=0&brand_name=seoul&model_name=tarungi&notes=",
+		);
+	});
+
+	test("deletes strava shoes through athlete gear endpoint", async () => {
+		await client.connect({ refreshToken: "token" });
+		await expect(
+			client.deleteGear("30735448", {
+				id: "local-gear",
+				name: "Pegasus Shield",
+				code: "peg-shield",
+				brand: "Nike",
+				type: GearType.SHOES,
+				maximumDistance: 650000,
+				distance: 0,
+				dateBegin: undefined,
+				dateEnd: undefined,
+				providerConnections: [],
+			}),
+		).resolves.toBeUndefined();
+
+		const matchingCall = mockFetch.mock.calls.find(
+			([url, init]) =>
+				(typeof url === "string" ? url : url.url).includes(
+					"/athletes/5533532/gear/30735448",
+				) && init?.method === "DELETE",
+		);
+
+		expect(matchingCall).toBeTruthy();
+	});
+
+	test("deletes strava bikes through bikes endpoint", async () => {
+		await client.connect({ refreshToken: "token" });
+		await expect(
+			client.deleteGear("17858335", {
+				id: "local-bike",
+				name: "tarungi",
+				code: "tarungi",
+				brand: "seoul",
+				type: GearType.BIKE,
+				maximumDistance: 0,
+				distance: 0,
+				dateBegin: undefined,
+				dateEnd: undefined,
+				providerConnections: [],
+			}),
+		).resolves.toBeUndefined();
+
+		const matchingCall = mockFetch.mock.calls.find(
+			([url, init]) =>
+				(typeof url === "string" ? url : url.url).includes("/bikes/17858335") &&
+				init?.method === "DELETE",
+		);
+
+		expect(matchingCall).toBeTruthy();
 	});
 
 	activities.forEach((activity, index) => {
@@ -297,6 +558,38 @@ describe.sequential("strava client connect()", () => {
 		expect(averageSpeed).toBe(activitiesData[testActivityId].average_speed);
 		expect(result.activity.data.metadata?.averageHeartRate).toBeUndefined();
 		expect(result.activity.data.metadata?.maximumHeartRate).toBeUndefined();
+	});
+
+	test("updates strava activity gear with gear_id payload", async () => {
+		await client.connect({ refreshToken: "token" });
+		await client.linkActivityGear("16198895522", "b5079135");
+
+		const matchingCall = mockFetch.mock.calls.find(
+			([url, init]) =>
+				(typeof url === "string" ? url : url.url).includes(
+					"/activities/16198895522",
+				) && init?.method === "PUT",
+		);
+
+		expect(matchingCall).toBeTruthy();
+		expect(matchingCall?.[1]?.body).toBe(
+			JSON.stringify({ gear_id: "b5079135" }),
+		);
+	});
+
+	test("clears strava activity gear with gear_id none", async () => {
+		await client.connect({ refreshToken: "token" });
+		await client.unlinkActivityGear("16198895522", "b5079135");
+
+		const matchingCall = mockFetch.mock.calls.find(
+			([url, init]) =>
+				(typeof url === "string" ? url : url.url).includes(
+					"/activities/16198895522",
+				) && init?.method === "PUT",
+		);
+
+		expect(matchingCall).toBeTruthy();
+		expect(matchingCall?.[1]?.body).toBe(JSON.stringify({ gear_id: "none" }));
 	});
 
 	test("imports trainer runs as indoor subtype", async () => {

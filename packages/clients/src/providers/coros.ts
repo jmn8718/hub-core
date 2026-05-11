@@ -1,3 +1,4 @@
+import { type ActivityData, CorosApi, downloadFile } from "@nyt87/crs-connect";
 import { dayjs } from "@repo/dates";
 import type {
 	CacheDb,
@@ -12,10 +13,10 @@ import {
 	type DbActivityPopulated,
 	FileExtensions,
 	type IDbActivity,
+	type IDbGearWithDistance,
 	type LoginCredentials,
 	Providers,
 } from "@repo/types";
-import { type ActivityData, CorosApi, downloadFile } from "coros-connect";
 import pMap from "p-map";
 import pQueue from "p-queue";
 import { type Client, generateActivityFilePath } from "./Client.js";
@@ -365,6 +366,13 @@ export class CorosClient extends Base implements Client {
 		throw new Error("Not supported");
 	}
 
+	async deleteGear(
+		_providerGearId: string,
+		_gear: IDbGearWithDistance,
+	): Promise<void> {
+		throw new Error("Coros does not support remote gear deletion");
+	}
+
 	async linkActivityGear(activityId: string, gearId: string) {
 		throw new Error("Not supported");
 	}
@@ -436,7 +444,7 @@ export class CorosClient extends Base implements Client {
 	}
 
 	async updateActivityNotes(_activityId: string, _notes?: string | null) {
-		// TODO implement when coros-connect supports it
+		// TODO implement when @nyt87/crs-connect supports it
 		return;
 	}
 

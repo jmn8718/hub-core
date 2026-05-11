@@ -420,6 +420,13 @@ export class GarminClient extends Base implements Client {
 			.then((gears) => gears.map((currentGear) => mapGear(currentGear)));
 	}
 
+	deleteGear(
+		_providerGearId: string,
+		_gear: IDbGearWithDistance,
+	): Promise<void> {
+		throw new Error("Garmin does not support remote gear deletion");
+	}
+
 	async linkActivityGear(activityId: string, gearId: string) {
 		await this._client.linkActivityGear(gearId, Number(activityId));
 		// refresh the cache
