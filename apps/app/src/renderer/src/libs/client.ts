@@ -1,4 +1,5 @@
 import type { Client } from "@repo/clients";
+import { resolveSupabaseSession } from "@repo/clients";
 import {
 	type ActivitiesData,
 	type ActivityRegenerationSummary,
@@ -9,6 +10,8 @@ import {
 	type DbActivityPopulated,
 	type GearsData,
 	type IActivityCreateInput,
+	type ICloudSyncResult,
+	type ICloudSyncStatus,
 	type IDailyOverviewData,
 	type IDbGearWithDistance,
 	type IGearCreateInput,
@@ -24,8 +27,11 @@ import {
 	type StravaClientOptions,
 	type Value,
 } from "@repo/types";
+import { getCloudConfig } from "./cloud.js";
 
 export class AppClient implements Client {
+	private readonly _cloudConfig = getCloudConfig();
+
 	async getDataOverview({ limit }: { limit?: number }): Promise<
 		ProviderSuccessResponse<{
 			data: IOverviewData[];
@@ -603,7 +609,137 @@ export class AppClient implements Client {
 		}
 	}
 
-	async signout(): Promise<undefined> {}
+	async getCloudSyncStatus(): Promise<
+		ProviderSuccessResponse<{ data: ICloudSyncStatus }>
+	> {
+		try {
+			if (!this._cloudConfig) {
+				return {
+					success: true,
+					data: {
+						configured: false,
+						authenticated: false,
+						email: null,
+						userId: null,
+						validation: null,
+					},
+				};
+			}
+
+			const session = await resolveSupabaseSession({
+				supabase: this._cloudConfig.supabase,
+				supabaseUrl: this._cloudConfig.supabaseUrl,
+			});
+
+			const validation =
+				session?.access_token && this._cloudConfig.apiBaseUrl
+					? ((await window.electron.ipcRenderer.invoke(
+							Channels.DB_CLOUD_SYNC_VALIDATE,
+							{
+								accessToken: session.access_token,
+								apiBaseUrl: this._cloudConfig.apiBaseUrl,
+							},
+						)) as ICloudSyncStatus["validation"])
+					: null;
+
+			return {
+				success: true,
+				data: {
+					configured: true,
+					authenticated: !!session?.access_token,
+					email: session?.user.email ?? null,
+					userId: session?.user.id ?? null,
+					validation,
+				},
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async signInCloud(
+		email: string,
+		password: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			if (!this._cloudConfig) {
+				throw new Error("Cloud sync is not configured in this desktop build");
+			}
+			if (!email.trim() || !password) {
+				throw new Error("Missing Supabase email or password");
+			}
+
+			const { error } =
+				await this._cloudConfig.supabase.auth.signInWithPassword({
+					email: email.trim(),
+					password,
+				});
+			if (error) {
+				throw error;
+			}
+
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async syncCloud(): Promise<
+		ProviderSuccessResponse<{ data: ICloudSyncResult }>
+	> {
+		try {
+			if (!this._cloudConfig) {
+				throw new Error("Cloud sync is not configured in this desktop build");
+			}
+
+			const session = await resolveSupabaseSession({
+				supabase: this._cloudConfig.supabase,
+				supabaseUrl: this._cloudConfig.supabaseUrl,
+			});
+			const accessToken = session?.access_token;
+			if (!accessToken) {
+				throw new Error("Sign in to Supabase before syncing");
+			}
+
+			const data = (await window.electron.ipcRenderer.invoke(
+				Channels.DB_CLOUD_SYNC,
+				{
+					accessToken,
+					apiBaseUrl: this._cloudConfig.apiBaseUrl,
+					userId: session.user.id,
+				},
+			)) as ICloudSyncResult;
+
+			return {
+				success: true,
+				data,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async signout(): Promise<undefined> {
+		if (!this._cloudConfig) {
+			return undefined;
+		}
+		const { error } = await this._cloudConfig.supabase.auth.signOut();
+		if (error) {
+			throw error;
+		}
+		return undefined;
+	}
 
 	getDebugInfo(): ProviderSuccessResponse<{ data: string[] }> {
 		try {

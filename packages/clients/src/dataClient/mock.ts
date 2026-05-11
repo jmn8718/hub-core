@@ -7,6 +7,8 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IActivityCreateInput,
+	ICloudSyncResult,
+	ICloudSyncStatus,
 	IDailyOverviewData,
 	IDbGearWithDistance,
 	IGearCreateInput,
@@ -389,6 +391,37 @@ export class MockClient implements Client {
 		return {
 			success: true,
 			data: "",
+		};
+	}
+
+	async getCloudSyncStatus(): Promise<
+		ProviderSuccessResponse<{ data: ICloudSyncStatus }>
+	> {
+		return {
+			success: true,
+			data: {
+				configured: false,
+				authenticated: false,
+				email: null,
+				userId: null,
+				validation: null,
+			},
+		};
+	}
+
+	async signInCloud(): Promise<ProviderSuccessResponse> {
+		return {
+			success: false,
+			error: "Cloud sync is not supported in the mock client",
+		};
+	}
+
+	async syncCloud(): Promise<
+		ProviderSuccessResponse<{ data: ICloudSyncResult }>
+	> {
+		return {
+			success: false,
+			error: "Cloud sync is not supported in the mock client",
 		};
 	}
 

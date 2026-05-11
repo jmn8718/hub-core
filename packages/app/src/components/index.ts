@@ -5,6 +5,7 @@ export * from "./charts/WeeklyDistanceChart.js";
 export * from "./filters/Activities.js";
 export * from "./filters/Gears.js";
 export * from "./settings/FolderPathSection.js";
+export * from "./settings/CloudSyncSection.js";
 export * from "./settings/ThemeSection.js";
 export * from "./settings/SignOutSection.js";
 export * from "./BottomStatus.js";

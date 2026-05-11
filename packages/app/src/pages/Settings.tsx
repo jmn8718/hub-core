@@ -4,6 +4,7 @@ import type React from "react";
 import { Link } from "react-router-dom";
 import {
 	Box,
+	CloudSyncSection,
 	FolderPathSection,
 	SectionContainer,
 	SignOutSection,
@@ -112,6 +113,7 @@ export function Settings() {
 								</div>
 							</SectionContainer>
 						)}
+					{type === AppType.DESKTOP && <CloudSyncSection />}
 				</Box>
 				{type === AppType.WEB && (
 					<Box>

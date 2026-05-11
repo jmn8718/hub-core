@@ -15,6 +15,7 @@ import "./activity.js";
 import "./db.js";
 import "./gear.js";
 import "./providers.js";
+import "./sync.js";
 
 // implement common ipc messages
 ipcMain.on("ping", () => console.log("pong"));

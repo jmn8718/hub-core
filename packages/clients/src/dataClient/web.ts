@@ -8,6 +8,8 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IActivityCreateInput,
+	ICloudSyncResult,
+	ICloudSyncStatus,
 	IDailyOverviewData,
 	IDbGearWithDistance,
 	IGearCreateInput,
@@ -347,6 +349,41 @@ export class WebClient implements Client {
 		return {
 			success: true,
 			data: "",
+		};
+	}
+
+	async getCloudSyncStatus(): Promise<
+		ProviderSuccessResponse<{ data: ICloudSyncStatus }>
+	> {
+		const session = await resolveSupabaseSession({
+			supabase: this._supabase,
+			supabaseUrl: this._supabaseUrl,
+		});
+		return {
+			success: true,
+			data: {
+				configured: true,
+				authenticated: !!session?.access_token,
+				email: session?.user.email ?? null,
+				userId: session?.user.id ?? null,
+				validation: null,
+			},
+		};
+	}
+
+	async signInCloud(): Promise<ProviderSuccessResponse> {
+		return {
+			success: false,
+			error: "Use the web sign-in flow instead",
+		};
+	}
+
+	async syncCloud(): Promise<
+		ProviderSuccessResponse<{ data: ICloudSyncResult }>
+	> {
+		return {
+			success: false,
+			error: "Cloud sync is not supported in the web client",
 		};
 	}
 

@@ -7,6 +7,8 @@ import type {
 	DbActivityPopulated,
 	GearsData,
 	IActivityCreateInput,
+	ICloudSyncResult,
+	ICloudSyncStatus,
 	IDailyOverviewData,
 	IDbGearWithDistance,
 	IGearCreateInput,
@@ -185,6 +187,20 @@ export abstract class Client {
 		title: string,
 	): Promise<ProviderSuccessResponse<{ data: string }>>;
 
+	abstract getCloudSyncStatus(): Promise<
+		ProviderSuccessResponse<{
+			data: ICloudSyncStatus;
+		}>
+	>;
+	abstract signInCloud(
+		email: string,
+		password: string,
+	): Promise<ProviderSuccessResponse>;
+	abstract syncCloud(): Promise<
+		ProviderSuccessResponse<{
+			data: ICloudSyncResult;
+		}>
+	>;
 	abstract signout(): Promise<undefined>;
 
 	abstract getDebugInfo(): ProviderSuccessResponse<{ data: string[] }>;
