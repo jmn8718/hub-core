@@ -1,5 +1,40 @@
 import { sql } from "drizzle-orm";
-import { integer, pgTable, text } from "drizzle-orm/pg-core";
+import { integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
+import { uuidv7 } from "uuidv7";
+
+export const appUsers = pgTable("app_users", {
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => uuidv7()),
+	email: text("email"),
+	displayName: text("display_name"),
+	createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP::text`),
+	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP::text`),
+});
+
+export const authIdentities = pgTable(
+	"auth_identities",
+	{
+		provider: text("provider").notNull(),
+		providerUserId: text("provider_user_id").notNull(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => appUsers.id),
+		email: text("email"),
+		displayName: text("display_name"),
+		createdAt: text("created_at")
+			.notNull()
+			.default(sql`CURRENT_TIMESTAMP::text`),
+		updatedAt: text("updated_at")
+			.notNull()
+			.default(sql`CURRENT_TIMESTAMP::text`),
+	},
+	(table) => [
+		primaryKey({
+			columns: [table.provider, table.providerUserId],
+		}),
+	],
+);
 
 export const syncSessions = pgTable("sync_sessions", {
 	id: text("id").primaryKey(),

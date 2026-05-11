@@ -648,7 +648,7 @@ export class AppClient implements Client {
 					configured: true,
 					authenticated: !!session?.access_token,
 					email: session?.user.email ?? null,
-					userId: session?.user.id ?? null,
+					userId: validation?.userId ?? null,
 					validation,
 				},
 			};
@@ -714,7 +714,6 @@ export class AppClient implements Client {
 				{
 					accessToken,
 					apiBaseUrl: this._cloudConfig.apiBaseUrl,
-					userId: session.user.id,
 				},
 			)) as ICloudSyncResult;
 

@@ -101,11 +101,9 @@ ipcMain.handle(
 		{
 			accessToken,
 			apiBaseUrl,
-			userId,
 		}: {
 			accessToken: string;
 			apiBaseUrl: string;
-			userId: string;
 		},
 	): Promise<ICloudSyncResult> => {
 		if (!accessToken) {
@@ -113,9 +111,6 @@ ipcMain.handle(
 		}
 		if (!apiBaseUrl) {
 			throw new Error("Missing API base URL");
-		}
-		if (!userId) {
-			throw new Error("Missing Supabase user id");
 		}
 
 		const baseUrl = apiBaseUrl.replace(/\/$/, "");
@@ -131,6 +126,9 @@ ipcMain.handle(
 		const validationData = validation.data;
 		if (!validationData) {
 			throw new Error("Sync validation returned no data");
+		}
+		if (!validationData.userId) {
+			throw new Error("Sync validation did not return an internal user id");
 		}
 		if (!validationData.compatible) {
 			throw new Error(
@@ -150,6 +148,7 @@ ipcMain.handle(
 		const syncSessionId = start.syncSessionId;
 		const allowedTables = start.allowedTables ?? [];
 		const batchLimit = start.batchLimit ?? db.getSyncBatchLimit();
+		const userId = validationData.userId;
 		const existingSyncState = await db.getSyncState({ userId });
 		const syncMode: ICloudSyncResult["syncMode"] =
 			existingSyncState &&

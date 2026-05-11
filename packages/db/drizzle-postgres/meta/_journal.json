@@ -29,6 +29,13 @@
       "when": 1778120000001,
       "tag": "0003_sync_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778200000001,
+      "tag": "0004_app_users",
+      "breakpoints": true
     }
   ]
 }

@@ -62,6 +62,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
 	const data: ISyncValidateData = {
 		compatible: reasons.length === 0,
+		userId: authContext.internalUserId,
 		reasons,
 		clientId: payload.clientId ?? "desktop",
 		clientSchemaVersion: payload.schemaVersion,

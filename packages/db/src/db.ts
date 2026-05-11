@@ -42,7 +42,7 @@ import {
 import pMap from "p-map";
 import { uuidv7 } from "uuidv7";
 import { type DbClient, type DbDialect, getDbClientDialect } from "./client";
-import { inbody, profiles } from "./schemas";
+import { appUsers, authIdentities, inbody, profiles } from "./schemas";
 import { syncSessions, syncState, weight } from "./schemas";
 import {
 	activities,
@@ -140,6 +140,13 @@ interface ISyncStatusData {
 	startedAt: string;
 	completedAt: string | null;
 	error: string | null;
+}
+
+interface IResolvedAppUserData {
+	userId: string;
+	email: string | null;
+	displayName: string | null;
+	created: boolean;
 }
 
 const syncTableSet = new Set<string>(SYNC_TABLES);
@@ -378,6 +385,167 @@ export class Db {
 		return this._dialect === "postgres"
 			? sql<string>`to_char(to_timestamp(${activities.timestamp} / 1000.0), 'YYYY-MM-DD')`
 			: sql<string>`strftime('%Y-%m-%d', ${activities.timestamp} / 1000, 'unixepoch')`;
+	}
+
+	async getOrCreateAppUser(params: {
+		provider: string;
+		providerUserId: string;
+		email?: string | null;
+		displayName?: string | null;
+	}): Promise<IResolvedAppUserData> {
+		const provider = params.provider.trim();
+		const providerUserId = params.providerUserId.trim();
+		if (!provider) {
+			throw new Error("Missing auth provider");
+		}
+		if (!providerUserId) {
+			throw new Error("Missing provider user id");
+		}
+
+		const email = params.email?.trim() || null;
+		const displayName = params.displayName?.trim() || null;
+		const existing = await this._client
+			.select({
+				userId: authIdentities.userId,
+				email: appUsers.email,
+				displayName: appUsers.displayName,
+			})
+			.from(authIdentities)
+			.innerJoin(appUsers, eq(authIdentities.userId, appUsers.id))
+			.where(
+				and(
+					eq(authIdentities.provider, provider),
+					eq(authIdentities.providerUserId, providerUserId),
+				),
+			)
+			.limit(1)
+			.then((rows) => rows[0]);
+
+		if (existing) {
+			const updatedAt = this._nowIso();
+			await this._client
+				.update(authIdentities)
+				.set({
+					email,
+					displayName,
+					updatedAt,
+				})
+				.where(
+					and(
+						eq(authIdentities.provider, provider),
+						eq(authIdentities.providerUserId, providerUserId),
+					),
+				);
+			await this._client
+				.update(appUsers)
+				.set({
+					email,
+					displayName,
+					updatedAt,
+				})
+				.where(eq(appUsers.id, existing.userId));
+
+			return {
+				userId: existing.userId,
+				email,
+				displayName,
+				created: false,
+			};
+		}
+
+		const userId = uuidv7();
+		const timestamp = this._nowIso();
+
+		await this._client.transaction(async (tx) => {
+			await tx.insert(appUsers).values({
+				id: userId,
+				email,
+				displayName,
+				createdAt: timestamp,
+				updatedAt: timestamp,
+			});
+
+			await tx
+				.insert(authIdentities)
+				.values({
+					provider,
+					providerUserId,
+					userId,
+					email,
+					displayName,
+					createdAt: timestamp,
+					updatedAt: timestamp,
+				})
+				.onConflictDoNothing();
+
+			const resolvedIdentity = await tx
+				.select({ userId: authIdentities.userId })
+				.from(authIdentities)
+				.where(
+					and(
+						eq(authIdentities.provider, provider),
+						eq(authIdentities.providerUserId, providerUserId),
+					),
+				)
+				.limit(1)
+				.then((rows) => rows[0]);
+
+			if (!resolvedIdentity) {
+				throw new Error("Failed to resolve app user identity");
+			}
+
+			if (resolvedIdentity.userId !== userId) {
+				await tx.delete(appUsers).where(eq(appUsers.id, userId));
+			}
+		});
+
+		const resolvedUser = await this._client
+			.select({
+				userId: appUsers.id,
+				email: appUsers.email,
+				displayName: appUsers.displayName,
+			})
+			.from(appUsers)
+			.where(eq(appUsers.id, userId))
+			.limit(1)
+			.then((rows) => rows[0]);
+
+		if (resolvedUser) {
+			return {
+				userId: resolvedUser.userId,
+				email: resolvedUser.email,
+				displayName: resolvedUser.displayName,
+				created: true,
+			};
+		}
+
+		const fallbackResolvedUser = await this._client
+			.select({
+				userId: appUsers.id,
+				email: appUsers.email,
+				displayName: appUsers.displayName,
+			})
+			.from(authIdentities)
+			.innerJoin(appUsers, eq(authIdentities.userId, appUsers.id))
+			.where(
+				and(
+					eq(authIdentities.provider, provider),
+					eq(authIdentities.providerUserId, providerUserId),
+				),
+			)
+			.limit(1)
+			.then((rows) => rows[0]);
+
+		if (!fallbackResolvedUser) {
+			throw new Error("Failed to load resolved app user");
+		}
+
+		return {
+			userId: fallbackResolvedUser.userId,
+			email: fallbackResolvedUser.email,
+			displayName: fallbackResolvedUser.displayName,
+			created: false,
+		};
 	}
 
 	private _activityConnectionsJson() {
@@ -1254,7 +1422,7 @@ export class Db {
 			activityId = uuidv7();
 			const metadata = await this._buildSyncMetadata();
 			const values: typeof activities.$inferInsert = {
-				...activity.data,
+				...(activity.data as typeof activities.$inferInsert),
 				metadata: activity.data.metadata
 					? JSON.stringify(activity.data.metadata)
 					: "{}",
@@ -1468,7 +1636,7 @@ export class Db {
 					gearId = uuidv7();
 					const metadata = await this._buildSyncMetadata();
 					const values: typeof gears.$inferInsert = {
-						...data,
+						...(data as typeof gears.$inferInsert),
 						id: gearId,
 						...metadata,
 					};

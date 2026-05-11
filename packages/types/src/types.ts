@@ -335,6 +335,7 @@ export interface ISyncValidatePayload {
 
 export interface ISyncValidateData {
 	compatible: boolean;
+	userId: string;
 	reasons: string[];
 	clientId: string;
 	clientSchemaVersion: string;

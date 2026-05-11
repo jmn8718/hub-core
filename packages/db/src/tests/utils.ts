@@ -12,11 +12,20 @@ import {
 	providerActivities,
 	providerGears,
 } from "../schemas/app.js";
+import {
+	appUsers,
+	authIdentities,
+	syncSessions,
+	syncState,
+} from "../schemas/sync.js";
 
 import { data } from "../mocks/index.js";
 
 export function clearData(client: DbClient) {
 	return Promise.all([
+		client.delete(authIdentities),
+		client.delete(syncSessions),
+		client.delete(syncState),
 		client.delete(activitiesConnection),
 		client.delete(gearsConnection),
 		client.delete(activityGears),
@@ -24,6 +33,7 @@ export function clearData(client: DbClient) {
 		client.delete(activities),
 		client.delete(providerActivities),
 		client.delete(providerGears),
+		client.delete(appUsers),
 	]);
 }
 

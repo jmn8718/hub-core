@@ -29,7 +29,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
 	try {
 		const data = await db.finishSyncSession({
-			userId: authContext.user.id,
+			userId: authContext.internalUserId,
 			syncSessionId: payload.syncSessionId,
 		});
 		return NextResponse.json({

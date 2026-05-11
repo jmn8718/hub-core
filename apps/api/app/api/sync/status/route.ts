@@ -22,7 +22,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
 	try {
 		const data = await db.getSyncSessionStatus({
-			userId: authContext.user.id,
+			userId: authContext.internalUserId,
 			syncSessionId,
 		});
 		return NextResponse.json({

@@ -253,16 +253,40 @@ describe("db", () => {
 		expect(String(rows[0]?.id) <= String(rows[1]?.id)).toBe(true);
 	});
 
+	test("should resolve the same internal app user for the same auth identity", async () => {
+		const first = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "supabase-user-1",
+			email: "runner@example.com",
+			displayName: "Runner One",
+		});
+		const second = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "supabase-user-1",
+			email: "runner@example.com",
+			displayName: "Runner One",
+		});
+
+		expect(first.userId).eq(second.userId);
+		expect(first.created).toBe(true);
+		expect(second.created).toBe(false);
+	});
+
 	test("should create and complete a sync session while upserting rows", async () => {
+		const resolvedUser = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "sync-user-1",
+			email: "sync-user-1@example.com",
+		});
 		const sync = await db.createSyncSession({
-			userId: "user-1",
+			userId: resolvedUser.userId,
 			clientId: "desktop-test",
 			schemaVersion: "1",
 		});
 		const activitySyncId = uuidv7();
 
 		const pushed = await db.pushSyncRows({
-			userId: "user-1",
+			userId: resolvedUser.userId,
 			syncSessionId: sync.syncSessionId,
 			table: "activities",
 			batchIndex: 0,
@@ -298,7 +322,7 @@ describe("db", () => {
 		expect(syncedActivity?.name).eq("Synced Activity");
 
 		const completed = await db.finishSyncSession({
-			userId: "user-1",
+			userId: resolvedUser.userId,
 			syncSessionId: sync.syncSessionId,
 		});
 		expect(completed.status).eq("completed");
@@ -306,15 +330,20 @@ describe("db", () => {
 	});
 
 	test("should pull and apply sync rows and persist sync state", async () => {
+		const resolvedUser = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "sync-user-2",
+			email: "sync-user-2@example.com",
+		});
 		const sync = await db.createSyncSession({
-			userId: "user-2",
+			userId: resolvedUser.userId,
 			clientId: "desktop-test",
 			schemaVersion: "2",
 		});
 		const activitySyncId = uuidv7();
 
 		await db.pushSyncRows({
-			userId: "user-2",
+			userId: resolvedUser.userId,
 			syncSessionId: sync.syncSessionId,
 			table: "activities",
 			batchIndex: 0,
@@ -344,7 +373,7 @@ describe("db", () => {
 		});
 
 		const pulled = await db.pullSyncRows({
-			userId: "user-2",
+			userId: resolvedUser.userId,
 			syncSessionId: sync.syncSessionId,
 			table: "activities",
 			limit: 10,
@@ -359,14 +388,14 @@ describe("db", () => {
 		expect(applied).eq(pulled.rows.length);
 
 		const state = await db.upsertSyncState({
-			userId: "user-2",
+			userId: resolvedUser.userId,
 			lastSyncSessionId: sync.syncSessionId,
 			lastSchemaVersion: "2",
 			lastSyncedAt: "2026-05-11T00:00:00.000Z",
 			lastPushCompletedAt: "2026-05-11T00:00:00.000Z",
 			lastPullCompletedAt: "2026-05-11T00:00:00.000Z",
 		});
-		expect(state.userId).eq("user-2");
+		expect(state.userId).eq(resolvedUser.userId);
 		expect(state.lastSchemaVersion).eq("2");
 		expect(state.lastSyncSessionId).eq(sync.syncSessionId);
 	});

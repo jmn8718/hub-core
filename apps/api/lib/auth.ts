@@ -1,5 +1,6 @@
 import { type User, createClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
+import { db } from "./db";
 
 const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY } = process.env;
 
@@ -17,7 +18,8 @@ const supabase = createClient(
 );
 
 export interface AuthContext {
-	user: User;
+	externalUser: User;
+	internalUserId: string;
 	accessToken: string;
 }
 
@@ -36,8 +38,19 @@ export async function requireUser(
 		return null;
 	}
 
+	const resolvedUser = await db.getOrCreateAppUser({
+		provider: "supabase",
+		providerUserId: data.user.id,
+		email: data.user.email ?? null,
+		displayName:
+			data.user.user_metadata?.full_name ??
+			data.user.user_metadata?.name ??
+			null,
+	});
+
 	return {
-		user: data.user,
+		externalUser: data.user,
+		internalUserId: resolvedUser.userId,
 		accessToken,
 	};
 }
