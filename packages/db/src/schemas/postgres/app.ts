@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
 	doublePrecision,
 	index,
@@ -32,6 +33,11 @@ export const activities = pgTable(
 		isEvent: integer("is_event").default(0),
 		startLatitude: doublePrecision("start_latitude").default(0),
 		startLongitude: doublePrecision("start_longitude").default(0),
+		userId: text("user_id"),
+		updatedAt: text("updated_at")
+			.notNull()
+			.default(sql`CURRENT_TIMESTAMP::text`),
+		deletedAt: text("deleted_at"),
 	},
 	(table) => [index("timestamp_idx").on(table.timestamp)],
 );
@@ -42,6 +48,9 @@ export const providerActivities = pgTable("provider_activities", {
 	timestamp: doublePrecision("timestamp").notNull(),
 	original: integer("original").default(0),
 	data: text("data").default("{}"),
+	userId: text("user_id"),
+	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP::text`),
+	deletedAt: text("deleted_at"),
 });
 
 export const gears = pgTable("gears", {
@@ -55,6 +64,9 @@ export const gears = pgTable("gears", {
 	dateBegin: text("date_begin"),
 	dateEnd: text("date_end"),
 	maximumDistance: integer("maximum_distance").default(0),
+	userId: text("user_id"),
+	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP::text`),
+	deletedAt: text("deleted_at"),
 });
 
 export const providerGears = pgTable("provider_gears", {
@@ -64,6 +76,9 @@ export const providerGears = pgTable("provider_gears", {
 	provider: text("provider").notNull(),
 	providerId: text("provider_id").notNull(),
 	data: text("data").default("{}"),
+	userId: text("user_id"),
+	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP::text`),
+	deletedAt: text("deleted_at"),
 });
 
 export const activityGears = pgTable(
@@ -75,6 +90,11 @@ export const activityGears = pgTable(
 		activityId: text("activity_id")
 			.references(() => activities.id)
 			.notNull(),
+		userId: text("user_id"),
+		updatedAt: text("updated_at")
+			.notNull()
+			.default(sql`CURRENT_TIMESTAMP::text`),
+		deletedAt: text("deleted_at"),
 	},
 	(table) => [
 		primaryKey({
@@ -92,6 +112,11 @@ export const activitiesConnection = pgTable(
 		providerActivityId: text("provider_activity_id")
 			.references(() => providerActivities.id)
 			.notNull(),
+		userId: text("user_id"),
+		updatedAt: text("updated_at")
+			.notNull()
+			.default(sql`CURRENT_TIMESTAMP::text`),
+		deletedAt: text("deleted_at"),
 	},
 	(table) => [
 		primaryKey({
@@ -109,6 +134,11 @@ export const gearsConnection = pgTable(
 		providerGearId: text("provider_gear_id")
 			.references(() => providerGears.id)
 			.notNull(),
+		userId: text("user_id"),
+		updatedAt: text("updated_at")
+			.notNull()
+			.default(sql`CURRENT_TIMESTAMP::text`),
+		deletedAt: text("deleted_at"),
 	},
 	(table) => [
 		primaryKey({

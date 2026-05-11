@@ -251,3 +251,125 @@ export interface IInbodyCreateInput {
 export interface IInbodyUpdateInput extends IInbodyCreateInput {
 	id: string;
 }
+
+export type SyncTableName =
+	| "activities"
+	| "provider_activities"
+	| "activities_connection"
+	| "gears"
+	| "provider_gears"
+	| "gears_connection"
+	| "activity_gears"
+	| "inbody"
+	| "weight";
+
+export const CLOUD_SYNC_SCHEMA_VERSION = "3";
+
+export interface ISyncStartPayload {
+	clientId?: string;
+	schemaVersion?: string;
+}
+
+export interface ISyncStartData {
+	syncSessionId: string;
+	allowedTables: SyncTableName[];
+	batchLimit: number;
+	status: "started";
+}
+
+export interface ISyncPushPayload {
+	syncSessionId: string;
+	table: SyncTableName;
+	batchIndex: number;
+	rows: Record<string, unknown>[];
+}
+
+export interface ISyncPushData {
+	syncSessionId: string;
+	table: SyncTableName;
+	batchIndex: number;
+	processed: number;
+	totalRows: number;
+}
+
+export interface ISyncPullPayload {
+	syncSessionId: string;
+	table: SyncTableName;
+	limit?: number;
+	offset?: number;
+	updatedAfter?: string;
+}
+
+export interface ISyncPullData {
+	syncSessionId: string;
+	table: SyncTableName;
+	rows: Record<string, unknown>[];
+	nextOffset: number;
+	hasMore: boolean;
+}
+
+export interface ISyncFinishPayload {
+	syncSessionId: string;
+}
+
+export interface ISyncStatusData {
+	id: string;
+	userId: string;
+	clientId: string;
+	schemaVersion: string;
+	status: "started" | "completed" | "failed";
+	lastTable: SyncTableName | null;
+	lastBatchIndex: number;
+	totalRows: number;
+	startedAt: string;
+	completedAt: string | null;
+	error: string | null;
+}
+
+export interface ISyncValidatePayload {
+	clientId?: string;
+	schemaVersion: string;
+	tables: SyncTableName[];
+	batchLimit: number;
+}
+
+export interface ISyncValidateData {
+	compatible: boolean;
+	reasons: string[];
+	clientId: string;
+	clientSchemaVersion: string;
+	clientTables: SyncTableName[];
+	clientBatchLimit: number;
+	serverSchemaVersion: string;
+	serverTables: SyncTableName[];
+	serverBatchLimit: number;
+}
+
+export interface ICloudSyncStatus {
+	configured: boolean;
+	authenticated: boolean;
+	email: string | null;
+	userId: string | null;
+	validation: ISyncValidateData | null;
+}
+
+export interface ICloudSyncResult {
+	syncSessionId: string;
+	syncedTables: number;
+	syncedRows: number;
+	pushedTables: number;
+	pushedRows: number;
+	pulledTables: number;
+	pulledRows: number;
+	syncMode: "full" | "delta";
+}
+
+export interface ISyncStateData {
+	userId: string;
+	lastSyncSessionId: string | null;
+	lastSchemaVersion: string | null;
+	lastSyncedAt: string | null;
+	lastPushCompletedAt: string | null;
+	lastPullCompletedAt: string | null;
+	updatedAt: string;
+}

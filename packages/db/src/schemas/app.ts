@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
 	index,
 	integer,
@@ -32,6 +33,9 @@ export const activities = sqliteTable(
 		isEvent: integer("is_event").default(0),
 		startLatitude: real("start_latitude").default(0),
 		startLongitude: real("start_longitude").default(0),
+		userId: text("user_id"),
+		updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+		deletedAt: text("deleted_at"),
 	},
 	(table) => [index("timestamp_idx").on(table.timestamp)],
 );
@@ -42,6 +46,9 @@ export const providerActivities = sqliteTable("provider_activities", {
 	timestamp: real("timestamp").notNull(),
 	original: integer("original").default(0),
 	data: text("data").default("{}"),
+	userId: text("user_id"),
+	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	deletedAt: text("deleted_at"),
 });
 
 export const gears = sqliteTable("gears", {
@@ -55,6 +62,9 @@ export const gears = sqliteTable("gears", {
 	dateBegin: text("date_begin"),
 	dateEnd: text("date_end"),
 	maximumDistance: integer("maximum_distance").default(0),
+	userId: text("user_id"),
+	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	deletedAt: text("deleted_at"),
 });
 
 export const providerGears = sqliteTable("provider_gears", {
@@ -64,6 +74,9 @@ export const providerGears = sqliteTable("provider_gears", {
 	provider: text("provider").notNull(),
 	providerId: text("provider_id").notNull(),
 	data: text("data").default("{}"),
+	userId: text("user_id"),
+	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	deletedAt: text("deleted_at"),
 });
 
 export const activityGears = sqliteTable(
@@ -75,6 +88,9 @@ export const activityGears = sqliteTable(
 		activityId: text("activity_id")
 			.references(() => activities.id)
 			.notNull(),
+		userId: text("user_id"),
+		updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+		deletedAt: text("deleted_at"),
 	},
 	(table) => [
 		primaryKey({
@@ -96,6 +112,9 @@ export const activitiesConnection = sqliteTable(
 		providerActivityId: text("provider_activity_id")
 			.references(() => providerActivities.id)
 			.notNull(),
+		userId: text("user_id"),
+		updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+		deletedAt: text("deleted_at"),
 	},
 	(table) => [
 		primaryKey({
@@ -117,6 +136,9 @@ export const gearsConnection = sqliteTable(
 		providerGearId: text("provider_gear_id")
 			.references(() => providerGears.id)
 			.notNull(),
+		userId: text("user_id"),
+		updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+		deletedAt: text("deleted_at"),
 	},
 	(table) => [
 		primaryKey({

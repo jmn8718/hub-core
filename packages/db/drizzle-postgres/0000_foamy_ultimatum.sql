@@ -17,18 +17,27 @@ CREATE TABLE "activities" (
 	"metadata" text DEFAULT '{}',
 	"is_event" integer DEFAULT 0,
 	"start_latitude" double precision DEFAULT 0,
-	"start_longitude" double precision DEFAULT 0
+	"start_longitude" double precision DEFAULT 0,
+	"user_id" text,
+	"updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL,
+	"deleted_at" text
 );
 --> statement-breakpoint
 CREATE TABLE "activities_connection" (
 	"activity_id" text NOT NULL,
 	"provider_activity_id" text NOT NULL,
+	"user_id" text,
+	"updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL,
+	"deleted_at" text,
 	CONSTRAINT "activities_connection_activity_id_provider_activity_id_pk" PRIMARY KEY("activity_id","provider_activity_id")
 );
 --> statement-breakpoint
 CREATE TABLE "activity_gears" (
 	"gear_id" text NOT NULL,
 	"activity_id" text NOT NULL,
+	"user_id" text,
+	"updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL,
+	"deleted_at" text,
 	CONSTRAINT "activity_gears_gear_id_activity_id_pk" PRIMARY KEY("gear_id","activity_id")
 );
 --> statement-breakpoint
@@ -40,12 +49,18 @@ CREATE TABLE "gears" (
 	"type" text NOT NULL,
 	"date_begin" text,
 	"date_end" text,
-	"maximum_distance" integer DEFAULT 0
+	"maximum_distance" integer DEFAULT 0,
+	"user_id" text,
+	"updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL,
+	"deleted_at" text
 );
 --> statement-breakpoint
 CREATE TABLE "gears_connection" (
 	"gear_id" text NOT NULL,
 	"provider_gear_id" text NOT NULL,
+	"user_id" text,
+	"updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL,
+	"deleted_at" text,
 	CONSTRAINT "gears_connection_gear_id_provider_gear_id_pk" PRIMARY KEY("gear_id","provider_gear_id")
 );
 --> statement-breakpoint
@@ -54,14 +69,20 @@ CREATE TABLE "provider_activities" (
 	"provider" text NOT NULL,
 	"timestamp" double precision NOT NULL,
 	"original" integer DEFAULT 0,
-	"data" text DEFAULT '{}'
+	"data" text DEFAULT '{}',
+	"user_id" text,
+	"updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL,
+	"deleted_at" text
 );
 --> statement-breakpoint
 CREATE TABLE "provider_gears" (
 	"id" text PRIMARY KEY NOT NULL,
 	"provider" text NOT NULL,
 	"provider_id" text NOT NULL,
-	"data" text DEFAULT '{}'
+	"data" text DEFAULT '{}',
+	"user_id" text,
+	"updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL,
+	"deleted_at" text
 );
 --> statement-breakpoint
 CREATE TABLE "cache_records" (
@@ -96,7 +117,10 @@ CREATE TABLE "inbody" (
 	"composition_body_fat" integer,
 	"type" text NOT NULL,
 	"date" text NOT NULL,
-	"created_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL
+	"created_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL,
+	"user_id" text,
+	"updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL,
+	"deleted_at" text
 );
 --> statement-breakpoint
 CREATE TABLE "profiles" (
@@ -127,7 +151,10 @@ CREATE TABLE "webhooks" (
 CREATE TABLE "weight" (
 	"id" text PRIMARY KEY NOT NULL,
 	"weight" integer NOT NULL,
-	"date" text NOT NULL
+	"date" text NOT NULL,
+	"user_id" text,
+	"updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL,
+	"deleted_at" text
 );
 --> statement-breakpoint
 ALTER TABLE "activities_connection" ADD CONSTRAINT "activities_connection_activity_id_activities_id_fk" FOREIGN KEY ("activity_id") REFERENCES "public"."activities"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

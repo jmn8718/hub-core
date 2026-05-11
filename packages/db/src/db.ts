@@ -17,6 +17,7 @@ import type {
 	IInbodyData,
 	IInbodyUpdateInput,
 	IOverviewData,
+	ISyncStateData,
 	IWeeklyOverviewData,
 	InbodyType,
 	Providers,
@@ -31,6 +32,7 @@ import {
 	getTableColumns,
 	gt,
 	gte,
+	isNull,
 	lt,
 	lte,
 	min,
@@ -41,6 +43,7 @@ import pMap from "p-map";
 import { uuidv7 } from "uuidv7";
 import { type DbClient, type DbDialect, getDbClientDialect } from "./client";
 import { inbody, profiles } from "./schemas";
+import { syncSessions, syncState, weight } from "./schemas";
 import {
 	activities,
 	activitiesConnection,
@@ -74,6 +77,72 @@ interface IDbActivityRow {
 	startLatitude: number | null;
 	startLongitude: number | null;
 }
+
+const SYNC_BATCH_LIMIT = 250;
+
+const SYNC_TABLES: SyncTableName[] = [
+	"activities",
+	"provider_activities",
+	"activities_connection",
+	"gears",
+	"provider_gears",
+	"gears_connection",
+	"activity_gears",
+	"inbody",
+	"weight",
+];
+
+type SyncSessionStatus = "started" | "completed" | "failed";
+
+type SyncTableName =
+	| "activities"
+	| "provider_activities"
+	| "activities_connection"
+	| "gears"
+	| "provider_gears"
+	| "gears_connection"
+	| "activity_gears"
+	| "inbody"
+	| "weight";
+
+interface ISyncStartData {
+	syncSessionId: string;
+	allowedTables: SyncTableName[];
+	batchLimit: number;
+	status: "started";
+}
+
+interface ISyncPushData {
+	syncSessionId: string;
+	table: SyncTableName;
+	batchIndex: number;
+	processed: number;
+	totalRows: number;
+}
+
+interface ISyncPullData {
+	syncSessionId: string;
+	table: SyncTableName;
+	rows: Record<string, unknown>[];
+	nextOffset: number;
+	hasMore: boolean;
+}
+
+interface ISyncStatusData {
+	id: string;
+	userId: string;
+	clientId: string;
+	schemaVersion: string;
+	status: SyncSessionStatus;
+	lastTable: SyncTableName | null;
+	lastBatchIndex: number;
+	totalRows: number;
+	startedAt: string;
+	completedAt: string | null;
+	error: string | null;
+}
+
+const syncTableSet = new Set<string>(SYNC_TABLES);
 
 function normalizeMetadata(
 	type: string,
@@ -265,6 +334,34 @@ export class Db {
 		this._dialect = getDbClientDialect(client);
 	}
 
+	private _nowIso() {
+		return new Date().toISOString();
+	}
+
+	private async _getLatestSyncUserId(): Promise<string | null> {
+		const state = await this._client
+			.select({ userId: syncState.userId })
+			.from(syncState)
+			.orderBy(desc(syncState.updatedAt))
+			.limit(1)
+			.then((rows) => rows[0]);
+		return state?.userId ?? null;
+	}
+
+	private async _buildSyncMetadata(params?: {
+		userId?: string | null;
+		deletedAt?: string | null;
+	}) {
+		return {
+			userId:
+				params && "userId" in params
+					? (params.userId ?? null)
+					: await this._getLatestSyncUserId(),
+			updatedAt: this._nowIso(),
+			deletedAt: params?.deletedAt ?? null,
+		};
+	}
+
 	private _monthIdentifier() {
 		return this._dialect === "postgres"
 			? sql<string>`to_char(to_timestamp(${activities.timestamp} / 1000.0), 'YYYY MM')`
@@ -299,6 +396,38 @@ export class Db {
 		return this._dialect === "postgres"
 			? sql<string>`coalesce(json_agg(json_build_object('provider', ${providerGears.provider}, 'providerId', ${providerGears.providerId})) filter (where ${providerGears.id} is not null), '[]'::json)::text`
 			: sql<string>`json_group_array(json_object('provider', ${providerGears.provider}, 'providerId', ${providerGears.providerId}))`;
+	}
+
+	private _activeActivityCondition() {
+		return isNull(activities.deletedAt);
+	}
+
+	private _activeProviderActivityCondition() {
+		return isNull(providerActivities.deletedAt);
+	}
+
+	private _activeGearCondition() {
+		return isNull(gears.deletedAt);
+	}
+
+	private _activeProviderGearCondition() {
+		return isNull(providerGears.deletedAt);
+	}
+
+	private _activeActivityGearCondition() {
+		return isNull(activityGears.deletedAt);
+	}
+
+	private _activeActivitiesConnectionCondition() {
+		return isNull(activitiesConnection.deletedAt);
+	}
+
+	private _activeGearsConnectionCondition() {
+		return isNull(gearsConnection.deletedAt);
+	}
+
+	private _activeInbodyCondition() {
+		return isNull(inbody.deletedAt);
 	}
 
 	async findNearestLocationByCoordinates({
@@ -337,14 +466,19 @@ export class Db {
 				locationCountry: activities.locationCountry,
 			})
 			.from(activities)
-			.where(sql`
-				${activities.startLatitude} IS NOT NULL
-				AND ${activities.startLongitude} IS NOT NULL
-				AND ${activities.startLatitude} != 0
-				AND ${activities.startLongitude} != 0
-				AND (trim(${activities.locationName}) != '' OR trim(${activities.locationCountry}) != '')
-				AND ${distanceSq} <= ${maxDistanceSq}
-			`)
+			.where(
+				and(
+					this._activeActivityCondition(),
+					sql`
+						${activities.startLatitude} IS NOT NULL
+						AND ${activities.startLongitude} IS NOT NULL
+						AND ${activities.startLatitude} != 0
+						AND ${activities.startLongitude} != 0
+						AND (trim(${activities.locationName}) != '' OR trim(${activities.locationCountry}) != '')
+						AND ${distanceSq} <= ${maxDistanceSq}
+					`,
+				),
+			)
 			.orderBy(asc(distanceSq))
 			.limit(1);
 
@@ -366,7 +500,12 @@ export class Db {
 				month: monthIdentifier.as("month"),
 			})
 			.from(activities)
-			.where(gte(activities.timestamp, monthsBefore(limit).getTime()))
+			.where(
+				and(
+					gte(activities.timestamp, monthsBefore(limit).getTime()),
+					this._activeActivityCondition(),
+				),
+			)
 			.groupBy(activities.timestamp)
 			.orderBy(desc(activities.timestamp))
 			.as("subquery");
@@ -399,6 +538,7 @@ export class Db {
 				and(
 					gte(activities.timestamp, weeksBefore(limit).getTime()),
 					eq(activities.type, ActivityType.RUN),
+					this._activeActivityCondition(),
 				),
 			)
 			.groupBy(activities.timestamp)
@@ -480,6 +620,7 @@ export class Db {
 					gte(activities.timestamp, startDateValue.getTime()),
 					lte(activities.timestamp, endDateValue.getTime()),
 					eq(activities.type, ActivityType.RUN),
+					this._activeActivityCondition(),
 				),
 			)
 			.groupBy(activities.timestamp)
@@ -508,9 +649,13 @@ export class Db {
 					connections: this._activityConnectionsJson().as("connections"),
 				})
 				.from(activitiesConnection)
+				.where(this._activeActivitiesConnectionCondition())
 				.leftJoin(
 					providerActivities,
-					eq(activitiesConnection.providerActivityId, providerActivities.id),
+					and(
+						eq(activitiesConnection.providerActivityId, providerActivities.id),
+						this._activeProviderActivityCondition(),
+					),
 				)
 				.groupBy(activitiesConnection.activityId),
 		);
@@ -522,7 +667,11 @@ export class Db {
 					gears: this._activityGearsJson().as("gears"),
 				})
 				.from(activityGears)
-				.leftJoin(gears, eq(activityGears.gearId, gears.id))
+				.where(this._activeActivityGearCondition())
+				.leftJoin(
+					gears,
+					and(eq(activityGears.gearId, gears.id), this._activeGearCondition()),
+				)
 				.groupBy(activityGears.activityId),
 		);
 
@@ -534,7 +683,9 @@ export class Db {
 				gears: groupedGears.gears,
 			})
 			.from(activities)
-			.where(eq(activities.id, activityId))
+			.where(
+				and(eq(activities.id, activityId), this._activeActivityCondition()),
+			)
 			.leftJoin(connections, eq(activities.id, connections.activityId))
 			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId))
 			.limit(1)
@@ -574,9 +725,13 @@ export class Db {
 					connections: this._activityConnectionsJson().as("connections"),
 				})
 				.from(activitiesConnection)
+				.where(this._activeActivitiesConnectionCondition())
 				.leftJoin(
 					providerActivities,
-					eq(activitiesConnection.providerActivityId, providerActivities.id),
+					and(
+						eq(activitiesConnection.providerActivityId, providerActivities.id),
+						this._activeProviderActivityCondition(),
+					),
 				)
 				.groupBy(activitiesConnection.activityId),
 		);
@@ -588,7 +743,11 @@ export class Db {
 					gears: this._activityGearsJson().as("gears"),
 				})
 				.from(activityGears)
-				.leftJoin(gears, eq(activityGears.gearId, gears.id))
+				.where(this._activeActivityGearCondition())
+				.leftJoin(
+					gears,
+					and(eq(activityGears.gearId, gears.id), this._activeGearCondition()),
+				)
 				.groupBy(activityGears.activityId),
 		);
 		const order = sort === "DESC" ? desc : asc;
@@ -605,7 +764,7 @@ export class Db {
 			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId))
 			.orderBy(order(activities.timestamp));
 
-		const baseConditions = [];
+		const baseConditions = [this._activeActivityCondition()];
 		if (type) {
 			baseConditions.push(eq(activities.type, type));
 		}
@@ -643,6 +802,7 @@ export class Db {
 					select 1
 					from ${activityGears}
 					where ${activityGears.activityId} = ${activities.id}
+					and ${activityGears.deletedAt} is null
 				)`,
 			);
 		}
@@ -670,7 +830,10 @@ export class Db {
 						.select({ count: count() })
 						.from(activities)
 						.where(baseWhere)
-				: this._client.select({ count: count() }).from(activities),
+				: this._client
+						.select({ count: count() })
+						.from(activities)
+						.where(this._activeActivityCondition()),
 			dataQuery.limit(limit),
 		]);
 
@@ -701,9 +864,13 @@ export class Db {
 				connections: this._gearConnectionsJson().as("connections"),
 			})
 			.from(gearsConnection)
+			.where(this._activeGearsConnectionCondition())
 			.leftJoin(
 				providerGears,
-				eq(gearsConnection.providerGearId, providerGears.id),
+				and(
+					eq(gearsConnection.providerGearId, providerGears.id),
+					this._activeProviderGearCondition(),
+				),
 			)
 			.groupBy(gearsConnection.gearId)
 			.as("gearConnections");
@@ -715,7 +882,14 @@ export class Db {
 				count: count().as("count"),
 			})
 			.from(activityGears)
-			.leftJoin(activities, eq(activityGears.activityId, activities.id))
+			.where(this._activeActivityGearCondition())
+			.leftJoin(
+				activities,
+				and(
+					eq(activityGears.activityId, activities.id),
+					this._activeActivityCondition(),
+				),
+			)
 			.groupBy(activityGears.gearId)
 			.as("subquery");
 
@@ -729,7 +903,7 @@ export class Db {
 					.from(gears)
 					.leftJoin(subquery, eq(gears.id, subquery.gearId))
 					.leftJoin(gearConnections, eq(gears.id, gearConnections.gearId))
-					.where(gt(gears.id, cursor))
+					.where(and(gt(gears.id, cursor), this._activeGearCondition()))
 			: this._client
 					.select({
 						...getTableColumns(gears),
@@ -738,10 +912,14 @@ export class Db {
 					})
 					.from(gears)
 					.leftJoin(subquery, eq(gears.id, subquery.gearId))
-					.leftJoin(gearConnections, eq(gears.id, gearConnections.gearId));
+					.leftJoin(gearConnections, eq(gears.id, gearConnections.gearId))
+					.where(this._activeGearCondition());
 
 		const [countRows, dataRows] = await Promise.all([
-			this._client.select({ count: count() }).from(gears),
+			this._client
+				.select({ count: count() })
+				.from(gears)
+				.where(this._activeGearCondition()),
 			dataQuery.limit(limit).offset(offset),
 		]);
 		const dataCount = countRows[0]?.count || 0;
@@ -772,9 +950,13 @@ export class Db {
 				connections: this._gearConnectionsJson().as("connections"),
 			})
 			.from(gearsConnection)
+			.where(this._activeGearsConnectionCondition())
 			.leftJoin(
 				providerGears,
-				eq(gearsConnection.providerGearId, providerGears.id),
+				and(
+					eq(gearsConnection.providerGearId, providerGears.id),
+					this._activeProviderGearCondition(),
+				),
 			)
 			.groupBy(gearsConnection.gearId)
 			.as("gearConnections");
@@ -786,7 +968,14 @@ export class Db {
 				count: count().as("count"),
 			})
 			.from(activityGears)
-			.leftJoin(activities, eq(activityGears.activityId, activities.id))
+			.where(this._activeActivityGearCondition())
+			.leftJoin(
+				activities,
+				and(
+					eq(activityGears.activityId, activities.id),
+					this._activeActivityCondition(),
+				),
+			)
 			.groupBy(activityGears.gearId)
 			.as("subquery");
 
@@ -799,7 +988,7 @@ export class Db {
 			.from(gears)
 			.leftJoin(subquery, eq(gears.id, subquery.gearId))
 			.leftJoin(gearConnections, eq(gears.id, gearConnections.gearId))
-			.where(eq(gears.id, gearId))
+			.where(and(eq(gears.id, gearId), this._activeGearCondition()))
 			.limit(1);
 
 		const record = result[0];
@@ -823,6 +1012,7 @@ export class Db {
 			throw new Error("Missing gear code");
 		}
 		const id = uuidv7();
+		const metadata = await this._buildSyncMetadata();
 		await this._client.insert(gears).values({
 			id,
 			name: data.name.trim(),
@@ -834,15 +1024,23 @@ export class Db {
 				data.maximumDistance !== undefined
 					? Math.max(0, Math.round(data.maximumDistance))
 					: 0,
+			...metadata,
 		});
 		return { id };
 	}
 
-	editGear(id: string, data: Record<string, string>) {
-		return this._client.update(gears).set(data).where(eq(gears.id, id));
+	async editGear(id: string, data: Record<string, string>) {
+		const metadata = await this._buildSyncMetadata();
+		return this._client
+			.update(gears)
+			.set({
+				...data,
+				...metadata,
+			})
+			.where(eq(gears.id, id));
 	}
 
-	editActivity(
+	async editActivity(
 		id: string,
 		data: Record<string, string | number | null | Record<string, unknown>>,
 	) {
@@ -850,9 +1048,13 @@ export class Db {
 		if ("metadata" in updateData && typeof updateData.metadata === "object") {
 			updateData.metadata = JSON.stringify(updateData.metadata);
 		}
+		const metadata = await this._buildSyncMetadata();
 		return this._client
 			.update(activities)
-			.set(updateData)
+			.set({
+				...updateData,
+				...metadata,
+			})
 			.where(eq(activities.id, id));
 	}
 
@@ -902,13 +1104,32 @@ export class Db {
 
 	deleteActivity(activityId: string) {
 		return this._client.transaction(async (tx) => {
+			const deletedAt = this._nowIso();
+			const userId = await this._getLatestSyncUserId();
 			await tx
-				.delete(activityGears)
+				.update(activityGears)
+				.set({
+					userId,
+					updatedAt: deletedAt,
+					deletedAt,
+				})
 				.where(eq(activityGears.activityId, activityId));
 			await tx
-				.delete(activitiesConnection)
+				.update(activitiesConnection)
+				.set({
+					userId,
+					updatedAt: deletedAt,
+					deletedAt,
+				})
 				.where(eq(activitiesConnection.activityId, activityId));
-			await tx.delete(activities).where(eq(activities.id, activityId));
+			await tx
+				.update(activities)
+				.set({
+					userId,
+					updatedAt: deletedAt,
+					deletedAt,
+				})
+				.where(eq(activities.id, activityId));
 		});
 	}
 
@@ -1031,12 +1252,17 @@ export class Db {
 			}
 		} else {
 			activityId = uuidv7();
-			await this._client.insert(activities).values({
+			const metadata = await this._buildSyncMetadata();
+			const values: typeof activities.$inferInsert = {
 				...activity.data,
 				metadata: activity.data.metadata
 					? JSON.stringify(activity.data.metadata)
 					: "{}",
 				id: activityId,
+				...metadata,
+			};
+			await this._client.insert(activities).values({
+				...values,
 			});
 		}
 
@@ -1054,17 +1280,25 @@ export class Db {
 					.where(eq(providerActivities.id, providerActivity.id))
 					.limit(1);
 				if (linkedProviderActivity[0]) {
-					console.log(
-						linkedProviderActivity[0].id,
-						" providerActivities already inserted",
-					);
+					await txClient
+						.update(providerActivities)
+						.set({
+							provider: providerActivity.provider,
+							timestamp: providerActivity.timestamp,
+							original: providerActivity.original ? 1 : 0,
+							data: providerActivity.data,
+							...(await this._buildSyncMetadata()),
+						})
+						.where(eq(providerActivities.id, providerActivity.id));
 				} else {
+					const metadata = await this._buildSyncMetadata();
 					await txClient.insert(providerActivities).values({
 						id: providerActivity.id,
 						provider: providerActivity.provider,
 						timestamp: providerActivity.timestamp,
 						original: providerActivity.original ? 1 : 0,
 						data: providerActivity.data,
+						...metadata,
 					});
 				}
 
@@ -1076,13 +1310,26 @@ export class Db {
 					)
 					.limit(1);
 				if (linkedActivityConnection[0]) {
-					console.log(
-						`${activityId} | ${providerActivity.id} => activitiesConnection already connected`,
-					);
+					await txClient
+						.update(activitiesConnection)
+						.set({
+							...(await this._buildSyncMetadata()),
+						})
+						.where(
+							and(
+								eq(activitiesConnection.activityId, activityId),
+								eq(
+									activitiesConnection.providerActivityId,
+									providerActivity.id,
+								),
+							),
+						);
 				} else {
+					const metadata = await this._buildSyncMetadata();
 					await txClient.insert(activitiesConnection).values({
 						activityId,
 						providerActivityId: providerActivity.id,
+						...metadata,
 					});
 				}
 			});
@@ -1092,10 +1339,23 @@ export class Db {
 				gears,
 				(gear) =>
 					this.insertGear(gear).then((gearId) =>
-						this._client.insert(activityGears).values({
-							activityId,
-							gearId,
-						}),
+						this._client
+							.insert(activityGears)
+							.values({
+								activityId,
+								gearId,
+								userId: null,
+								updatedAt: this._nowIso(),
+								deletedAt: null,
+							})
+							.onConflictDoUpdate({
+								target: [activityGears.gearId, activityGears.activityId],
+								set: {
+									userId: sql`excluded.user_id`,
+									updatedAt: sql`excluded.updated_at`,
+									deletedAt: sql`excluded.deleted_at`,
+								},
+							}),
 					),
 				{
 					concurrency: 1,
@@ -1113,7 +1373,12 @@ export class Db {
 				timestamp: providerActivities.timestamp,
 			})
 			.from(providerActivities)
-			.where(eq(providerActivities.provider, provider))
+			.where(
+				and(
+					eq(providerActivities.provider, provider),
+					this._activeProviderActivityCondition(),
+				),
+			)
 			.orderBy(desc(providerActivities.timestamp))
 			.limit(1)
 			.then((data) => data[0]);
@@ -1134,20 +1399,24 @@ export class Db {
 			let providerGearId = dbProviderGear[0]?.id;
 			if (providerGearId) {
 				// update data
+				const metadata = await this._buildSyncMetadata();
 				await tx
 					.update(providerGears)
 					.set({
 						data: JSON.stringify(data),
+						...metadata,
 					})
 					.where(eq(providerGears.id, providerGearId));
 			} else {
 				// create new one
 				providerGearId = uuidv7();
+				const metadata = await this._buildSyncMetadata();
 				await tx.insert(providerGears).values({
 					id: providerGearId,
 					providerId: providerGear.id,
 					provider: providerGear.provider,
 					data: JSON.stringify(data),
+					...metadata,
 				});
 			}
 			const linkedGear = await tx
@@ -1165,10 +1434,12 @@ export class Db {
 						.where(eq(gears.id, gearId))
 						.limit(1);
 					if (gearWithCode[0] && !gearWithCode[0].dateEnd) {
+						const metadata = await this._buildSyncMetadata();
 						await tx
 							.update(gears)
 							.set({
 								dateEnd: data.dateEnd,
+								...metadata,
 							})
 							.where(eq(gears.id, gearId))
 							.returning();
@@ -1183,48 +1454,76 @@ export class Db {
 				if (gearWithCode[0]) {
 					gearId = gearWithCode[0].id;
 					if (!gearWithCode[0].dateEnd && data.dateEnd) {
+						const metadata = await this._buildSyncMetadata();
 						await tx
 							.update(gears)
 							.set({
 								dateEnd: data.dateEnd,
+								...metadata,
 							})
 							.where(eq(gears.id, gearId))
 							.returning();
 					}
 				} else {
 					gearId = uuidv7();
-					await tx
-						.insert(gears)
-						.values({
-							...data,
-							id: gearId,
-						})
-						.returning();
+					const metadata = await this._buildSyncMetadata();
+					const values: typeof gears.$inferInsert = {
+						...data,
+						id: gearId,
+						...metadata,
+					};
+					await tx.insert(gears).values(values).returning();
 				}
-				await tx.insert(gearsConnection).values({
-					gearId,
-					providerGearId,
-				});
+				const metadata = await this._buildSyncMetadata();
+				await tx
+					.insert(gearsConnection)
+					.values({
+						gearId,
+						providerGearId,
+						...metadata,
+					})
+					.onConflictDoUpdate({
+						target: [gearsConnection.gearId, gearsConnection.providerGearId],
+						set: {
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
 			}
 			return gearId;
 		});
 	}
 
-	linkActivityGear(activityId: string, gearId: string) {
+	async linkActivityGear(activityId: string, gearId: string) {
+		const metadata = await this._buildSyncMetadata();
 		return this._client
 			.insert(activityGears)
 			.values({
 				gearId,
 				activityId,
+				...metadata,
 			})
-			.onConflictDoNothing({
+			.onConflictDoUpdate({
 				target: [activityGears.gearId, activityGears.activityId],
+				set: {
+					userId: sql`excluded.user_id`,
+					updatedAt: sql`excluded.updated_at`,
+					deletedAt: sql`excluded.deleted_at`,
+				},
 			});
 	}
 
-	unlinkActivityGear(activityId: string, gearId: string) {
+	async unlinkActivityGear(activityId: string, gearId: string) {
+		const deletedAt = this._nowIso();
+		const userId = await this._getLatestSyncUserId();
 		return this._client
-			.delete(activityGears)
+			.update(activityGears)
+			.set({
+				userId,
+				updatedAt: deletedAt,
+				deletedAt,
+			})
 			.where(
 				and(
 					eq(activityGears.activityId, activityId),
@@ -1240,11 +1539,71 @@ export class Db {
 				providerId: providerGears.providerId,
 			})
 			.from(gearsConnection)
-			.where(eq(gearsConnection.gearId, gearId))
+			.where(
+				and(
+					eq(gearsConnection.gearId, gearId),
+					this._activeGearsConnectionCondition(),
+				),
+			)
 			.leftJoin(
 				providerGears,
-				eq(gearsConnection.providerGearId, providerGears.id),
+				and(
+					eq(gearsConnection.providerGearId, providerGears.id),
+					this._activeProviderGearCondition(),
+				),
 			);
+	}
+
+	async deleteGearConnection(params: { gearId: string; provider: string }) {
+		const connection = await this._client
+			.select({
+				providerGearId: gearsConnection.providerGearId,
+			})
+			.from(gearsConnection)
+			.leftJoin(
+				providerGears,
+				and(
+					eq(gearsConnection.providerGearId, providerGears.id),
+					this._activeProviderGearCondition(),
+				),
+			)
+			.where(
+				and(
+					eq(gearsConnection.gearId, params.gearId),
+					eq(providerGears.provider, params.provider),
+					this._activeGearsConnectionCondition(),
+				),
+			)
+			.limit(1);
+
+		const providerGearId = connection[0]?.providerGearId;
+		if (!providerGearId) return;
+
+		await this._client.transaction(async (tx) => {
+			const deletedAt = this._nowIso();
+			const userId = await this._getLatestSyncUserId();
+			await tx
+				.update(gearsConnection)
+				.set({
+					userId,
+					updatedAt: deletedAt,
+					deletedAt,
+				})
+				.where(
+					and(
+						eq(gearsConnection.gearId, params.gearId),
+						eq(gearsConnection.providerGearId, providerGearId),
+					),
+				);
+			await tx
+				.update(providerGears)
+				.set({
+					userId,
+					updatedAt: deletedAt,
+					deletedAt,
+				})
+				.where(eq(providerGears.id, providerGearId));
+		});
 	}
 
 	getActivityProvider(activityId: string, provider: Providers) {
@@ -1255,12 +1614,16 @@ export class Db {
 			.from(activitiesConnection)
 			.leftJoin(
 				providerActivities,
-				eq(providerActivities.id, activitiesConnection.providerActivityId),
+				and(
+					eq(providerActivities.id, activitiesConnection.providerActivityId),
+					this._activeProviderActivityCondition(),
+				),
 			)
 			.where(
 				and(
 					eq(activitiesConnection.activityId, activityId),
 					eq(providerActivities.provider, provider),
+					this._activeActivitiesConnectionCondition(),
 				),
 			);
 	}
@@ -1271,13 +1634,24 @@ export class Db {
 				...getTableColumns(activities),
 			})
 			.from(activitiesConnection)
-			.leftJoin(activities, eq(activities.id, activitiesConnection.activityId))
-			.where(eq(activitiesConnection.providerActivityId, providerActivityId))
+			.leftJoin(
+				activities,
+				and(
+					eq(activities.id, activitiesConnection.activityId),
+					this._activeActivityCondition(),
+				),
+			)
+			.where(
+				and(
+					eq(activitiesConnection.providerActivityId, providerActivityId),
+					this._activeActivitiesConnectionCondition(),
+				),
+			)
 			.limit(1)
 			.then((rows) => rows[0]);
 	}
 
-	linkActivityConnection(activityId: string, providerActivityId: string) {
+	async linkActivityConnection(activityId: string, providerActivityId: string) {
 		return this._client.transaction(async (tx) => {
 			const providerActivity = await tx
 				.select({ id: providerActivities.id })
@@ -1295,15 +1669,37 @@ export class Db {
 			if (existing[0]) {
 				throw new Error("Provider activity already linked");
 			}
+			const metadata = await this._buildSyncMetadata();
 			await tx
 				.insert(activitiesConnection)
-				.values({ activityId, providerActivityId });
+				.values({ activityId, providerActivityId, ...metadata })
+				.onConflictDoUpdate({
+					target: [
+						activitiesConnection.activityId,
+						activitiesConnection.providerActivityId,
+					],
+					set: {
+						userId: sql`excluded.user_id`,
+						updatedAt: sql`excluded.updated_at`,
+						deletedAt: sql`excluded.deleted_at`,
+					},
+				});
 		});
 	}
 
-	unlinkActivityConnection(activityId: string, providerActivityId: string) {
+	async unlinkActivityConnection(
+		activityId: string,
+		providerActivityId: string,
+	) {
+		const deletedAt = this._nowIso();
+		const userId = await this._getLatestSyncUserId();
 		return this._client
-			.delete(activitiesConnection)
+			.update(activitiesConnection)
+			.set({
+				userId,
+				updatedAt: deletedAt,
+				deletedAt,
+			})
 			.where(
 				and(
 					eq(activitiesConnection.activityId, activityId),
@@ -1343,7 +1739,7 @@ export class Db {
 				type: inbody.type,
 			})
 			.from(inbody)
-			.where(eq(inbody.type, type))
+			.where(and(eq(inbody.type, type), this._activeInbodyCondition()))
 			.orderBy(desc(inbody.date));
 	}
 
@@ -1354,6 +1750,7 @@ export class Db {
 		const toOptional = (value?: number | null) =>
 			value === undefined || value === null ? null : Math.round(value * 100);
 
+		const metadata = await this._buildSyncMetadata();
 		await this._client.insert(inbody).values({
 			id,
 			type: data.type,
@@ -1377,6 +1774,7 @@ export class Db {
 			compositionProtein: toOptional(data.compositionProtein),
 			compositionMinerals: toOptional(data.compositionMinerals),
 			compositionBodyFat: toOptional(data.compositionBodyFat),
+			...metadata,
 		});
 
 		const [created] = await this._client
@@ -1420,6 +1818,7 @@ export class Db {
 		const toOptional = (value?: number | null) =>
 			value === undefined || value === null ? null : Math.round(value * 100);
 
+		const metadata = await this._buildSyncMetadata();
 		await this._client
 			.update(inbody)
 			.set({
@@ -1444,6 +1843,7 @@ export class Db {
 				compositionProtein: toOptional(data.compositionProtein),
 				compositionMinerals: toOptional(data.compositionMinerals),
 				compositionBodyFat: toOptional(data.compositionBodyFat),
+				...metadata,
 			})
 			.where(eq(inbody.id, data.id));
 
@@ -1481,6 +1881,685 @@ export class Db {
 		}
 
 		return updated as IInbodyData;
+	}
+
+	getSyncTables(): SyncTableName[] {
+		return [...SYNC_TABLES];
+	}
+
+	getSyncBatchLimit(): number {
+		return SYNC_BATCH_LIMIT;
+	}
+
+	async exportSyncRows(params: {
+		table: SyncTableName;
+		limit?: number;
+		offset?: number;
+		updatedAfter?: string;
+		userId?: string;
+	}): Promise<Record<string, unknown>[]> {
+		const limit = Math.max(1, Math.min(params.limit ?? SYNC_BATCH_LIMIT, 1000));
+		const offset = Math.max(0, params.offset ?? 0);
+		const updatedAfter = params.updatedAfter;
+
+		switch (params.table) {
+			case "activities": {
+				const conditions = [
+					updatedAfter ? gt(activities.updatedAt, updatedAfter) : undefined,
+					params.userId ? eq(activities.userId, params.userId) : undefined,
+				].filter((condition) => condition !== undefined);
+				const where = conditions.length > 0 ? and(...conditions) : undefined;
+				const query = this._client
+					.select()
+					.from(activities)
+					.orderBy(asc(activities.id));
+				return (where ? query.where(where) : query).limit(limit).offset(offset);
+			}
+			case "provider_activities": {
+				const conditions = [
+					updatedAfter
+						? gt(providerActivities.updatedAt, updatedAfter)
+						: undefined,
+					params.userId
+						? eq(providerActivities.userId, params.userId)
+						: undefined,
+				].filter((condition) => condition !== undefined);
+				const where = conditions.length > 0 ? and(...conditions) : undefined;
+				const query = this._client
+					.select()
+					.from(providerActivities)
+					.orderBy(asc(providerActivities.id));
+				return (where ? query.where(where) : query).limit(limit).offset(offset);
+			}
+			case "activities_connection": {
+				const conditions = [
+					updatedAfter
+						? gt(activitiesConnection.updatedAt, updatedAfter)
+						: undefined,
+					params.userId
+						? eq(activitiesConnection.userId, params.userId)
+						: undefined,
+				].filter((condition) => condition !== undefined);
+				const where = conditions.length > 0 ? and(...conditions) : undefined;
+				const query = this._client
+					.select()
+					.from(activitiesConnection)
+					.orderBy(
+						asc(activitiesConnection.activityId),
+						asc(activitiesConnection.providerActivityId),
+					);
+				return (where ? query.where(where) : query).limit(limit).offset(offset);
+			}
+			case "gears": {
+				const conditions = [
+					updatedAfter ? gt(gears.updatedAt, updatedAfter) : undefined,
+					params.userId ? eq(gears.userId, params.userId) : undefined,
+				].filter((condition) => condition !== undefined);
+				const where = conditions.length > 0 ? and(...conditions) : undefined;
+				const query = this._client.select().from(gears).orderBy(asc(gears.id));
+				return (where ? query.where(where) : query).limit(limit).offset(offset);
+			}
+			case "provider_gears": {
+				const conditions = [
+					updatedAfter ? gt(providerGears.updatedAt, updatedAfter) : undefined,
+					params.userId ? eq(providerGears.userId, params.userId) : undefined,
+				].filter((condition) => condition !== undefined);
+				const where = conditions.length > 0 ? and(...conditions) : undefined;
+				const query = this._client
+					.select()
+					.from(providerGears)
+					.orderBy(asc(providerGears.id));
+				return (where ? query.where(where) : query).limit(limit).offset(offset);
+			}
+			case "gears_connection": {
+				const conditions = [
+					updatedAfter
+						? gt(gearsConnection.updatedAt, updatedAfter)
+						: undefined,
+					params.userId ? eq(gearsConnection.userId, params.userId) : undefined,
+				].filter((condition) => condition !== undefined);
+				const where = conditions.length > 0 ? and(...conditions) : undefined;
+				const query = this._client
+					.select()
+					.from(gearsConnection)
+					.orderBy(
+						asc(gearsConnection.gearId),
+						asc(gearsConnection.providerGearId),
+					);
+				return (where ? query.where(where) : query).limit(limit).offset(offset);
+			}
+			case "activity_gears": {
+				const conditions = [
+					updatedAfter ? gt(activityGears.updatedAt, updatedAfter) : undefined,
+					params.userId ? eq(activityGears.userId, params.userId) : undefined,
+				].filter((condition) => condition !== undefined);
+				const where = conditions.length > 0 ? and(...conditions) : undefined;
+				const query = this._client
+					.select()
+					.from(activityGears)
+					.orderBy(asc(activityGears.activityId), asc(activityGears.gearId));
+				return (where ? query.where(where) : query).limit(limit).offset(offset);
+			}
+			case "inbody": {
+				const conditions = [
+					updatedAfter ? gt(inbody.updatedAt, updatedAfter) : undefined,
+					params.userId ? eq(inbody.userId, params.userId) : undefined,
+				].filter((condition) => condition !== undefined);
+				const where = conditions.length > 0 ? and(...conditions) : undefined;
+				const query = this._client
+					.select()
+					.from(inbody)
+					.orderBy(asc(inbody.id));
+				return (where ? query.where(where) : query).limit(limit).offset(offset);
+			}
+			case "weight": {
+				const conditions = [
+					updatedAfter ? gt(weight.updatedAt, updatedAfter) : undefined,
+					params.userId ? eq(weight.userId, params.userId) : undefined,
+				].filter((condition) => condition !== undefined);
+				const where = conditions.length > 0 ? and(...conditions) : undefined;
+				const query = this._client
+					.select()
+					.from(weight)
+					.orderBy(asc(weight.id));
+				return (where ? query.where(where) : query).limit(limit).offset(offset);
+			}
+		}
+
+		throw new Error("Unsupported sync table");
+	}
+
+	async pullSyncRows(params: {
+		userId: string;
+		syncSessionId: string;
+		table: SyncTableName;
+		limit?: number;
+		offset?: number;
+		updatedAfter?: string;
+	}): Promise<ISyncPullData> {
+		if (!syncTableSet.has(params.table)) {
+			throw new Error("Unsupported sync table");
+		}
+
+		const session = await this._client
+			.select()
+			.from(syncSessions)
+			.where(
+				and(
+					eq(syncSessions.id, params.syncSessionId),
+					eq(syncSessions.userId, params.userId),
+				),
+			)
+			.limit(1)
+			.then((rows) => rows[0]);
+
+		if (!session) {
+			throw new Error("Sync session not found");
+		}
+
+		const normalizedLimit = Math.max(
+			1,
+			Math.min(params.limit ?? SYNC_BATCH_LIMIT, SYNC_BATCH_LIMIT),
+		);
+		const normalizedOffset = Math.max(0, params.offset ?? 0);
+		const rows = await this.exportSyncRows({
+			table: params.table,
+			limit: normalizedLimit,
+			offset: normalizedOffset,
+			updatedAfter: params.updatedAfter,
+			userId: params.userId,
+		});
+
+		return {
+			syncSessionId: params.syncSessionId,
+			table: params.table,
+			rows,
+			nextOffset: normalizedOffset + rows.length,
+			hasMore: rows.length === normalizedLimit,
+		};
+	}
+
+	async applySyncRows(params: {
+		table: SyncTableName;
+		rows: Record<string, unknown>[];
+		userId?: string;
+	}): Promise<number> {
+		if (!syncTableSet.has(params.table)) {
+			throw new Error("Unsupported sync table");
+		}
+		if (!Array.isArray(params.rows)) {
+			throw new Error("Sync rows must be an array");
+		}
+		if (params.rows.length > 1000) {
+			throw new Error("Sync apply batch exceeds limit of 1000 rows");
+		}
+		if (
+			params.rows.some(
+				(row) => !row || typeof row !== "object" || Array.isArray(row),
+			)
+		) {
+			throw new Error("Sync rows must contain plain objects");
+		}
+		if (params.rows.length === 0) {
+			return 0;
+		}
+
+		const normalizedRows = params.rows.map((row) => ({
+			...row,
+			...(params.userId ? { userId: params.userId } : {}),
+			updatedAt:
+				typeof row.updatedAt === "string" && row.updatedAt
+					? row.updatedAt
+					: this._nowIso(),
+			deletedAt:
+				"deletedAt" in row && typeof row.deletedAt !== "undefined"
+					? row.deletedAt
+					: null,
+		}));
+
+		await this._client.transaction(async (tx) => {
+			await this._applySyncRows(tx, params.table, normalizedRows);
+		});
+
+		return normalizedRows.length;
+	}
+
+	async getSyncState(params: {
+		userId: string;
+	}): Promise<ISyncStateData | null> {
+		const state = await this._client
+			.select()
+			.from(syncState)
+			.where(eq(syncState.userId, params.userId))
+			.limit(1)
+			.then((rows) => rows[0]);
+
+		return (state as ISyncStateData | undefined) ?? null;
+	}
+
+	async upsertSyncState(params: {
+		userId: string;
+		lastSyncSessionId?: string | null;
+		lastSchemaVersion?: string | null;
+		lastSyncedAt?: string | null;
+		lastPushCompletedAt?: string | null;
+		lastPullCompletedAt?: string | null;
+	}): Promise<ISyncStateData> {
+		const updatedAt = new Date().toISOString();
+		const values = {
+			userId: params.userId,
+			lastSyncSessionId: params.lastSyncSessionId ?? null,
+			lastSchemaVersion: params.lastSchemaVersion ?? null,
+			lastSyncedAt: params.lastSyncedAt ?? null,
+			lastPushCompletedAt: params.lastPushCompletedAt ?? null,
+			lastPullCompletedAt: params.lastPullCompletedAt ?? null,
+			updatedAt,
+		};
+
+		await this._client
+			.insert(syncState)
+			.values(values)
+			.onConflictDoUpdate({
+				target: syncState.userId,
+				set: {
+					lastSyncSessionId: values.lastSyncSessionId,
+					lastSchemaVersion: values.lastSchemaVersion,
+					lastSyncedAt: values.lastSyncedAt,
+					lastPushCompletedAt: values.lastPushCompletedAt,
+					lastPullCompletedAt: values.lastPullCompletedAt,
+					updatedAt: values.updatedAt,
+				},
+			});
+
+		const state = await this.getSyncState({ userId: params.userId });
+		if (!state) {
+			throw new Error("Failed to persist sync state");
+		}
+		return state;
+	}
+
+	async createSyncSession(params: {
+		userId: string;
+		clientId?: string;
+		schemaVersion?: string;
+	}): Promise<ISyncStartData> {
+		const syncSessionId = uuidv7();
+		await this._client.insert(syncSessions).values({
+			id: syncSessionId,
+			userId: params.userId,
+			clientId: params.clientId ?? "",
+			schemaVersion: params.schemaVersion ?? "",
+			status: "started",
+		});
+
+		return {
+			syncSessionId,
+			allowedTables: this.getSyncTables(),
+			batchLimit: this.getSyncBatchLimit(),
+			status: "started",
+		};
+	}
+
+	async getSyncSessionStatus(params: {
+		userId: string;
+		syncSessionId: string;
+	}): Promise<ISyncStatusData> {
+		const session = await this._client
+			.select()
+			.from(syncSessions)
+			.where(
+				and(
+					eq(syncSessions.id, params.syncSessionId),
+					eq(syncSessions.userId, params.userId),
+				),
+			)
+			.limit(1)
+			.then((rows) => rows[0]);
+
+		if (!session) {
+			throw new Error("Sync session not found");
+		}
+
+		return session as ISyncStatusData;
+	}
+
+	async pushSyncRows(params: {
+		userId: string;
+		syncSessionId: string;
+		table: SyncTableName;
+		batchIndex: number;
+		rows: Record<string, unknown>[];
+	}): Promise<ISyncPushData> {
+		if (!syncTableSet.has(params.table)) {
+			throw new Error("Unsupported sync table");
+		}
+		if (!Number.isInteger(params.batchIndex) || params.batchIndex < 0) {
+			throw new Error("Invalid sync batch index");
+		}
+		if (!Array.isArray(params.rows)) {
+			throw new Error("Sync rows must be an array");
+		}
+		if (params.rows.length > SYNC_BATCH_LIMIT) {
+			throw new Error(
+				`Sync batch exceeds limit of ${SYNC_BATCH_LIMIT} rows for a single request`,
+			);
+		}
+		if (
+			params.rows.some(
+				(row) => !row || typeof row !== "object" || Array.isArray(row),
+			)
+		) {
+			throw new Error("Sync rows must contain plain objects");
+		}
+
+		const normalizedRows = params.rows.map((row) => ({
+			...row,
+			userId: params.userId,
+			updatedAt:
+				typeof row.updatedAt === "string" && row.updatedAt
+					? row.updatedAt
+					: this._nowIso(),
+			deletedAt:
+				"deletedAt" in row && typeof row.deletedAt !== "undefined"
+					? row.deletedAt
+					: null,
+		}));
+
+		try {
+			return await this._client.transaction(async (tx) => {
+				const session = await tx
+					.select()
+					.from(syncSessions)
+					.where(
+						and(
+							eq(syncSessions.id, params.syncSessionId),
+							eq(syncSessions.userId, params.userId),
+						),
+					)
+					.limit(1)
+					.then((rows) => rows[0]);
+
+				if (!session) {
+					throw new Error("Sync session not found");
+				}
+				if (session.status === "completed") {
+					throw new Error("Sync session is already completed");
+				}
+
+				await this._applySyncRows(tx, params.table, normalizedRows);
+
+				const totalRows = session.totalRows + normalizedRows.length;
+				await tx
+					.update(syncSessions)
+					.set({
+						status: "started",
+						lastTable: params.table,
+						lastBatchIndex: params.batchIndex,
+						totalRows,
+						error: null,
+					})
+					.where(eq(syncSessions.id, params.syncSessionId));
+
+				return {
+					syncSessionId: params.syncSessionId,
+					table: params.table,
+					batchIndex: params.batchIndex,
+					processed: normalizedRows.length,
+					totalRows,
+				};
+			});
+		} catch (error) {
+			await this._client
+				.update(syncSessions)
+				.set({
+					status: "failed",
+					lastTable: params.table,
+					lastBatchIndex: params.batchIndex,
+					error: (error as Error).message,
+				})
+				.where(
+					and(
+						eq(syncSessions.id, params.syncSessionId),
+						eq(syncSessions.userId, params.userId),
+					),
+				);
+			throw error;
+		}
+	}
+
+	async finishSyncSession(params: {
+		userId: string;
+		syncSessionId: string;
+	}): Promise<ISyncStatusData> {
+		const completedAt = new Date().toISOString();
+		await this._client
+			.update(syncSessions)
+			.set({
+				status: "completed",
+				completedAt,
+				error: null,
+			})
+			.where(
+				and(
+					eq(syncSessions.id, params.syncSessionId),
+					eq(syncSessions.userId, params.userId),
+				),
+			);
+
+		return this.getSyncSessionStatus(params);
+	}
+
+	private async _applySyncRows(
+		tx: {
+			insert: DbClient["insert"];
+		},
+		table: SyncTableName,
+		rows: Record<string, unknown>[],
+	): Promise<void> {
+		switch (table) {
+			case "activities": {
+				const values = rows as Array<typeof activities.$inferInsert>;
+				if (values.length === 0) return;
+				await tx
+					.insert(activities)
+					.values(values)
+					.onConflictDoUpdate({
+						target: activities.id,
+						set: {
+							name: sql`excluded.name`,
+							timestamp: sql`excluded.timestamp`,
+							timezone: sql`excluded.timezone`,
+							distance: sql`excluded.distance`,
+							duration: sql`excluded.duration`,
+							manufacturer: sql`excluded.manufacturer`,
+							device: sql`excluded.device`,
+							locationName: sql`excluded.location_name`,
+							locationCountry: sql`excluded.location_country`,
+							type: sql`excluded.type`,
+							subtype: sql`excluded.subtype`,
+							notes: sql`excluded.notes`,
+							insight: sql`excluded.insight`,
+							description: sql`excluded.description`,
+							metadata: sql`excluded.metadata`,
+							isEvent: sql`excluded.is_event`,
+							startLatitude: sql`excluded.start_latitude`,
+							startLongitude: sql`excluded.start_longitude`,
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
+				return;
+			}
+			case "provider_activities": {
+				const values = rows as Array<typeof providerActivities.$inferInsert>;
+				if (values.length === 0) return;
+				await tx
+					.insert(providerActivities)
+					.values(values)
+					.onConflictDoUpdate({
+						target: providerActivities.id,
+						set: {
+							provider: sql`excluded.provider`,
+							timestamp: sql`excluded.timestamp`,
+							original: sql`excluded.original`,
+							data: sql`excluded.data`,
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
+				return;
+			}
+			case "activities_connection": {
+				const values = rows as Array<typeof activitiesConnection.$inferInsert>;
+				if (values.length === 0) return;
+				await tx
+					.insert(activitiesConnection)
+					.values(values)
+					.onConflictDoUpdate({
+						target: [
+							activitiesConnection.activityId,
+							activitiesConnection.providerActivityId,
+						],
+						set: {
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
+				return;
+			}
+			case "gears": {
+				const values = rows as Array<typeof gears.$inferInsert>;
+				if (values.length === 0) return;
+				await tx
+					.insert(gears)
+					.values(values)
+					.onConflictDoUpdate({
+						target: gears.id,
+						set: {
+							name: sql`excluded.name`,
+							code: sql`excluded.code`,
+							brand: sql`excluded.brand`,
+							type: sql`excluded.type`,
+							dateBegin: sql`excluded.date_begin`,
+							dateEnd: sql`excluded.date_end`,
+							maximumDistance: sql`excluded.maximum_distance`,
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
+				return;
+			}
+			case "provider_gears": {
+				const values = rows as Array<typeof providerGears.$inferInsert>;
+				if (values.length === 0) return;
+				await tx
+					.insert(providerGears)
+					.values(values)
+					.onConflictDoUpdate({
+						target: providerGears.id,
+						set: {
+							provider: sql`excluded.provider`,
+							providerId: sql`excluded.provider_id`,
+							data: sql`excluded.data`,
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
+				return;
+			}
+			case "gears_connection": {
+				const values = rows as Array<typeof gearsConnection.$inferInsert>;
+				if (values.length === 0) return;
+				await tx
+					.insert(gearsConnection)
+					.values(values)
+					.onConflictDoUpdate({
+						target: [gearsConnection.gearId, gearsConnection.providerGearId],
+						set: {
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
+				return;
+			}
+			case "activity_gears": {
+				const values = rows as Array<typeof activityGears.$inferInsert>;
+				if (values.length === 0) return;
+				await tx
+					.insert(activityGears)
+					.values(values)
+					.onConflictDoUpdate({
+						target: [activityGears.gearId, activityGears.activityId],
+						set: {
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
+				return;
+			}
+			case "inbody": {
+				const values = rows as Array<typeof inbody.$inferInsert>;
+				if (values.length === 0) return;
+				await tx
+					.insert(inbody)
+					.values(values)
+					.onConflictDoUpdate({
+						target: inbody.id,
+						set: {
+							weight: sql`excluded.weight`,
+							muscleMass: sql`excluded.muscle_mass`,
+							bodyFatMass: sql`excluded.body_fat_mass`,
+							bmi: sql`excluded.bmi`,
+							percentageBodyFat: sql`excluded.percentage_body_fat`,
+							leanCore: sql`excluded.lean_core`,
+							leanLeftArm: sql`excluded.lean_left_arm`,
+							leanRightArm: sql`excluded.lean_right_arm`,
+							leanLeftLeg: sql`excluded.lean_left_leg`,
+							leanRightLeg: sql`excluded.lean_right_leg`,
+							fatCore: sql`excluded.fat_core`,
+							fatLeftArm: sql`excluded.fat_left_arm`,
+							fatRightArm: sql`excluded.fat_right_arm`,
+							fatLeftLeg: sql`excluded.fat_left_leg`,
+							fatRightLeg: sql`excluded.fat_right_leg`,
+							compositionBodyWater: sql`excluded.composition_body_water`,
+							compositionProtein: sql`excluded.composition_protein`,
+							compositionMinerals: sql`excluded.composition_minerals`,
+							compositionBodyFat: sql`excluded.composition_body_fat`,
+							type: sql`excluded.type`,
+							date: sql`excluded.date`,
+							createdAt: sql`excluded.created_at`,
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
+				return;
+			}
+			case "weight": {
+				const values = rows as Array<typeof weight.$inferInsert>;
+				if (values.length === 0) return;
+				await tx
+					.insert(weight)
+					.values(values)
+					.onConflictDoUpdate({
+						target: weight.id,
+						set: {
+							weight: sql`excluded.weight`,
+							date: sql`excluded.date`,
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
+			}
+		}
 	}
 
 	getProfileToken(provider: Providers, externalId?: string) {

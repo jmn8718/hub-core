@@ -25,4 +25,7 @@ export const inbody = pgTable("inbody", {
 	type: text("type").notNull(),
 	date: text("date").notNull(),
 	createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP::text`),
+	userId: text("user_id"),
+	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP::text`),
+	deletedAt: text("deleted_at"),
 });

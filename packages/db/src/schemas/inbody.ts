@@ -25,4 +25,7 @@ export const inbody = sqliteTable("inbody", {
 	type: text("type").notNull(),
 	date: text("date").notNull(),
 	createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	userId: text("user_id"),
+	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	deletedAt: text("deleted_at"),
 });

@@ -121,6 +121,27 @@ async function getRemoteColumns(pool: Pool, table: string) {
 	return result.rows.map((row) => row.column_name);
 }
 
+async function getRemotePrimaryKeyColumns(pool: Pool, table: string) {
+	const result = await pool.query<{
+		column_name: string;
+	}>(
+		[
+			"SELECT attributes.attname AS column_name",
+			"FROM pg_index index_data",
+			"JOIN pg_class table_data ON table_data.oid = index_data.indrelid",
+			"JOIN pg_namespace schema_data ON schema_data.oid = table_data.relnamespace",
+			"JOIN unnest(index_data.indkey) WITH ORDINALITY AS key_data(attnum, ordinality) ON TRUE",
+			"JOIN pg_attribute attributes ON attributes.attrelid = table_data.oid AND attributes.attnum = key_data.attnum",
+			"WHERE schema_data.nspname = 'public'",
+			"AND table_data.relname = $1",
+			"AND index_data.indisprimary",
+			"ORDER BY key_data.ordinality;",
+		].join(" "),
+		[table],
+	);
+	return result.rows.map((row) => row.column_name);
+}
+
 async function getParentTables(
 	client: ReturnType<typeof createClient>,
 	table: string,
@@ -266,6 +287,7 @@ async function copyTable(params: {
 }) {
 	const { local, remote, table, batchSize, dryRun } = params;
 	const columns = await getLocalColumns(local, table);
+	const primaryKeyColumns = await getRemotePrimaryKeyColumns(remote, table);
 	const rowCount = await countRows(local, table);
 
 	if (columns.length === 0) {
@@ -279,6 +301,21 @@ async function copyTable(params: {
 	}
 
 	const columnSql = columns.map(quoteIdentifier).join(", ");
+	const primaryKeyColumnSet = new Set(primaryKeyColumns);
+	const updatableColumns = columns.filter(
+		(column) => !primaryKeyColumnSet.has(column),
+	);
+	const conflictSql =
+		primaryKeyColumns.length === 0
+			? ""
+			: updatableColumns.length === 0
+				? ` ON CONFLICT (${primaryKeyColumns.map(quoteIdentifier).join(", ")}) DO NOTHING`
+				: ` ON CONFLICT (${primaryKeyColumns.map(quoteIdentifier).join(", ")}) DO UPDATE SET ${updatableColumns
+						.map(
+							(column) =>
+								`${quoteIdentifier(column)} = EXCLUDED.${quoteIdentifier(column)}`,
+						)
+						.join(", ")}`;
 
 	let copied = 0;
 	for (let offset = 0; offset < rowCount; offset += batchSize) {
@@ -305,7 +342,7 @@ async function copyTable(params: {
 		);
 
 		await remote.query(
-			`INSERT INTO ${quoteIdentifier(table)} (${columnSql}) VALUES ${valuePlaceholders};`,
+			`INSERT INTO ${quoteIdentifier(table)} (${columnSql}) VALUES ${valuePlaceholders}${conflictSql};`,
 			values,
 		);
 		copied += rows.length;

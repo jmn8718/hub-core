@@ -1,5 +1,7 @@
 import "dotenv/config";
+import { randomUUID } from "node:crypto";
 import { ActivitySubType, ActivityType, Providers } from "@repo/types";
+import { uuidv7 } from "uuidv7";
 import {
 	afterEach,
 	beforeAll,
@@ -16,7 +18,7 @@ import { clearData, importData } from "./tests/utils";
 
 describe("db", () => {
 	const client = createDbClient({
-		url: process.env.LOCAL_TEST_DB || "file:test.sqlite",
+		url: process.env.LOCAL_TEST_DB || `file:test-${randomUUID()}.sqlite`,
 		logger: false,
 	});
 	const db = new Db(client);
@@ -236,5 +238,136 @@ describe("db", () => {
 	test("should get all gear linked to an activity", async () => {
 		const result = await db.getActivityProvider(activityId, Providers.GARMIN);
 		expect(result.length).eq(1);
+	});
+
+	test("should export sync rows deterministically", async () => {
+		const rows = await db.exportSyncRows({
+			table: "activities",
+			limit: 2,
+			offset: 0,
+		});
+
+		expect(rows.length).eq(2);
+		expect(typeof rows[0]?.id).eq("string");
+		expect(typeof rows[1]?.id).eq("string");
+		expect(String(rows[0]?.id) <= String(rows[1]?.id)).toBe(true);
+	});
+
+	test("should create and complete a sync session while upserting rows", async () => {
+		const sync = await db.createSyncSession({
+			userId: "user-1",
+			clientId: "desktop-test",
+			schemaVersion: "1",
+		});
+		const activitySyncId = uuidv7();
+
+		const pushed = await db.pushSyncRows({
+			userId: "user-1",
+			syncSessionId: sync.syncSessionId,
+			table: "activities",
+			batchIndex: 0,
+			rows: [
+				{
+					id: activitySyncId,
+					name: "Synced Activity",
+					timestamp: 1_700_000_000_000,
+					timezone: "Asia/Seoul",
+					distance: 1234,
+					duration: 567,
+					manufacturer: "sync",
+					device: "sync",
+					locationName: "",
+					locationCountry: "",
+					type: ActivityType.OTHER,
+					subtype: null,
+					notes: "",
+					insight: "",
+					description: "",
+					metadata: "{}",
+					isEvent: 0,
+					startLatitude: 0,
+					startLongitude: 0,
+				},
+			],
+		});
+
+		expect(pushed.processed).eq(1);
+		expect(pushed.totalRows).eq(1);
+
+		const syncedActivity = await db.getActivity(activitySyncId);
+		expect(syncedActivity?.name).eq("Synced Activity");
+
+		const completed = await db.finishSyncSession({
+			userId: "user-1",
+			syncSessionId: sync.syncSessionId,
+		});
+		expect(completed.status).eq("completed");
+		expect(completed.totalRows).eq(1);
+	});
+
+	test("should pull and apply sync rows and persist sync state", async () => {
+		const sync = await db.createSyncSession({
+			userId: "user-2",
+			clientId: "desktop-test",
+			schemaVersion: "2",
+		});
+		const activitySyncId = uuidv7();
+
+		await db.pushSyncRows({
+			userId: "user-2",
+			syncSessionId: sync.syncSessionId,
+			table: "activities",
+			batchIndex: 0,
+			rows: [
+				{
+					id: activitySyncId,
+					name: "Remote Activity",
+					timestamp: 1_700_000_000_123,
+					timezone: "Asia/Seoul",
+					distance: 9999,
+					duration: 123,
+					manufacturer: "remote",
+					device: "remote",
+					locationName: "",
+					locationCountry: "",
+					type: ActivityType.OTHER,
+					subtype: null,
+					notes: "",
+					insight: "",
+					description: "",
+					metadata: "{}",
+					isEvent: 0,
+					startLatitude: 0,
+					startLongitude: 0,
+				},
+			],
+		});
+
+		const pulled = await db.pullSyncRows({
+			userId: "user-2",
+			syncSessionId: sync.syncSessionId,
+			table: "activities",
+			limit: 10,
+			offset: 0,
+		});
+		expect(pulled.rows.length).gte(1);
+
+		const applied = await db.applySyncRows({
+			table: "activities",
+			rows: pulled.rows,
+		});
+		expect(applied).eq(pulled.rows.length);
+
+		const state = await db.upsertSyncState({
+			userId: "user-2",
+			lastSyncSessionId: sync.syncSessionId,
+			lastSchemaVersion: "2",
+			lastSyncedAt: "2026-05-11T00:00:00.000Z",
+			lastPushCompletedAt: "2026-05-11T00:00:00.000Z",
+			lastPullCompletedAt: "2026-05-11T00:00:00.000Z",
+		});
+		expect(state.userId).eq("user-2");
+		expect(state.lastSchemaVersion).eq("2");
+		expect(state.lastSyncSessionId).eq(sync.syncSessionId);
 	});
 });
