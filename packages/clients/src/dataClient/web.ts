@@ -251,6 +251,13 @@ export class WebClient implements Client {
 		return this._execute("providerGearCreate", { provider, gearId });
 	}
 
+	async providerGearDelete(
+		provider: Providers,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		return this._execute("providerGearDelete", { provider, gearId });
+	}
+
 	async providerGearUnlink(
 		activityId: string,
 		gearId: string,

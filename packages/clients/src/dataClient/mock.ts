@@ -324,6 +324,23 @@ export class MockClient implements Client {
 		return { success: true };
 	}
 
+	async providerGearDelete(
+		provider: Providers,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		this.gears = this.gears.map((gear) =>
+			gear.id === gearId
+				? {
+						...gear,
+						providerConnections: (gear.providerConnections ?? []).filter(
+							(connection) => connection.provider !== provider,
+						),
+					}
+				: gear,
+		);
+		return { success: true };
+	}
+
 	async providerGearUnlink(
 		activityId: string,
 		gearId: string,

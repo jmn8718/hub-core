@@ -453,6 +453,26 @@ export class AppClient implements Client {
 		}
 	}
 
+	async providerGearDelete(
+		provider: Providers,
+		gearId: string,
+	): Promise<ProviderSuccessResponse> {
+		try {
+			await window.electron.ipcRenderer.invoke(Channels.PROVIDERS_GEAR_DELETE, {
+				provider,
+				gearId,
+			});
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async providerGearUnlink(
 		activityId: string,
 		gearId: string,

@@ -175,6 +175,22 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
+	Channels.PROVIDERS_GEAR_DELETE,
+	async (
+		_event,
+		{
+			provider,
+			gearId,
+		}: {
+			provider: Providers;
+			gearId: string;
+		},
+	) => {
+		await manager.deleteGearOnProvider({ provider, gearId });
+	},
+);
+
+ipcMain.handle(
 	Channels.PROVIDERS_GEAR_LINK,
 	async (
 		_event,

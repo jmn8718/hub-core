@@ -119,6 +119,25 @@ export function GearDetails() {
 		}
 	};
 
+	const handleDeleteProviderGear = async (provider: Providers) => {
+		if (!gear) return;
+		setPendingProvider(provider);
+		setLocalLoading(true);
+		try {
+			const result = await client.providerGearDelete(provider, gear.id);
+			if (!result.success) {
+				throw new Error(result.error);
+			}
+			await loadGear();
+			toast.success(`${provider} gear deleted.`, { transition: Bounce });
+		} catch (error) {
+			toast.error((error as Error).message, { transition: Bounce });
+		} finally {
+			setPendingProvider(null);
+			setTimeout(() => setLocalLoading(false), 200);
+		}
+	};
+
 	if (isLoading) {
 		return (
 			<div
@@ -200,18 +219,34 @@ export function GearDetails() {
 										{provider}
 									</span>
 									{providerId ? (
-										<button
-											type="button"
-											onClick={() => handleOpenProvider(provider, providerId)}
-											className={cn(
-												"rounded px-3 py-1 text-xs font-medium border",
-												isDarkMode
-													? "border-gray-600 text-gray-200 hover:bg-gray-700"
-													: "border-gray-300 text-gray-700 hover:bg-gray-100",
-											)}
-										>
-											Open in provider
-										</button>
+										<>
+											<button
+												type="button"
+												onClick={() => handleOpenProvider(provider, providerId)}
+												className={cn(
+													"rounded px-3 py-1 text-xs font-medium border",
+													isDarkMode
+														? "border-gray-600 text-gray-200 hover:bg-gray-700"
+														: "border-gray-300 text-gray-700 hover:bg-gray-100",
+												)}
+											>
+												Open in provider
+											</button>
+											<button
+												type="button"
+												onClick={() => handleDeleteProviderGear(provider)}
+												disabled={isConnecting}
+												className={cn(
+													"rounded px-3 py-1 text-xs font-medium border",
+													isDarkMode
+														? "border-red-500/40 text-red-300 hover:bg-red-500/10"
+														: "border-red-300 text-red-700 hover:bg-red-50",
+													isConnecting && "opacity-60 cursor-not-allowed",
+												)}
+											>
+												{isConnecting ? "Deleting..." : "Delete from provider"}
+											</button>
+										</>
 									) : (
 										<button
 											type="button"

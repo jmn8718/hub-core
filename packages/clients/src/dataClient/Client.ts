@@ -157,6 +157,10 @@ export abstract class Client {
 		provider: Providers,
 		gearId: string,
 	): Promise<ProviderSuccessResponse>;
+	abstract providerGearDelete(
+		provider: Providers,
+		gearId: string,
+	): Promise<ProviderSuccessResponse>;
 
 	abstract providerSync(
 		provider: Providers,

@@ -330,6 +330,21 @@ export async function handleClientAction(
 				});
 			});
 		}
+		case "providerGearDelete": {
+			const { provider, gearId } = payload as {
+				provider?: Providers;
+				gearId?: string;
+			};
+			const providerEnum = ensureProvider(provider);
+			const targetGearId = ensureString(gearId, "gear id");
+			return withVoid(async () => {
+				const manager = await getProviderManager();
+				await manager.deleteGearOnProvider({
+					provider: providerEnum,
+					gearId: targetGearId,
+				});
+			});
+		}
 		case "providerGearUnlink": {
 			const { activityId, gearId } = payload as {
 				activityId?: string;
