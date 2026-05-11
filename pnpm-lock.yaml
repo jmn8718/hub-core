@@ -384,6 +384,9 @@ importers:
 
   packages/clients:
     dependencies:
+      '@nyt87/crs-connect':
+        specifier: 0.1.7
+        version: 0.1.7
       '@repo/dates':
         specifier: workspace:*
         version: link:../dates
@@ -396,9 +399,6 @@ importers:
       '@supabase/supabase-js':
         specifier: 2.48.1
         version: 2.48.1
-      coros-connect:
-        specifier: 0.1.7
-        version: 0.1.7
       garmin-connect:
         specifier: 1.6.2
         version: 1.6.2(patch_hash=kpmqv4fedm4k62n56xofokmcz4)
@@ -4228,6 +4228,20 @@ packages:
       rimraf: 3.0.2
     dev: true
 
+  /@nyt87/crs-connect@0.1.7:
+    resolution: {integrity: sha512-pBEvVF9WENWkSnUSFml1WeqFGTf7NDD2o1CNLGEwTlpOjy8nJqqogxnz3P6inYSUhcLfKfJ2FaXp4fvt8wfNeg==}
+    dependencies:
+      '@aws-sdk/client-s3': 3.1000.0
+      app-root-path: 3.1.0
+      axios: 1.13.6
+      dayjs: 1.11.13
+      jszip: 3.10.1
+      ky: 1.7.2
+    transitivePeerDependencies:
+      - aws-crt
+      - debug
+    dev: false
+
   /@pkgjs/parseargs@0.11.0:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
@@ -6887,20 +6901,6 @@ packages:
 
   /core-util-is@1.0.2:
     resolution: {integrity: sha512-3lqz5YjWTYnW6dlDa5TLaTCcShfar1e40rmcJVwCBJC6mWlFuj0eCHIElmG1g5kyuJ/GD+8Wn4FFCcz4gJPfaQ==}
-
-  /coros-connect@0.1.7:
-    resolution: {integrity: sha512-vdO/Lae40dMghYH3p0cCPtWLobxfYVOgvugiTFElTlcjDpgDIQYDUgYEUHiazBscxXglM0BvR7rGK7yAdg37sA==}
-    dependencies:
-      '@aws-sdk/client-s3': 3.1000.0
-      app-root-path: 3.1.0
-      axios: 1.13.6
-      dayjs: 1.11.13
-      jszip: 3.10.1
-      ky: 1.7.2
-    transitivePeerDependencies:
-      - aws-crt
-      - debug
-    dev: false
 
   /cosmiconfig-typescript-loader@6.2.0(@types/node@22.13.4)(cosmiconfig@9.0.1)(typescript@5.7.3):
     resolution: {integrity: sha512-GEN39v7TgdxgIoNcdkRE3uiAzQt3UXLyHbRHD6YoL048XAeOomyxaP+Hh/+2C6C2wYjxJ2onhJcsQp+L4YEkVQ==}
