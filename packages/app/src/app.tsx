@@ -1,5 +1,5 @@
 import type { Client } from "@repo/clients";
-import type { AppType } from "@repo/types";
+import { AppType } from "@repo/types";
 import {
 	Navigate,
 	Route,
@@ -33,6 +33,16 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 									<Route
 										path={AppRoutes.SETTINGS}
 										element={<Pages.SettingsPage />}
+									/>
+									<Route
+										path={AppRoutes.SYNC}
+										element={
+											type === AppType.DESKTOP ? (
+												<Pages.SyncPage />
+											) : (
+												<Navigate to={AppRoutes.SETTINGS} replace />
+											)
+										}
 									/>
 									<Route
 										path={AppRoutes.DATA}

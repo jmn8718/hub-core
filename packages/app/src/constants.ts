@@ -15,6 +15,7 @@ export const Routes = {
 	INBODY_EDIT: "/inbody/:id/edit",
 	INBODY_HISTORY: "/inbody/history",
 	ADD: "/add",
+	SYNC: "/sync",
 	SETTINGS: "/settings",
 	DEBUG: "/debug",
 };

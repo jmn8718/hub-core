@@ -11,6 +11,7 @@ import {
 	Menu,
 	PanelLeftClose,
 	PlusSquare,
+	RefreshCw,
 	Settings,
 } from "lucide-react";
 import type React from "react";
@@ -47,6 +48,7 @@ const getPageTitle = (pathname: string) => {
 	if (pathname === AppRoutes.GEAR) return "Gear";
 	if (pathname === AppRoutes.GEAR_ADD) return "Add Gear";
 	if (pathname.startsWith(`${AppRoutes.GEAR}/`)) return "Gear Details";
+	if (pathname === AppRoutes.SYNC) return "Sync";
 	if (pathname === AppRoutes.SETTINGS) return "Settings";
 	if (pathname === AppRoutes.DEBUG) return "Debug";
 	if (pathname.startsWith(`${AppRoutes.DETAILS}/`)) {
@@ -63,13 +65,14 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
 	const largeWebViewportQuery = "(min-width: 1200px)";
 	const { colors, isDarkMode } = useTheme();
-	const { type } = useDataClient();
+	const { client, type } = useDataClient();
 	const location = useLocation();
 	const isCalendarRoute = location.pathname === AppRoutes.CALENDAR;
 	const isWeb = type === AppType.WEB;
 	const pageTitle = getPageTitle(location.pathname);
 	const [isLargeWebViewport, setIsLargeWebViewport] = useState(false);
 	const [isWebSidebarOpen, setIsWebSidebarOpen] = useState(false);
+	const [isSyncConfigured, setIsSyncConfigured] = useState(false);
 	const useFixedWebSidebar = isWeb && isLargeWebViewport;
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -101,6 +104,25 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 			mediaQuery.removeEventListener("change", handleChange);
 		};
 	}, [isWeb]);
+
+	useEffect(() => {
+		let cancelled = false;
+		if (type !== AppType.DESKTOP) {
+			setIsSyncConfigured(false);
+			return;
+		}
+
+		void client.getCloudSyncStatus().then((result) => {
+			if (cancelled) {
+				return;
+			}
+			setIsSyncConfigured(Boolean(result.success && result.data.configured));
+		});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [client, type]);
 
 	useEffect(() => {
 		const handleOfflineCacheHit = () => {
@@ -182,6 +204,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 					<h1 className="min-w-0 truncate text-center text-base font-semibold tracking-normal">
 						{pageTitle}
 					</h1>
+					{type === AppType.DESKTOP && isSyncConfigured ? (
+						<Link
+							to={AppRoutes.SYNC}
+							aria-label="Sync"
+							title="Sync"
+							className={cn(headerIconActionClass, "right-14", colors.navHover)}
+						>
+							<RefreshCw className={cn("size-5", colors.navIcon)} />
+						</Link>
+					) : null}
 					<Link
 						to={AppRoutes.SETTINGS}
 						aria-label="Settings"
