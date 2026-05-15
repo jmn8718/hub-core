@@ -142,6 +142,43 @@ describe.sequential("garmin client", () => {
 		expect(result.activity.providerActivity?.original).toBe(false);
 	});
 
+	test("uses startTimeGMT and infers offset timezone for manual activities with placeholder GMT", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+
+		getActivityMock.mockResolvedValueOnce({
+			...activitiesData["17936939301"],
+			activityId: 999998,
+			metadataDTO: {
+				...activitiesData["17936939301"].metadataDTO,
+				manualActivity: true,
+			},
+			timeZoneUnitDTO: {
+				...activitiesData["17936939301"].timeZoneUnitDTO,
+				timeZone: "GMT",
+				unitKey: "GMT",
+			},
+			summaryDTO: {
+				...activitiesData["17936939301"].summaryDTO,
+				startTimeLocal: "2025-01-07T18:00:00.0",
+				startTimeGMT: "2025-01-07T09:00:00.0",
+			},
+			activityTypeDTO: {
+				...activitiesData["17936939301"].activityTypeDTO,
+				typeKey: "workout",
+			},
+		});
+
+		const result = await client.syncActivity("999998");
+		expect(result.activity.data.timestamp).toBe(
+			new Date("2025-01-07T09:00:00.0Z").getTime(),
+		);
+		expect(result.activity.data.timezone).toBe("UTC+09:00");
+	});
+
 	test("maps running metadata from garmin activity details", async () => {
 		const { client } = await createContext();
 		await client.connect({

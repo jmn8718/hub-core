@@ -97,6 +97,69 @@ function buildMetadataForActivity(params: {
 		: undefined;
 }
 
+function normalizeGarminTimezone(params: {
+	isManual: boolean;
+	timezone?: string | null;
+	startTimeLocal?: string | null;
+	startTimeGMT?: string | null;
+}) {
+	const timezone = params.timezone?.trim() ?? "";
+	if (!timezone) {
+		return "";
+	}
+	if (
+		params.isManual &&
+		(timezone === "GMT" || timezone === "UTC" || timezone === "Etc/UTC")
+	) {
+		const inferredTimezone = inferUtcOffsetTimezone(
+			params.startTimeLocal,
+			params.startTimeGMT,
+		);
+		return inferredTimezone ?? "";
+	}
+	return timezone;
+}
+
+function inferUtcOffsetTimezone(
+	startTimeLocal?: string | null,
+	startTimeGMT?: string | null,
+) {
+	if (!startTimeLocal || !startTimeGMT) {
+		return null;
+	}
+
+	const localTimestamp = Date.parse(`${startTimeLocal}Z`);
+	const gmtTimestamp = Date.parse(`${startTimeGMT}Z`);
+	if (Number.isNaN(localTimestamp) || Number.isNaN(gmtTimestamp)) {
+		return null;
+	}
+
+	const offsetMinutes = Math.round((localTimestamp - gmtTimestamp) / 60000);
+	const sign = offsetMinutes >= 0 ? "+" : "-";
+	const absoluteMinutes = Math.abs(offsetMinutes);
+	const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, "0");
+	const minutes = String(absoluteMinutes % 60).padStart(2, "0");
+	return `UTC${sign}${hours}:${minutes}`;
+}
+
+function resolveGarminTimestamp(activity: IActivityDetails) {
+	const startTimeGMT = activity.summaryDTO.startTimeGMT;
+	if (startTimeGMT) {
+		const normalizedStartTimeGMT = /(?:Z|[+-]\d{2}:\d{2})$/.test(startTimeGMT)
+			? startTimeGMT
+			: `${startTimeGMT}Z`;
+		const timestamp = new Date(normalizedStartTimeGMT).getTime();
+		if (!Number.isNaN(timestamp)) {
+			return timestamp;
+		}
+	}
+
+	return dateWithTimezoneToUTC(
+		activity.summaryDTO.startTimeLocal,
+		activity.timeZoneUnitDTO.timeZone,
+	).getTime();
+}
+
 function mapActivity({
 	activity,
 }: { activity: IActivityDetails }): IDbActivity {
@@ -104,17 +167,20 @@ function mapActivity({
 	const isManual = activity.metadataDTO.manualActivity;
 	const deviceId = activity.metadataDTO.deviceMetaDataDTO.deviceId || "";
 	const type = mapProviderActivityType(activity.activityTypeDTO.typeKey);
+	const timezone = normalizeGarminTimezone({
+		isManual,
+		timezone: activity.timeZoneUnitDTO.timeZone,
+		startTimeLocal: activity.summaryDTO.startTimeLocal,
+		startTimeGMT: activity.summaryDTO.startTimeGMT,
+	});
 	const subtype =
 		type === ActivityType.RUN
 			? mapProviderActivitySubType(activity.eventTypeDTO.typeKey)
 			: undefined;
 	return {
 		id: activity.activityId.toString(),
-		timestamp: dateWithTimezoneToUTC(
-			activity.summaryDTO.startTimeLocal,
-			activity.timeZoneUnitDTO.timeZone,
-		).getTime(),
-		timezone: activity.timeZoneUnitDTO.timeZone,
+		timestamp: resolveGarminTimestamp(activity),
+		timezone,
 		name: activity.activityName || "",
 		distance: Math.round(activity.summaryDTO.distance),
 		duration: Math.round(activity.summaryDTO.duration),
