@@ -1,4 +1,3 @@
-import { sql } from "drizzle-orm";
 import {
 	index,
 	integer,
@@ -34,7 +33,9 @@ export const activities = sqliteTable(
 		startLatitude: real("start_latitude").default(0),
 		startLongitude: real("start_longitude").default(0),
 		userId: text("user_id"),
-		updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+		updatedAt: text("updated_at")
+			.notNull()
+			.$defaultFn(() => new Date().toISOString()),
 		deletedAt: text("deleted_at"),
 	},
 	(table) => [index("timestamp_idx").on(table.timestamp)],
@@ -47,7 +48,9 @@ export const providerActivities = sqliteTable("provider_activities", {
 	original: integer("original").default(0),
 	data: text("data").default("{}"),
 	userId: text("user_id"),
-	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
 	deletedAt: text("deleted_at"),
 });
 
@@ -63,7 +66,9 @@ export const gears = sqliteTable("gears", {
 	dateEnd: text("date_end"),
 	maximumDistance: integer("maximum_distance").default(0),
 	userId: text("user_id"),
-	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
 	deletedAt: text("deleted_at"),
 });
 
@@ -75,7 +80,9 @@ export const providerGears = sqliteTable("provider_gears", {
 	providerId: text("provider_id").notNull(),
 	data: text("data").default("{}"),
 	userId: text("user_id"),
-	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
 	deletedAt: text("deleted_at"),
 });
 
@@ -89,7 +96,9 @@ export const activityGears = sqliteTable(
 			.references(() => activities.id)
 			.notNull(),
 		userId: text("user_id"),
-		updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+		updatedAt: text("updated_at")
+			.notNull()
+			.$defaultFn(() => new Date().toISOString()),
 		deletedAt: text("deleted_at"),
 	},
 	(table) => [
@@ -113,7 +122,9 @@ export const activitiesConnection = sqliteTable(
 			.references(() => providerActivities.id)
 			.notNull(),
 		userId: text("user_id"),
-		updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+		updatedAt: text("updated_at")
+			.notNull()
+			.$defaultFn(() => new Date().toISOString()),
 		deletedAt: text("deleted_at"),
 	},
 	(table) => [
@@ -137,7 +148,9 @@ export const gearsConnection = sqliteTable(
 			.references(() => providerGears.id)
 			.notNull(),
 		userId: text("user_id"),
-		updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+		updatedAt: text("updated_at")
+			.notNull()
+			.$defaultFn(() => new Date().toISOString()),
 		deletedAt: text("deleted_at"),
 	},
 	(table) => [

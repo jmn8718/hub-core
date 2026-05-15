@@ -12,29 +12,15 @@
     {
       "idx": 1,
       "version": "7",
-      "when": 1777429000001,
-      "tag": "0001_sync_sessions",
+      "when": 1778807346435,
+      "tag": "0001_light_earthquake",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1778025600001,
-      "tag": "0002_sync_state",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1778120000001,
-      "tag": "0003_sync_metadata",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1778200000001,
-      "tag": "0004_app_users",
+      "when": 1778807477272,
+      "tag": "0002_chief_aaron_stack",
       "breakpoints": true
     }
   ]

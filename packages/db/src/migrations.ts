@@ -13,35 +13,44 @@ import {
 
 export { clearData } from "./tests/utils";
 
-async function ensureSqliteSyncMetadata(client: SqliteDbClient) {
+async function backfillSqliteUpdatedAt(client: SqliteDbClient) {
 	const statements = [
-		'ALTER TABLE "activities" ADD COLUMN "user_id" text',
-		'ALTER TABLE "activities" ADD COLUMN "updated_at" text',
-		'ALTER TABLE "activities" ADD COLUMN "deleted_at" text',
-		'ALTER TABLE "provider_activities" ADD COLUMN "user_id" text',
-		'ALTER TABLE "provider_activities" ADD COLUMN "updated_at" text',
-		'ALTER TABLE "provider_activities" ADD COLUMN "deleted_at" text',
-		'ALTER TABLE "activities_connection" ADD COLUMN "user_id" text',
-		'ALTER TABLE "activities_connection" ADD COLUMN "updated_at" text',
-		'ALTER TABLE "activities_connection" ADD COLUMN "deleted_at" text',
-		'ALTER TABLE "gears" ADD COLUMN "user_id" text',
-		'ALTER TABLE "gears" ADD COLUMN "updated_at" text',
-		'ALTER TABLE "gears" ADD COLUMN "deleted_at" text',
-		'ALTER TABLE "provider_gears" ADD COLUMN "user_id" text',
-		'ALTER TABLE "provider_gears" ADD COLUMN "updated_at" text',
-		'ALTER TABLE "provider_gears" ADD COLUMN "deleted_at" text',
-		'ALTER TABLE "gears_connection" ADD COLUMN "user_id" text',
-		'ALTER TABLE "gears_connection" ADD COLUMN "updated_at" text',
-		'ALTER TABLE "gears_connection" ADD COLUMN "deleted_at" text',
-		'ALTER TABLE "activity_gears" ADD COLUMN "user_id" text',
-		'ALTER TABLE "activity_gears" ADD COLUMN "updated_at" text',
-		'ALTER TABLE "activity_gears" ADD COLUMN "deleted_at" text',
-		'ALTER TABLE "inbody" ADD COLUMN "user_id" text',
-		'ALTER TABLE "inbody" ADD COLUMN "updated_at" text',
-		'ALTER TABLE "inbody" ADD COLUMN "deleted_at" text',
-		'ALTER TABLE "weight" ADD COLUMN "user_id" text',
-		'ALTER TABLE "weight" ADD COLUMN "updated_at" text',
-		'ALTER TABLE "weight" ADD COLUMN "deleted_at" text',
+		`UPDATE "activities"
+		 SET "updated_at" = COALESCE(datetime("timestamp" / 1000, 'unixepoch'), CURRENT_TIMESTAMP)
+		 WHERE "updated_at" IS NULL`,
+		`UPDATE "provider_activities"
+		 SET "updated_at" = COALESCE(datetime("timestamp" / 1000, 'unixepoch'), CURRENT_TIMESTAMP)
+		 WHERE "updated_at" IS NULL`,
+		`UPDATE "activities_connection"
+		 SET "updated_at" = COALESCE(
+		 	(SELECT "updated_at" FROM "activities" WHERE "activities"."id" = "activities_connection"."activity_id"),
+		 	(SELECT "updated_at" FROM "provider_activities" WHERE "provider_activities"."id" = "activities_connection"."provider_activity_id"),
+		 	CURRENT_TIMESTAMP
+		 )
+		 WHERE "updated_at" IS NULL`,
+		`UPDATE "gears"
+		 SET "updated_at" = COALESCE(NULLIF("date_begin", ''), NULLIF("date_end", ''), CURRENT_TIMESTAMP)
+		 WHERE "updated_at" IS NULL`,
+		`UPDATE "provider_gears"
+		 SET "updated_at" = CURRENT_TIMESTAMP
+		 WHERE "updated_at" IS NULL`,
+		`UPDATE "gears_connection"
+		 SET "updated_at" = COALESCE(
+		 	(SELECT "updated_at" FROM "gears" WHERE "gears"."id" = "gears_connection"."gear_id"),
+		 	(SELECT "updated_at" FROM "provider_gears" WHERE "provider_gears"."id" = "gears_connection"."provider_gear_id"),
+		 	CURRENT_TIMESTAMP
+		 )
+		 WHERE "updated_at" IS NULL`,
+		`UPDATE "activity_gears"
+		 SET "updated_at" = COALESCE(
+		 	(SELECT "updated_at" FROM "activities" WHERE "activities"."id" = "activity_gears"."activity_id"),
+		 	(SELECT "updated_at" FROM "gears" WHERE "gears"."id" = "activity_gears"."gear_id"),
+		 	CURRENT_TIMESTAMP
+		 )
+		 WHERE "updated_at" IS NULL`,
+		`UPDATE "inbody"
+		 SET "updated_at" = COALESCE(NULLIF("created_at", ''), NULLIF("date", ''), CURRENT_TIMESTAMP)
+		 WHERE "updated_at" IS NULL`,
 	];
 
 	for (const statement of statements) {
@@ -54,42 +63,15 @@ async function ensureSqliteSyncMetadata(client: SqliteDbClient) {
 				"";
 			const causeMessage = (error as { cause?: Error }).cause?.message || "";
 			if (
-				message.includes("duplicate column name") ||
 				message.includes("no such table") ||
-				causeMessage.includes("duplicate column name") ||
-				causeMessage.includes("no such table")
+				message.includes("no such column") ||
+				causeMessage.includes("no such table") ||
+				causeMessage.includes("no such column")
 			) {
 				continue;
 			}
 			throw error;
 		}
-	}
-}
-
-async function ensureSqliteAppUsers(client: SqliteDbClient) {
-	const statements = [
-		`CREATE TABLE IF NOT EXISTS "app_users" (
-			"id" text PRIMARY KEY NOT NULL,
-			"email" text,
-			"display_name" text,
-			"created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-			"updated_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL
-		)`,
-		`CREATE TABLE IF NOT EXISTS "auth_identities" (
-			"provider" text NOT NULL,
-			"provider_user_id" text NOT NULL,
-			"user_id" text NOT NULL,
-			"email" text,
-			"display_name" text,
-			"created_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-			"updated_at" text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-			PRIMARY KEY("provider", "provider_user_id"),
-			FOREIGN KEY ("user_id") REFERENCES "app_users"("id") ON UPDATE no action ON DELETE no action
-		)`,
-	];
-
-	for (const statement of statements) {
-		await client.run(sql.raw(statement));
 	}
 }
 
@@ -109,10 +91,9 @@ export const migrateDb = (client: DbClient) => {
 		});
 	}
 
-	return migrateLibsql(client as unknown as SqliteDbClient, {
-		migrationsFolder: folderPath,
-	}).then(async () => {
-		await ensureSqliteAppUsers(client as unknown as SqliteDbClient);
-		await ensureSqliteSyncMetadata(client as unknown as SqliteDbClient);
-	});
+	return backfillSqliteUpdatedAt(client as unknown as SqliteDbClient).then(() =>
+		migrateLibsql(client as unknown as SqliteDbClient, {
+			migrationsFolder: folderPath,
+		}),
+	);
 };

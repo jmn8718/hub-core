@@ -260,10 +260,9 @@ export type SyncTableName =
 	| "provider_gears"
 	| "gears_connection"
 	| "activity_gears"
-	| "inbody"
-	| "weight";
+	| "inbody";
 
-export const CLOUD_SYNC_SCHEMA_VERSION = "3";
+export const CLOUD_SYNC_SCHEMA_VERSION = "4";
 
 export interface ISyncStartPayload {
 	clientId?: string;

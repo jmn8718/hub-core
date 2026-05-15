@@ -42,8 +42,14 @@ import {
 import pMap from "p-map";
 import { uuidv7 } from "uuidv7";
 import { type DbClient, type DbDialect, getDbClientDialect } from "./client";
-import { appUsers, authIdentities, inbody, profiles } from "./schemas";
-import { syncSessions, syncState, weight } from "./schemas";
+import {
+	appUsers,
+	authIdentities,
+	inbody,
+	profiles,
+	syncSessions,
+	syncState,
+} from "./schemas";
 import {
 	activities,
 	activitiesConnection,
@@ -89,7 +95,6 @@ const SYNC_TABLES: SyncTableName[] = [
 	"gears_connection",
 	"activity_gears",
 	"inbody",
-	"weight",
 ];
 
 type SyncSessionStatus = "started" | "completed" | "failed";
@@ -102,8 +107,7 @@ type SyncTableName =
 	| "provider_gears"
 	| "gears_connection"
 	| "activity_gears"
-	| "inbody"
-	| "weight";
+	| "inbody";
 
 interface ISyncStartData {
 	syncSessionId: string;
@@ -2180,18 +2184,6 @@ export class Db {
 					.orderBy(asc(inbody.id));
 				return (where ? query.where(where) : query).limit(limit).offset(offset);
 			}
-			case "weight": {
-				const conditions = [
-					updatedAfter ? gt(weight.updatedAt, updatedAfter) : undefined,
-					params.userId ? eq(weight.userId, params.userId) : undefined,
-				].filter((condition) => condition !== undefined);
-				const where = conditions.length > 0 ? and(...conditions) : undefined;
-				const query = this._client
-					.select()
-					.from(weight)
-					.orderBy(asc(weight.id));
-				return (where ? query.where(where) : query).limit(limit).offset(offset);
-			}
 		}
 
 		throw new Error("Unsupported sync table");
@@ -2709,23 +2701,6 @@ export class Db {
 						},
 					});
 				return;
-			}
-			case "weight": {
-				const values = rows as Array<typeof weight.$inferInsert>;
-				if (values.length === 0) return;
-				await tx
-					.insert(weight)
-					.values(values)
-					.onConflictDoUpdate({
-						target: weight.id,
-						set: {
-							weight: sql`excluded.weight`,
-							date: sql`excluded.date`,
-							userId: sql`excluded.user_id`,
-							updatedAt: sql`excluded.updated_at`,
-							deletedAt: sql`excluded.deleted_at`,
-						},
-					});
 			}
 		}
 	}

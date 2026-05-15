@@ -26,6 +26,8 @@ export const inbody = sqliteTable("inbody", {
 	date: text("date").notNull(),
 	createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 	userId: text("user_id"),
-	updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at")
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
 	deletedAt: text("deleted_at"),
 });

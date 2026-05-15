@@ -240,6 +240,24 @@ function mapPostgresValue(value: SqlValue): PostgresValue {
 	return value;
 }
 
+function normalizeRowValue(column: string, value: SqlValue): SqlValue {
+	if (value !== null) {
+		return value;
+	}
+
+	// Older local SQLite rows may predate sync metadata backfills.
+	// Postgres now expects these columns to be non-null.
+	if (
+		column === "updated_at" ||
+		column === "created_at" ||
+		column === "started_at"
+	) {
+		return new Date().toISOString();
+	}
+
+	return value;
+}
+
 async function fetchRows(params: {
 	client: ReturnType<typeof createClient>;
 	table: string;
@@ -338,7 +356,9 @@ async function copyTable(params: {
 			.join(", ");
 
 		const values = rows.flatMap((row) =>
-			mapRow(row, columns).map(mapPostgresValue),
+			mapRow(row, columns).map((value, index) =>
+				mapPostgresValue(normalizeRowValue(columns[index] || "", value)),
+			),
 		);
 
 		await remote.query(
