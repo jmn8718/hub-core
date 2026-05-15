@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const webhooks = sqliteTable("webhooks", {
-	id: integer("id").primaryKey(),
+	id: integer("id").primaryKey({ autoIncrement: true }),
 	aspect_type: text("aspect_type"),
 	object_type: text("object_type"),
 	updates: text("updates"),

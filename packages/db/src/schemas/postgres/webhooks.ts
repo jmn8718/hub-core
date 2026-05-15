@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { integer, pgTable, text } from "drizzle-orm/pg-core";
 
 export const webhooks = pgTable("webhooks", {
-	id: integer("id").primaryKey(),
+	id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
 	aspect_type: text("aspect_type"),
 	object_type: text("object_type"),
 	updates: text("updates"),

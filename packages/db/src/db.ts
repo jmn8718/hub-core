@@ -1836,7 +1836,12 @@ export class Db {
 			const existing = await tx
 				.select({ activityId: activitiesConnection.activityId })
 				.from(activitiesConnection)
-				.where(eq(activitiesConnection.providerActivityId, providerActivityId))
+				.where(
+					and(
+						eq(activitiesConnection.providerActivityId, providerActivityId),
+						this._activeActivitiesConnectionCondition(),
+					),
+				)
 				.limit(1);
 			if (existing[0]) {
 				throw new Error("Provider activity already linked");

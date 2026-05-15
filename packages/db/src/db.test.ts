@@ -240,6 +240,33 @@ describe("db", () => {
 		expect(result.length).eq(1);
 	});
 
+	test("should allow relinking a provider activity after the previous activity is soft-deleted", async () => {
+		const provider = await db.getActivityProvider(activityId, Providers.GARMIN);
+		const providerActivityId = provider[0]?.activityId;
+		expect(providerActivityId).toBeTruthy();
+		if (!providerActivityId) {
+			throw new Error("Expected seeded provider activity");
+		}
+
+		await db.deleteActivity(activityId);
+
+		const created = await db.createActivity({
+			name: "Relink target",
+			type: ActivityType.GYM,
+			timestamp: new Date("2026-05-15T09:00:00.000Z").toISOString(),
+			timezone: "Asia/Seoul",
+			durationSeconds: 1800,
+		});
+
+		await expect(
+			db.linkActivityConnection(created.id, providerActivityId),
+		).resolves.toBeUndefined();
+
+		const linkedActivity =
+			await db.getActivityByProviderActivityId(providerActivityId);
+		expect(linkedActivity?.id).toBe(created.id);
+	});
+
 	test("should export sync rows deterministically", async () => {
 		const rows = await db.exportSyncRows({
 			table: "activities",

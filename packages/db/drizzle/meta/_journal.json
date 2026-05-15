@@ -78,6 +78,13 @@
       "when": 1778808393136,
       "tag": "0010_nappy_black_panther",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1778838400157,
+      "tag": "0011_equal_ronan",
+      "breakpoints": true
     }
   ]
 }
