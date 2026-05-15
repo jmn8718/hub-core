@@ -34,6 +34,7 @@ Anti-direction:
 - When changing a database model, table definition, or Drizzle schema, update both schema trees:
   - `packages/db/src/schemas/*` for SQLite/libSQL
   - `packages/db/src/schemas/postgres/*` for Postgres
-- Keep the matching Drizzle migration outputs in sync as well:
-  - `packages/db/drizzle/*` for SQLite/libSQL
-  - `packages/db/drizzle-postgres/*` for Postgres
+- Do not manually edit the generated Drizzle migration folders.
+- After schema changes, generate the matching Drizzle outputs with:
+  - `pnpm db:schema:sqlite` for `packages/db/drizzle/*` (SQLite/libSQL)
+  - `pnpm db:schema:postgres` for `packages/db/drizzle-postgres/*` (Postgres)
