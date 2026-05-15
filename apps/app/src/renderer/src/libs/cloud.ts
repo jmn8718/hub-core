@@ -11,6 +11,7 @@ export function getCloudConfig() {
 
 	return {
 		supabaseUrl,
+		supabaseAnonKey,
 		apiBaseUrl,
 		supabase: createSupabaseClient(supabaseUrl, supabaseAnonKey),
 	};

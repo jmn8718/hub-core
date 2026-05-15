@@ -113,8 +113,12 @@ export function Settings() {
 								</div>
 							</SectionContainer>
 						)}
-					{type === AppType.DESKTOP && <CloudSyncSection />}
 				</Box>
+				{type === AppType.DESKTOP && (
+					<Box>
+						<CloudSyncSection />
+					</Box>
+				)}
 				{type === AppType.WEB && (
 					<Box>
 						<SignOutSection />

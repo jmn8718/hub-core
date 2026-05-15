@@ -397,6 +397,7 @@ export class WebClient implements Client {
 				authenticated: !!session?.access_token,
 				email: session?.user.email ?? null,
 				userId: session?.user.id ?? null,
+				lastSyncedAt: null,
 				validation: null,
 			},
 		};

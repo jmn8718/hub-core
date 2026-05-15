@@ -30,6 +30,22 @@ import {
 } from "@repo/types";
 import { getCloudConfig } from "./cloud.js";
 
+type CloudAuthSession = {
+	access_token: string;
+	refresh_token: string;
+};
+
+function maskEmail(email: string) {
+	const [localPart = "", domain = ""] = email.split("@");
+	if (!domain) {
+		return "***";
+	}
+	if (localPart.length <= 2) {
+		return `${localPart[0] ?? "*"}***@${domain}`;
+	}
+	return `${localPart.slice(0, 2)}***@${domain}`;
+}
+
 export class AppClient implements Client {
 	private readonly _cloudConfig = getCloudConfig();
 
@@ -650,6 +666,7 @@ export class AppClient implements Client {
 						authenticated: false,
 						email: null,
 						userId: null,
+						lastSyncedAt: null,
 						validation: null,
 					},
 				};
@@ -670,6 +687,14 @@ export class AppClient implements Client {
 							},
 						)) as ICloudSyncStatus["validation"])
 					: null;
+			const syncState = validation?.userId
+				? ((await window.electron.ipcRenderer.invoke(
+						Channels.DB_CLOUD_SYNC_STATE,
+						{
+							userId: validation.userId,
+						},
+					)) as { lastSyncedAt: string | null } | null)
+				: null;
 
 			return {
 				success: true,
@@ -678,6 +703,7 @@ export class AppClient implements Client {
 					authenticated: !!session?.access_token,
 					email: session?.user.email ?? null,
 					userId: validation?.userId ?? null,
+					lastSyncedAt: syncState?.lastSyncedAt ?? null,
 					validation,
 				},
 			};
@@ -701,19 +727,50 @@ export class AppClient implements Client {
 				throw new Error("Missing Supabase email or password");
 			}
 
-			const { error } =
-				await this._cloudConfig.supabase.auth.signInWithPassword({
+			console.info("[cloud-signin] renderer starting sign-in", {
+				configured: !!this._cloudConfig,
+				supabaseUrl: this._cloudConfig.supabaseUrl,
+				apiBaseUrl: this._cloudConfig.apiBaseUrl,
+				email: maskEmail(email.trim()),
+			});
+
+			const session = (await window.electron.ipcRenderer.invoke(
+				Channels.DB_CLOUD_SIGNIN,
+				{
+					supabaseUrl: this._cloudConfig.supabaseUrl,
+					supabaseAnonKey: this._cloudConfig.supabaseAnonKey,
 					email: email.trim(),
 					password,
-				});
+				},
+			)) as CloudAuthSession;
+
+			const { error } = await this._cloudConfig.supabase.auth.setSession({
+				access_token: session.access_token,
+				refresh_token: session.refresh_token,
+			});
 			if (error) {
+				console.error("[cloud-signin] renderer failed to persist session", {
+					email: maskEmail(email.trim()),
+					error,
+				});
 				throw error;
 			}
+
+			console.info("[cloud-signin] renderer persisted session", {
+				email: maskEmail(email.trim()),
+			});
 
 			return {
 				success: true,
 			};
 		} catch (err) {
+			console.error("[cloud-signin] renderer sign-in failed", {
+				configured: !!this._cloudConfig,
+				supabaseUrl: this._cloudConfig?.supabaseUrl ?? null,
+				apiBaseUrl: this._cloudConfig?.apiBaseUrl ?? null,
+				email: maskEmail(email.trim()),
+				error: err,
+			});
 			return {
 				success: false,
 				error: (err as Error).message,
@@ -762,10 +819,18 @@ export class AppClient implements Client {
 		if (!this._cloudConfig) {
 			return undefined;
 		}
-		const { error } = await this._cloudConfig.supabase.auth.signOut();
-		if (error) {
-			throw error;
+		const session = await resolveSupabaseSession({
+			supabase: this._cloudConfig.supabase,
+			supabaseUrl: this._cloudConfig.supabaseUrl,
+		});
+		if (session?.access_token) {
+			await window.electron.ipcRenderer.invoke(Channels.DB_CLOUD_SIGNOUT, {
+				supabaseUrl: this._cloudConfig.supabaseUrl,
+				supabaseAnonKey: this._cloudConfig.supabaseAnonKey,
+				accessToken: session.access_token,
+			});
 		}
+		await this._cloudConfig.supabase.auth.signOut({ scope: "local" });
 		return undefined;
 	}
 
@@ -973,6 +1038,9 @@ export class AppClient implements Client {
 	): Promise<ProviderSuccessResponse<TResponse>> {
 		try {
 			if (!this._cloudConfig) {
+				console.log("Strava subscriptions desktop cloud config missing", {
+					path,
+				});
 				throw new Error("Cloud sync is not configured in this desktop build");
 			}
 
@@ -981,12 +1049,24 @@ export class AppClient implements Client {
 				supabaseUrl: this._cloudConfig.supabaseUrl,
 			});
 			const accessToken = session?.access_token;
+			console.log("Strava subscriptions desktop session", {
+				path,
+				hasSession: Boolean(session),
+				hasAccessToken: Boolean(accessToken),
+				userId: session?.user?.id ?? null,
+				apiBaseUrl: this._cloudConfig.apiBaseUrl,
+			});
 			if (!accessToken) {
 				throw new Error(
 					"Sign in to Supabase before using Strava subscriptions",
 				);
 			}
 
+			console.log("Strava subscriptions desktop request", {
+				url: `${this._cloudConfig.apiBaseUrl}${path}`,
+				method: init.method ?? "GET",
+				body: typeof init.body === "string" ? init.body : null,
+			});
 			const response = await fetch(`${this._cloudConfig.apiBaseUrl}${path}`, {
 				...init,
 				headers: {
@@ -998,6 +1078,13 @@ export class AppClient implements Client {
 			const json = (await response
 				.json()
 				.catch(() => null)) as ProviderSuccessResponse<TResponse> | null;
+			console.log("Strava subscriptions desktop response", {
+				url: `${this._cloudConfig.apiBaseUrl}${path}`,
+				method: init.method ?? "GET",
+				status: response.status,
+				ok: response.ok,
+				json,
+			});
 			if (!json) {
 				return {
 					success: false,

@@ -15,14 +15,22 @@ async function requestStravaSubscriptions<T>(
 	path: string,
 	init?: RequestInit,
 ): Promise<T> {
-	const response = await fetch(`${STRAVA_API_BASE_URL}${path}`, init);
+	const url = `${STRAVA_API_BASE_URL}${path}`;
+	const response = await fetch(url, init);
 	if (!response.ok) {
 		const body = await response.text().catch(() => "");
+		console.error("Strava subscriptions request failed", {
+			url,
+			method: init?.method ?? "GET",
+			status: response.status,
+			body,
+		});
 		throw new Error(
 			body || `Strava request failed with status ${response.status}`,
 		);
 	}
-	return response.json() as Promise<T>;
+
+	return (await response.json()) as T;
 }
 
 function normalizeSubscription(

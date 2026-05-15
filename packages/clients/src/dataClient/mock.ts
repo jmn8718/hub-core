@@ -438,6 +438,7 @@ export class MockClient implements Client {
 				authenticated: false,
 				email: null,
 				userId: null,
+				lastSyncedAt: null,
 				validation: null,
 			},
 		};

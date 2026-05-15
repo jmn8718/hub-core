@@ -19,7 +19,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 	const { colors } = useTheme();
 
 	return (
-		<div className="relative group">
+		<div className="relative z-20 group">
 			<button
 				type="button"
 				onClick={onClick}
@@ -37,7 +37,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 			{tooltip && (
 				<span
 					className={cn(
-						"pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded px-2 py-1 text-xs transition-opacity duration-200",
+						"pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 whitespace-nowrap rounded px-2 py-1 text-xs transition-opacity duration-200",
 						colors.tooltip,
 						disabled
 							? "opacity-0"

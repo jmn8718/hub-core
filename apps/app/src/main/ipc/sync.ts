@@ -3,6 +3,7 @@ import {
 	Channels,
 	type ICloudSyncResult,
 	type ISyncPullData,
+	type ISyncStateData,
 	type ISyncValidateData,
 	type SyncTableName,
 } from "@repo/types";
@@ -16,6 +17,42 @@ interface JsonResponse<T> {
 	allowedTables?: SyncTableName[];
 	batchLimit?: number;
 	syncSessionId?: string;
+}
+
+interface SupabaseAuthSessionResponse {
+	access_token: string;
+	refresh_token: string;
+	expires_in?: number;
+	expires_at?: number;
+	token_type?: string;
+	user?: {
+		id: string;
+		email?: string | null;
+		[key: string]: unknown;
+	};
+	[key: string]: unknown;
+}
+
+function isSupabaseAuthSessionResponse(
+	value: unknown,
+): value is SupabaseAuthSessionResponse {
+	return (
+		!!value &&
+		typeof value === "object" &&
+		typeof (value as SupabaseAuthSessionResponse).access_token === "string" &&
+		typeof (value as SupabaseAuthSessionResponse).refresh_token === "string"
+	);
+}
+
+function maskEmail(email: string) {
+	const [localPart = "", domain = ""] = email.split("@");
+	if (!domain) {
+		return "***";
+	}
+	if (localPart.length <= 2) {
+		return `${localPart[0] ?? "*"}***@${domain}`;
+	}
+	return `${localPart.slice(0, 2)}***@${domain}`;
 }
 
 function getDesktopSyncContract() {
@@ -56,6 +93,199 @@ async function requestJson<T>(
 	}
 	return json;
 }
+
+async function requestSupabaseAuthSession(params: {
+	supabaseUrl: string;
+	supabaseAnonKey: string;
+	email: string;
+	password: string;
+}): Promise<SupabaseAuthSessionResponse> {
+	const baseUrl = params.supabaseUrl.replace(/\/$/, "");
+	console.info("[cloud-signin] requesting Supabase session", {
+		supabaseUrl: baseUrl,
+		email: maskEmail(params.email),
+	});
+
+	let response: Response;
+	try {
+		response = await fetch(`${baseUrl}/auth/v1/token?grant_type=password`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				apikey: params.supabaseAnonKey,
+			},
+			body: JSON.stringify({
+				email: params.email,
+				password: params.password,
+			}),
+		});
+	} catch (error) {
+		console.error("[cloud-signin] Supabase fetch failed", {
+			supabaseUrl: baseUrl,
+			email: maskEmail(params.email),
+			error,
+		});
+		throw error;
+	}
+
+	const json = (await response.json().catch(() => null)) as
+		| SupabaseAuthSessionResponse
+		| { error_description?: string; msg?: string }
+		| null;
+
+	if (!response.ok) {
+		console.error("[cloud-signin] Supabase sign-in rejected", {
+			supabaseUrl: baseUrl,
+			email: maskEmail(params.email),
+			status: response.status,
+			statusText: response.statusText,
+			body: json,
+		});
+		const message =
+			json && typeof json === "object" && "error_description" in json
+				? (json.error_description ?? json.msg ?? "Supabase sign-in failed")
+				: "Supabase sign-in failed";
+		throw new Error(
+			typeof message === "string" ? message : "Supabase sign-in failed",
+		);
+	}
+
+	if (!isSupabaseAuthSessionResponse(json)) {
+		console.error("[cloud-signin] Supabase sign-in returned invalid session", {
+			supabaseUrl: baseUrl,
+			email: maskEmail(params.email),
+			body: json,
+		});
+		throw new Error("Supabase sign-in returned no session");
+	}
+
+	console.info("[cloud-signin] Supabase session acquired", {
+		supabaseUrl: baseUrl,
+		email: maskEmail(params.email),
+		userId: json.user?.id ?? null,
+	});
+	return json;
+}
+
+async function requestSupabaseSignOut(params: {
+	supabaseUrl: string;
+	supabaseAnonKey: string;
+	accessToken: string;
+}) {
+	const baseUrl = params.supabaseUrl.replace(/\/$/, "");
+	const response = await fetch(`${baseUrl}/auth/v1/logout`, {
+		method: "POST",
+		headers: {
+			apikey: params.supabaseAnonKey,
+			Authorization: `Bearer ${params.accessToken}`,
+		},
+	});
+
+	if (!response.ok) {
+		const json = (await response.json().catch(() => null)) as {
+			error_description?: string;
+			msg?: string;
+		} | null;
+		throw new Error(
+			json?.error_description || json?.msg || "Supabase sign-out failed",
+		);
+	}
+}
+
+ipcMain.handle(
+	Channels.DB_CLOUD_SIGNIN,
+	async (
+		_event,
+		{
+			supabaseUrl,
+			supabaseAnonKey,
+			email,
+			password,
+		}: {
+			supabaseUrl: string;
+			supabaseAnonKey: string;
+			email: string;
+			password: string;
+		},
+	): Promise<SupabaseAuthSessionResponse> => {
+		if (!supabaseUrl) {
+			throw new Error("Missing Supabase URL");
+		}
+		if (!supabaseAnonKey) {
+			throw new Error("Missing Supabase anon key");
+		}
+		if (!email.trim() || !password) {
+			throw new Error("Missing Supabase email or password");
+		}
+
+		try {
+			return await requestSupabaseAuthSession({
+				supabaseUrl,
+				supabaseAnonKey,
+				email: email.trim(),
+				password,
+			});
+		} catch (error) {
+			console.error("[cloud-signin] IPC sign-in failed", {
+				supabaseUrl,
+				email: maskEmail(email.trim()),
+				error,
+			});
+			throw error;
+		}
+	},
+);
+
+ipcMain.handle(
+	Channels.DB_CLOUD_SIGNOUT,
+	async (
+		_event,
+		{
+			supabaseUrl,
+			supabaseAnonKey,
+			accessToken,
+		}: {
+			supabaseUrl: string;
+			supabaseAnonKey: string;
+			accessToken: string;
+		},
+	): Promise<true> => {
+		if (!supabaseUrl) {
+			throw new Error("Missing Supabase URL");
+		}
+		if (!supabaseAnonKey) {
+			throw new Error("Missing Supabase anon key");
+		}
+		if (!accessToken) {
+			throw new Error("Missing Supabase access token");
+		}
+
+		await requestSupabaseSignOut({
+			supabaseUrl,
+			supabaseAnonKey,
+			accessToken,
+		});
+		return true;
+	},
+);
+
+ipcMain.handle(
+	Channels.DB_CLOUD_SYNC_STATE,
+	async (
+		_event,
+		{
+			userId,
+		}: {
+			userId: string;
+		},
+	): Promise<ISyncStateData | null> => {
+		if (!userId) {
+			throw new Error("Missing sync user id");
+		}
+
+		return getDb().getSyncState({ userId });
+	},
+);
 
 ipcMain.handle(
 	Channels.DB_CLOUD_SYNC_VALIDATE,

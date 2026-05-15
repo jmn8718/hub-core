@@ -359,6 +359,7 @@ export interface ICloudSyncStatus {
 	authenticated: boolean;
 	email: string | null;
 	userId: string | null;
+	lastSyncedAt: string | null;
 	validation: ISyncValidateData | null;
 }
 

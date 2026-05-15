@@ -1,6 +1,6 @@
 import { AppType, type ICloudSyncStatus } from "@repo/types";
 import { cn } from "@repo/ui";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { useTheme } from "../../contexts/ThemeContext.js";
 import { useDataClient, useLoading } from "../../contexts/index.js";
@@ -12,15 +12,23 @@ export function CloudSyncSection() {
 	const { isDarkMode } = useTheme();
 	const { setGlobalLoading } = useLoading();
 	const [isLoading, setIsLoading] = useState(true);
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
+	const [hasResolvedInitialStatus, setHasResolvedInitialStatus] =
+		useState(false);
 	const [status, setStatus] = useState<ICloudSyncStatus>({
 		configured: false,
 		authenticated: false,
 		email: null,
 		userId: null,
+		lastSyncedAt: null,
 		validation: null,
 	});
+
+	const formattedLastSyncedAt = status.lastSyncedAt
+		? new Intl.DateTimeFormat(undefined, {
+				dateStyle: "medium",
+				timeStyle: "short",
+			}).format(new Date(status.lastSyncedAt))
+		: null;
 
 	const refreshStatus = useCallback(async () => {
 		setIsLoading(true);
@@ -30,7 +38,6 @@ export function CloudSyncSection() {
 				throw new Error(result.error);
 			}
 			setStatus(result.data);
-			setEmail(result.data.email ?? "");
 		} catch (error) {
 			toast.error((error as Error).message, {
 				hideProgressBar: false,
@@ -39,6 +46,7 @@ export function CloudSyncSection() {
 			});
 		} finally {
 			setIsLoading(false);
+			setHasResolvedInitialStatus(true);
 		}
 	}, [client]);
 
@@ -49,29 +57,6 @@ export function CloudSyncSection() {
 		void refreshStatus();
 	}, [refreshStatus, type]);
 
-	const handleSignIn = async (event: FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		setIsLoading(true);
-		try {
-			const result = await client.signInCloud(email, password);
-			if (!result.success) {
-				throw new Error(result.error);
-			}
-			setPassword("");
-			await refreshStatus();
-			toast.success("Cloud sync login complete.", {
-				transition: Bounce,
-			});
-		} catch (error) {
-			toast.error((error as Error).message, {
-				hideProgressBar: false,
-				closeOnClick: false,
-				transition: Bounce,
-			});
-			setIsLoading(false);
-		}
-	};
-
 	const handleSync = async () => {
 		setGlobalLoading(true, "Syncing local data to cloud");
 		try {
@@ -79,6 +64,7 @@ export function CloudSyncSection() {
 			if (!result.success) {
 				throw new Error(result.error);
 			}
+			await refreshStatus();
 			toast.success(
 				`${result.data.syncMode === "delta" ? "Delta" : "Baseline"} sync pushed ${result.data.pushedRows} rows across ${result.data.pushedTables} tables and pulled ${result.data.pulledRows} rows across ${result.data.pulledTables} tables.`,
 				{
@@ -100,7 +86,6 @@ export function CloudSyncSection() {
 		setIsLoading(true);
 		try {
 			await client.signout();
-			setPassword("");
 			await refreshStatus();
 		} catch (error) {
 			toast.error((error as Error).message, {
@@ -112,10 +97,6 @@ export function CloudSyncSection() {
 		}
 	};
 
-	if (type !== AppType.DESKTOP) {
-		return null;
-	}
-
 	if (!isLoading && !status.configured) {
 		return null;
 	}
@@ -126,17 +107,20 @@ export function CloudSyncSection() {
 		syncValidation !== null &&
 		!syncValidation.compatible;
 
-	const inputClassName = cn(
-		"w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500",
-		isDarkMode
-			? "border-gray-600 bg-gray-700 text-white focus:border-blue-500"
-			: "border-gray-300 bg-white text-gray-900 focus:border-blue-500",
+	const skeletonClassName = cn(
+		"animate-pulse rounded-lg",
+		isDarkMode ? "bg-gray-700/70" : "bg-gray-200",
 	);
 
 	return (
 		<SectionContainer title="Cloud Sync">
 			<div className="space-y-4">
-				{status.authenticated ? (
+				{!hasResolvedInitialStatus ? (
+					<div className="space-y-4">
+						<div className={cn(skeletonClassName, "h-4 w-40")} />
+						<div className={cn(skeletonClassName, "h-10 w-56 rounded-full")} />
+					</div>
+				) : status.authenticated ? (
 					<>
 						<div className="space-y-1 text-sm">
 							<p>Connected as {status.email || "unknown user"}</p>
@@ -145,6 +129,9 @@ export function CloudSyncSection() {
 									User ID: {status.userId}
 								</p>
 							)}
+							<p className="text-muted-foreground">
+								Last synced: {formattedLastSyncedAt ?? "Never"}
+							</p>
 						</div>
 						{hasSyncMismatch && (
 							<div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">
@@ -172,46 +159,15 @@ export function CloudSyncSection() {
 						</div>
 					</>
 				) : (
-					<form className="space-y-3" onSubmit={handleSignIn}>
-						<p className="text-sm text-muted-foreground">
-							Sign in with your Supabase account to push local app data to the
-							cloud database.
+					<div className="space-y-3 text-sm text-muted-foreground">
+						<p>
+							The desktop app no longer provides an in-app cloud login form.
 						</p>
-						<label className="flex flex-col gap-2">
-							<span className="text-sm text-gray-500 dark:text-gray-400">
-								Email
-							</span>
-							<input
-								type="email"
-								value={email}
-								onChange={(event) => setEmail(event.target.value)}
-								placeholder="name@example.com"
-								className={inputClassName}
-								autoComplete="email"
-							/>
-						</label>
-						<label className="flex flex-col gap-2">
-							<span className="text-sm text-gray-500 dark:text-gray-400">
-								Password
-							</span>
-							<input
-								type="password"
-								value={password}
-								onChange={(event) => setPassword(event.target.value)}
-								placeholder="Your password"
-								className={inputClassName}
-								autoComplete="current-password"
-							/>
-						</label>
-						<Button
-							type="submit"
-							disabled={isLoading || !email.trim() || !password}
-							variant="primary"
-							className="self-start"
-						>
-							Sign in to cloud sync
-						</Button>
-					</form>
+						<p>
+							Cloud sync remains available only when this desktop already has a
+							valid cloud session.
+						</p>
+					</div>
 				)}
 			</div>
 		</SectionContainer>
