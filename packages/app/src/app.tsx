@@ -73,6 +73,10 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										element={<Pages.ProvidersPage />}
 									/>
 									<Route
+										path={AppRoutes.STRAVA}
+										element={<Pages.StravaPage />}
+									/>
+									<Route
 										path={AppRoutes.PROVIDER_ACTIVITY_SYNC}
 										element={<Pages.ProviderActivitySyncPage />}
 									/>

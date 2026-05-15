@@ -42,6 +42,7 @@ const getPageTitle = (pathname: string) => {
 	}
 	if (pathname === AppRoutes.ANALYTICS) return "Analytics";
 	if (pathname === AppRoutes.PROVIDERS) return "Providers";
+	if (pathname === AppRoutes.STRAVA) return "Strava";
 	if (pathname.startsWith("/providers/")) return "Provider Sync";
 	if (pathname === AppRoutes.GEAR) return "Gear";
 	if (pathname === AppRoutes.GEAR_ADD) return "Add Gear";

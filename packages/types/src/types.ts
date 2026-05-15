@@ -186,6 +186,8 @@ export interface LoginCredentials {
 // TODO this should be removed and it should use the auth flow of the user and store tokens accordingly
 export interface ApiCredentials {
 	refreshToken: string;
+	accessToken?: string;
+	externalId?: string;
 }
 
 export interface StravaClientOptions {
@@ -193,6 +195,13 @@ export interface StravaClientOptions {
 	clientId: string;
 	clientSecret: string;
 	redirectUri?: string;
+}
+
+export interface StravaPushSubscription {
+	id: number;
+	callbackUrl: string;
+	createdAt?: string;
+	updatedAt?: string;
 }
 
 export type StravaCredentials = ApiCredentials & StravaClientOptions;

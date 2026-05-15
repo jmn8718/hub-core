@@ -22,12 +22,14 @@ import type {
 	Providers,
 	StorageKeys,
 	StravaClientOptions,
+	StravaPushSubscription,
 	Value,
 } from "@repo/types";
 import type { Client } from "./Client.js";
 
 export class MockClient implements Client {
 	private gears: IDbGearWithDistance[] = [];
+	private stravaSubscriptions: StravaPushSubscription[] = [];
 
 	async getDataOverview({ limit: _limit }: { limit?: number }): Promise<
 		ProviderSuccessResponse<{
@@ -382,6 +384,38 @@ export class MockClient implements Client {
 		credentials: ConnectCredentials,
 		options?: StravaClientOptions,
 	): Promise<ProviderSuccessResponse> {
+		return {
+			success: true,
+		};
+	}
+
+	async getStravaSubscriptions(): Promise<
+		ProviderSuccessResponse<{ data: StravaPushSubscription[] }>
+	> {
+		return {
+			success: true,
+			data: this.stravaSubscriptions,
+		};
+	}
+
+	async createStravaSubscription(
+		callbackUrl: string,
+	): Promise<ProviderSuccessResponse<{ data: StravaPushSubscription }>> {
+		const subscription = {
+			id: Date.now(),
+			callbackUrl,
+		} satisfies StravaPushSubscription;
+		this.stravaSubscriptions = [subscription, ...this.stravaSubscriptions];
+		return {
+			success: true,
+			data: subscription,
+		};
+	}
+
+	async deleteStravaSubscription(id: number): Promise<ProviderSuccessResponse> {
+		this.stravaSubscriptions = this.stravaSubscriptions.filter(
+			(subscription) => subscription.id !== id,
+		);
 		return {
 			success: true,
 		};

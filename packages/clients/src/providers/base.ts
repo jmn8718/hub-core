@@ -6,6 +6,8 @@ export class Base {
 
 	protected readonly _db: Db;
 
+	protected _externalId?: string;
+
 	constructor(
 		protected db: Db,
 		protected cache: CacheDb,
@@ -14,8 +16,8 @@ export class Base {
 		this._cache = cache;
 	}
 
-	protected getTokenFromDb(provider: Providers) {
-		return this._db.getProfileToken(provider);
+	protected getTokenFromDb(provider: Providers, externalId?: string) {
+		return this._db.getProfileToken(provider, externalId);
 	}
 
 	protected setTokenOnDb(
@@ -28,6 +30,6 @@ export class Base {
 		},
 		externalId?: string,
 	) {
-		this._db.setProfileToken(provider, values, externalId);
+		return this._db.setProfileToken(provider, values, externalId);
 	}
 }

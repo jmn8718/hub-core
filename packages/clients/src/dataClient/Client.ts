@@ -22,6 +22,7 @@ import type {
 	Providers,
 	StorageKeys,
 	StravaClientOptions,
+	StravaPushSubscription,
 	Value,
 } from "@repo/types";
 
@@ -180,6 +181,19 @@ export abstract class Client {
 		provider: Providers,
 		credentials: ConnectCredentials,
 		options?: StravaClientOptions,
+	): Promise<ProviderSuccessResponse>;
+	abstract getStravaSubscriptions(): Promise<
+		ProviderSuccessResponse<{
+			data: StravaPushSubscription[];
+		}>
+	>;
+	abstract createStravaSubscription(callbackUrl: string): Promise<
+		ProviderSuccessResponse<{
+			data: StravaPushSubscription;
+		}>
+	>;
+	abstract deleteStravaSubscription(
+		id: number,
 	): Promise<ProviderSuccessResponse>;
 
 	abstract getFolder(

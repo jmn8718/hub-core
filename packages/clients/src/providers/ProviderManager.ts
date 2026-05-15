@@ -4,7 +4,9 @@ import {
 	ActivityType,
 	type ConnectCredentials,
 	GearType,
+	type IConnection,
 	type IDbGearWithDistance,
+	type IGearConnection,
 	Providers,
 	type StravaClientOptions,
 } from "@repo/types";
@@ -131,7 +133,7 @@ export class ProviderManager {
 		}
 		if (
 			gear.providerConnections?.some(
-				(connection) => connection.provider === provider,
+				(connection: IGearConnection) => connection.provider === provider,
 			)
 		) {
 			throw new Error("Gear already connected to provider");
@@ -157,7 +159,7 @@ export class ProviderManager {
 			throw new Error("Missing gear");
 		}
 		const providerConnection = gear.providerConnections?.find(
-			(connection) => connection.provider === provider,
+			(connection: IGearConnection) => connection.provider === provider,
 		);
 		if (!providerConnection?.providerId) {
 			throw new Error("Gear is not connected to provider");
@@ -374,7 +376,7 @@ export class ProviderManager {
 				if (!activity) throw new Error("Missing activity");
 				if (
 					activity.connections.find(
-						({ provider }) => provider === params.target,
+						({ provider }: IConnection) => provider === params.target,
 					)
 				)
 					throw new Error("Activity already connected to provider");
@@ -401,8 +403,8 @@ export class ProviderManager {
 		const activity = await this._db.getActivity(params.activityId);
 		if (!activity?.connections?.length) return;
 		await pMap(
-			activity.connections,
-			async ({ provider, id }) => {
+			activity.connections as IConnection[],
+			async ({ provider, id }: IConnection) => {
 				if (!provider || !this._clients[provider]) return;
 				const client = this._clients[provider];
 				if (!client) return;
@@ -426,8 +428,8 @@ export class ProviderManager {
 		const activity = await this._db.getActivity(params.activityId);
 		if (!activity?.connections?.length) return;
 		await pMap(
-			activity.connections,
-			async ({ provider, id }) => {
+			activity.connections as IConnection[],
+			async ({ provider, id }: IConnection) => {
 				if (!provider || !this._clients[provider]) return;
 				const client = this._clients[provider];
 				if (!client) return;
@@ -449,7 +451,7 @@ export class ProviderManager {
 	) {
 		if (!activity) return;
 		const originalConnection = activity.connections.find(
-			(connection) =>
+			(connection: IConnection) =>
 				Boolean(connection.original) &&
 				Boolean(connection.provider) &&
 				Boolean(connection.id),
@@ -457,7 +459,7 @@ export class ProviderManager {
 		return (
 			originalConnection ||
 			activity.connections.find(
-				(connection) =>
+				(connection: IConnection) =>
 					connection.provider === Providers.STRAVA && Boolean(connection.id),
 			)
 		);

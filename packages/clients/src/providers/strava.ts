@@ -452,7 +452,10 @@ export class StravaClient extends Base implements Client {
 	private async getAccessToken(): Promise<string> {
 		// if we do not have auth object, try to get it from the db
 		if (!this._refreshToken || !this._auth) {
-			const dbToken = await this.getTokenFromDb(this._provider);
+			const dbToken = await this.getTokenFromDb(
+				this._provider,
+				this._externalId,
+			);
 			if (dbToken) {
 				this._refreshToken = dbToken.refreshToken;
 				this._auth = {
@@ -475,12 +478,16 @@ export class StravaClient extends Base implements Client {
 			);
 		}
 		const newToken = await this._client.oauth.refreshToken(this._refreshToken);
-		await this.setTokenOnDb(this._provider, {
-			accessToken: newToken.access_token,
-			refreshToken: newToken.refresh_token,
-			expiresAt: newToken.expires_at,
-			tokenType: newToken.token_type,
-		});
+		await this.setTokenOnDb(
+			this._provider,
+			{
+				accessToken: newToken.access_token,
+				refreshToken: newToken.refresh_token,
+				expiresAt: newToken.expires_at,
+				tokenType: newToken.token_type,
+			},
+			this._externalId,
+		);
 		this._refreshToken = newToken.refresh_token;
 		this._auth = {
 			access_token: newToken.access_token,
@@ -532,9 +539,18 @@ export class StravaClient extends Base implements Client {
 	}
 
 	async connect(params: ApiCredentials): Promise<void> {
+		this._externalId = params.externalId;
 		if (params.refreshToken !== this._refreshToken) {
 			this._refreshToken = params.refreshToken;
 			this._auth = null;
+		}
+		if (params.accessToken) {
+			this._auth = {
+				access_token: params.accessToken,
+				refresh_token: params.refreshToken,
+				expires_at: this._auth?.expires_at ?? 0,
+				token_type: this._auth?.token_type ?? "Bearer",
+			};
 		}
 		await this.getAccessToken();
 	}

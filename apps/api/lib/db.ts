@@ -5,7 +5,7 @@ import {
 	getDbClientConfigFromEnv,
 } from "@repo/db";
 
-const dbClient = createDbClient({
+export const dbClient = createDbClient({
 	...getDbClientConfigFromEnv(process.env),
 	logger: false,
 });

@@ -281,6 +281,54 @@ describe.sequential("strava client connect()", () => {
 		expect(token?.accessToken).toBe(refreshTokenResponse.access_token);
 	});
 
+	test("refreshes tokens for the scoped external athlete id", async () => {
+		const externalId = "5533532";
+		const otherExternalId = "9999999";
+		await db.setProfileToken(
+			Providers.STRAVA,
+			{
+				accessToken: "scoped-old-access",
+				refreshToken: "scoped-refresh",
+				expiresAt: Math.floor(Date.now() / 1000) - 120,
+				tokenType: "Bearer",
+			},
+			externalId,
+		);
+		await db.setProfileToken(
+			Providers.STRAVA,
+			{
+				accessToken: "other-access",
+				refreshToken: "other-refresh",
+				expiresAt: Math.floor(Date.now() / 1000) + 3600,
+				tokenType: "Bearer",
+			},
+			otherExternalId,
+		);
+
+		vi.mocked(stravaMock.oauth.refreshToken).mockResolvedValueOnce(
+			tokenResponse({
+				access_token: "scoped-new-access",
+				refresh_token: "scoped-new-refresh",
+			}),
+		);
+
+		await client.connect({
+			refreshToken: "",
+			externalId,
+		});
+
+		const scopedToken = await db.getProfileToken(Providers.STRAVA, externalId);
+		const otherToken = await db.getProfileToken(
+			Providers.STRAVA,
+			otherExternalId,
+		);
+
+		expect(scopedToken?.accessToken).toBe("scoped-new-access");
+		expect(scopedToken?.refreshToken).toBe("scoped-new-refresh");
+		expect(otherToken?.accessToken).toBe("other-access");
+		expect(otherToken?.refreshToken).toBe("other-refresh");
+	});
+
 	test("sync fetches activities and return all the activities", async () => {
 		await client.connect({ refreshToken: "token" });
 		const result = await client.sync({});

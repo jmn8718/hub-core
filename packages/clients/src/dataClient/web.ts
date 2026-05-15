@@ -22,6 +22,7 @@ import type {
 	ProviderSuccessResponse,
 	StravaClientOptions,
 	StravaCredentials,
+	StravaPushSubscription,
 	Value,
 } from "@repo/types";
 import type { SupabaseClient } from "../supabase.js";
@@ -52,12 +53,14 @@ type StoredProviderConfig = {
 export class WebClient implements Client {
 	private readonly _supabase: SupabaseClient;
 	private readonly _apiBaseUrl: string;
+	private readonly _apiRootUrl: string;
 	private readonly _supabaseUrl: string;
 	private readonly _offlineCache = new WebOfflineCache();
 
 	constructor({ apiBaseUrl, supabase, supabaseUrl }: WebClientConfig) {
 		this._supabase = supabase;
-		this._apiBaseUrl = `${apiBaseUrl.replace(/\/$/, "")}/api/client`;
+		this._apiRootUrl = apiBaseUrl.replace(/\/$/, "");
+		this._apiBaseUrl = `${this._apiRootUrl}/api/client`;
 		this._supabaseUrl = supabaseUrl;
 	}
 
@@ -319,6 +322,34 @@ export class WebClient implements Client {
 		// });
 	}
 
+	async getStravaSubscriptions(): Promise<
+		ProviderSuccessResponse<{ data: StravaPushSubscription[] }>
+	> {
+		return this._executeApiRoute<{ data: StravaPushSubscription[] }>(
+			"/api/strava/subscriptions",
+			{ method: "GET" },
+		);
+	}
+
+	async createStravaSubscription(
+		callbackUrl: string,
+	): Promise<ProviderSuccessResponse<{ data: StravaPushSubscription }>> {
+		return this._executeApiRoute<{ data: StravaPushSubscription }>(
+			"/api/strava/subscriptions",
+			{
+				method: "POST",
+				body: JSON.stringify({ callbackUrl }),
+			},
+		);
+	}
+
+	async deleteStravaSubscription(id: number): Promise<ProviderSuccessResponse> {
+		return this._executeApiRoute("/api/strava/subscriptions", {
+			method: "DELETE",
+			body: JSON.stringify({ id }),
+		});
+	}
+
 	async getInbodyData(params: {
 		type: string;
 	}): Promise<ProviderSuccessResponse<{ data: IInbodyData[] }>> {
@@ -487,6 +518,45 @@ export class WebClient implements Client {
 					Authorization: `Bearer ${accessToken}`,
 				},
 				body: JSON.stringify(payload),
+			});
+			const json = (await response
+				.json()
+				.catch(() => null)) as ProviderSuccessResponse<TResponse> | null;
+			if (!json) {
+				return {
+					success: false,
+					error: "Empty response from server",
+				};
+			}
+			return json;
+		} catch (error) {
+			return {
+				success: false,
+				error: (error as Error).message,
+			};
+		}
+	}
+
+	private async _executeApiRoute<TResponse>(
+		path: string,
+		init: RequestInit,
+	): Promise<ProviderSuccessResponse<TResponse>> {
+		try {
+			if (this._isOffline()) {
+				return {
+					success: false,
+					error: OFFLINE_WRITE_ERROR,
+				};
+			}
+
+			const accessToken = await this._getAccessToken();
+			const response = await fetch(`${this._apiRootUrl}${path}`, {
+				...init,
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${accessToken}`,
+					...(init.headers ?? {}),
+				},
 			});
 			const json = (await response
 				.json()

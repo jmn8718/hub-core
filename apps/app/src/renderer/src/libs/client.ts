@@ -25,6 +25,7 @@ import {
 	type Providers,
 	type StorageKeys,
 	type StravaClientOptions,
+	type StravaPushSubscription,
 	type Value,
 } from "@repo/types";
 import { getCloudConfig } from "./cloud.js";
@@ -585,6 +586,34 @@ export class AppClient implements Client {
 		}
 	}
 
+	async getStravaSubscriptions(): Promise<
+		ProviderSuccessResponse<{ data: StravaPushSubscription[] }>
+	> {
+		return this._executeCloudApi<{ data: StravaPushSubscription[] }>(
+			"/api/strava/subscriptions",
+			{ method: "GET" },
+		);
+	}
+
+	async createStravaSubscription(
+		callbackUrl: string,
+	): Promise<ProviderSuccessResponse<{ data: StravaPushSubscription }>> {
+		return this._executeCloudApi<{ data: StravaPushSubscription }>(
+			"/api/strava/subscriptions",
+			{
+				method: "POST",
+				body: JSON.stringify({ callbackUrl }),
+			},
+		);
+	}
+
+	async deleteStravaSubscription(id: number): Promise<ProviderSuccessResponse> {
+		return this._executeCloudApi("/api/strava/subscriptions", {
+			method: "DELETE",
+			body: JSON.stringify({ id }),
+		});
+	}
+
 	async getFolder(
 		defaultPath: string,
 		title: string,
@@ -930,6 +959,52 @@ export class AppClient implements Client {
 			return {
 				success: true,
 			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	private async _executeCloudApi<TResponse>(
+		path: string,
+		init: RequestInit,
+	): Promise<ProviderSuccessResponse<TResponse>> {
+		try {
+			if (!this._cloudConfig) {
+				throw new Error("Cloud sync is not configured in this desktop build");
+			}
+
+			const session = await resolveSupabaseSession({
+				supabase: this._cloudConfig.supabase,
+				supabaseUrl: this._cloudConfig.supabaseUrl,
+			});
+			const accessToken = session?.access_token;
+			if (!accessToken) {
+				throw new Error(
+					"Sign in to Supabase before using Strava subscriptions",
+				);
+			}
+
+			const response = await fetch(`${this._cloudConfig.apiBaseUrl}${path}`, {
+				...init,
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${accessToken}`,
+					...(init.headers ?? {}),
+				},
+			});
+			const json = (await response
+				.json()
+				.catch(() => null)) as ProviderSuccessResponse<TResponse> | null;
+			if (!json) {
+				return {
+					success: false,
+					error: "Empty response from server",
+				};
+			}
+			return json;
 		} catch (err) {
 			return {
 				success: false,

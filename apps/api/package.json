@@ -18,6 +18,8 @@
     "@repo/db": "workspace:*",
     "@supabase/auth-helpers-nextjs": "0.10.0",
     "@supabase/supabase-js": "2.48.1",
+    "@vercel/oidc": "^3.4.1",
+    "@vercel/queue": "^0.1.6",
     "next": "15.5.9",
     "react": "19.0.0",
     "react-dom": "19.0.0"

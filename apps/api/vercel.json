@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "app/api/queue/strava-activity-sync/route.ts": {
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "strava-activity-sync",
+          "retryAfterSeconds": 60,
+          "initialDelaySeconds": 0
+        }
+      ]
+    }
+  }
+}

@@ -10,6 +10,10 @@ type ProviderConfig = {
 
 const manager = new ProviderManager(db, cacheDb);
 
+export function createProviderManager() {
+	return new ProviderManager(db, cacheDb);
+}
+
 const envProviderConfigs: Partial<Record<Providers, ProviderConfig>> = {};
 
 const addConfig = (
@@ -113,4 +117,28 @@ export async function getProviderManager() {
 
 export function getEnvProviderConfig(provider: Providers) {
 	return envProviderConfigs[provider];
+}
+
+export async function syncStravaActivitiesForExternalId(
+	externalId: string,
+): Promise<boolean> {
+	const profile = await db.getProfileToken(Providers.STRAVA, externalId);
+	const config = envProviderConfigs[Providers.STRAVA];
+
+	if (!profile?.refreshToken || !config?.options) {
+		return false;
+	}
+
+	const scopedManager = createProviderManager();
+	scopedManager.initializeClient({
+		provider: Providers.STRAVA,
+		options: config.options,
+	});
+	await scopedManager.connect(Providers.STRAVA, {
+		refreshToken: profile.refreshToken,
+		accessToken: profile.accessToken,
+		externalId,
+	});
+	await scopedManager.sync(Providers.STRAVA);
+	return true;
 }

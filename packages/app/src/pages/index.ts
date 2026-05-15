@@ -12,6 +12,7 @@ export { InbodyAdd as InbodyAddPage } from "./InbodyAdd.js";
 export { InbodyEdit as InbodyEditPage } from "./InbodyEdit.js";
 export { InbodyHistory as InbodyHistoryPage } from "./InbodyHistory.js";
 export { ProvidersPage } from "./Providers.js";
+export { StravaPage } from "./Strava.js";
 export { ProviderActivitySyncPage } from "./ProviderActivitySync.js";
 export { ActivityDetails as ActivityDetailsPage } from "./ActivityDetails.js";
 export { AddActivity as AddActivityPage } from "./AddActivity.js";
