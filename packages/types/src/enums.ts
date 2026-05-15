@@ -35,6 +35,10 @@ export enum ActivityType {
 export enum ActivitySubType {
 	INDOOR = "indoor",
 	EASY_RUN = "easy-run",
+	LONG_RUN = "long-run",
+	RECOVERY = "recovery",
+	TEMPO = "tempo",
+	INTERVALS = "intervals",
 	TRAINING = "training",
 	ROAD = "road",
 	TRAIL = "trail",
