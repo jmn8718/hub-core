@@ -1,8 +1,11 @@
 import "dotenv/config";
-import { randomUUID } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { ActivitySubType, ActivityType, Providers } from "@repo/types";
 import { uuidv7 } from "uuidv7";
 import {
+	afterAll,
 	afterEach,
 	beforeAll,
 	beforeEach,
@@ -17,16 +20,25 @@ import { migrateDb } from "./migrations";
 import { clearData, importData } from "./tests/utils";
 
 describe("db", () => {
-	const client = createDbClient({
-		url: process.env.LOCAL_TEST_DB || `file:test-${randomUUID()}.sqlite`,
-		logger: false,
-	});
-	const db = new Db(client);
+	let testDbDir: string | null = null;
+	let client!: ReturnType<typeof createDbClient>;
+	let db!: Db;
 
 	let activityId = "";
 	let gearId = "";
 
 	beforeAll(async () => {
+		let testDbUrl = process.env.LOCAL_TEST_DB;
+		if (!testDbUrl) {
+			testDbDir = await mkdtemp(join(tmpdir(), "hub-core-test-db-"));
+			testDbUrl = `file:${join(testDbDir, "test.sqlite")}`;
+		}
+		client = createDbClient({
+			url: testDbUrl,
+			logger: false,
+		});
+		db = new Db(client);
+
 		await migrateDb(client).catch(console.error);
 		console.log("migrated db");
 		await clearData(client);
@@ -40,6 +52,12 @@ describe("db", () => {
 		activityId = activities.data[0]!.id;
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		gearId = activities.data[0]!.gears[0]!.id;
+	});
+
+	afterAll(async () => {
+		if (!process.env.LOCAL_TEST_DB && testDbDir) {
+			await rm(testDbDir, { recursive: true, force: true });
+		}
 	});
 
 	beforeEach(() => {
