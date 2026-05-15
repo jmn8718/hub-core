@@ -117,6 +117,8 @@ describe("db", () => {
 		expect(typeof result[0]!.distance).eq("number");
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		expect(typeof result[0]!.duration).eq("number");
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		expect(typeof result[0]!.activeDays).eq("number");
 	});
 
 	test("should get daily overview data for range", async () => {

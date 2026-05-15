@@ -241,7 +241,7 @@ const fillEmptyMonths = (
 	return Array.from(monthsMap.values());
 };
 
-const startOfWeek = (dateValue: Date | number): Date => {
+const startOfWeek = (dateValue: Date | number | string): Date => {
 	const date = new Date(
 		dateValue instanceof Date ? dateValue.getTime() : Number(dateValue),
 	);
@@ -256,7 +256,8 @@ const fillEmptyWeeks = (
 	data: {
 		distance: string | number | null;
 		duration: string | number | null;
-		minTimestamp: number | null;
+		activeDays: number;
+		minTimestamp: string | number | null;
 	}[],
 	size = 4,
 ): IWeeklyOverviewData[] => {
@@ -267,6 +268,7 @@ const fillEmptyWeeks = (
 		weeksMap.set(key, {
 			distance: 0,
 			duration: 0,
+			activeDays: 0,
 			weekStart: key,
 		});
 	}
@@ -281,6 +283,7 @@ const fillEmptyWeeks = (
 		weeksMap.set(weekStart, {
 			distance: Number(row.distance ?? 0),
 			duration: Number(row.duration ?? 0),
+			activeDays: row.activeDays,
 			weekStart,
 		});
 	});
@@ -697,13 +700,15 @@ export class Db {
 
 	async getWeeklyActivitiesOverview(limit = 4): Promise<IWeeklyOverviewData[]> {
 		const weekIdentifier = this._weekIdentifier().as("week");
+		const dayIdentifier = this._dayIdentifier().as("day");
 
 		const subquery = this._client
 			.select({
-				distance: min(activities.distance).as("distance"),
-				duration: min(activities.duration).as("duration"),
-				timestamp: activities.timestamp,
+				distance: sum(activities.distance).as("distance"),
+				duration: sum(activities.duration).as("duration"),
+				timestamp: min(activities.timestamp).as("timestamp"),
 				week: weekIdentifier,
+				day: dayIdentifier,
 			})
 			.from(activities)
 			.where(
@@ -713,7 +718,7 @@ export class Db {
 					this._activeActivityCondition(),
 				),
 			)
-			.groupBy(activities.timestamp)
+			.groupBy(({ week, day }) => [week, day])
 			.orderBy(desc(activities.timestamp))
 			.as("subquery");
 
@@ -721,6 +726,7 @@ export class Db {
 			.select({
 				distance: sum(subquery.distance),
 				duration: sum(subquery.duration),
+				activeDays: count(),
 				minTimestamp: min(subquery.timestamp),
 				week: subquery.week,
 			})

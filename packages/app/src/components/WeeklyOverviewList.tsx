@@ -56,6 +56,14 @@ const WeeklyOverviewSkeleton = ({
 							<SkeletonBlock className="h-3 w-10" isDarkMode={isDarkMode} />
 							<SkeletonBlock className="h-7 w-24" isDarkMode={isDarkMode} />
 						</div>
+						<div className="space-y-2">
+							<SkeletonBlock className="h-3 w-20" isDarkMode={isDarkMode} />
+							<SkeletonBlock className="h-7 w-16" isDarkMode={isDarkMode} />
+						</div>
+						<div className="space-y-2">
+							<SkeletonBlock className="h-3 w-28" isDarkMode={isDarkMode} />
+							<SkeletonBlock className="h-7 w-24" isDarkMode={isDarkMode} />
+						</div>
 					</div>
 				</div>
 			))}
@@ -72,6 +80,8 @@ const WeeklyOverviewSkeleton = ({
 						<th className="px-3 py-2 text-left">Week</th>
 						<th className="px-3 py-2 text-left">Distance</th>
 						<th className="px-3 py-2 text-left">Time</th>
+						<th className="px-3 py-2 text-center">Active Days</th>
+						<th className="px-3 py-2 text-center">Average Distance</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -87,6 +97,12 @@ const WeeklyOverviewSkeleton = ({
 								<SkeletonBlock className="h-5 w-24" isDarkMode={isDarkMode} />
 							</td>
 							<td className="px-3 py-3">
+								<SkeletonBlock className="h-5 w-24" isDarkMode={isDarkMode} />
+							</td>
+							<td className="px-3 py-3 text-center">
+								<SkeletonBlock className="h-5 w-16" isDarkMode={isDarkMode} />
+							</td>
+							<td className="px-3 py-3 text-center">
 								<SkeletonBlock className="h-5 w-24" isDarkMode={isDarkMode} />
 							</td>
 						</tr>
@@ -188,8 +204,11 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 
 		const withVariance = sortedAsc.map((entry, index) => {
 			const previous = index > 0 ? sortedAsc[index - 1] : undefined;
+			const averageDistance =
+				entry.activeDays > 0 ? entry.distance / entry.activeDays : 0;
 			return {
 				...entry,
+				averageDistance,
 				previousDistance: previous?.distance ?? null,
 				previousDuration: previous?.duration ?? null,
 				distanceVariance: previous ? entry.distance - previous.distance : null,
@@ -274,6 +293,32 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 											/>
 										</div>
 									</div>
+									<div>
+										<span
+											className={cn(
+												"text-xs font-semibold uppercase tracking-wide",
+												isDarkMode ? "text-gray-400" : "text-gray-600",
+											)}
+										>
+											Active Days
+										</span>
+										<p className="mt-1 text-base font-medium">
+											{week.activeDays}
+										</p>
+									</div>
+									<div>
+										<span
+											className={cn(
+												"text-xs font-semibold uppercase tracking-wide",
+												isDarkMode ? "text-gray-400" : "text-gray-600",
+											)}
+										>
+											Average Distance
+										</span>
+										<p className="mt-1 text-base font-medium">
+											{formatDistance(week.averageDistance)}
+										</p>
+									</div>
 								</div>
 							</div>
 						))}
@@ -290,6 +335,8 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 									<th className="px-3 py-2 text-left">Week</th>
 									<th className="px-3 py-2 text-left">Distance</th>
 									<th className="px-3 py-2 text-left">Time</th>
+									<th className="px-3 py-2 text-center">Active Days</th>
+									<th className="px-3 py-2 text-center">Average Distance</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -319,6 +366,10 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 												difference={week.durationVariance}
 												percentageBase={week.previousDuration}
 											/>
+										</td>
+										<td className="px-3 py-2 text-center">{week.activeDays}</td>
+										<td className="px-3 py-2 text-center">
+											{formatDistance(week.averageDistance)}
 										</td>
 									</tr>
 								))}

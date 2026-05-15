@@ -43,26 +43,25 @@ const RANGE_OPTIONS: WeekRange[] = [8, 12, 16];
 
 const CHART_THEME = {
 	light: {
-		accent: "#fc5200",
-		area: "rgba(252, 82, 0, 0.22)",
+		accent: "#2563eb",
+		area: "rgba(37, 99, 235, 0.22)",
 		axis: "#6b7280",
 		grid: "rgba(107, 114, 128, 0.24)",
-		cursor: "rgba(252, 82, 0, 0.28)",
-		tooltip: "bg-white text-gray-900 border border-orange-100",
-		radioIdle: "border-gray-200 bg-white text-gray-600 hover:border-orange-200",
-		radioActive: "border-orange-200 bg-orange-50 text-orange-700 shadow-sm",
+		cursor: "rgba(37, 99, 235, 0.28)",
+		tooltip: "bg-white text-gray-900 border border-blue-100",
+		radioIdle: "border-gray-200 bg-white text-gray-600 hover:border-blue-200",
+		radioActive: "border-blue-200 bg-blue-50 text-blue-700 shadow-sm",
 	},
 	dark: {
-		accent: "#ff6b1a",
-		area: "rgba(255, 107, 26, 0.24)",
+		accent: "#60a5fa",
+		area: "rgba(96, 165, 250, 0.24)",
 		axis: "#9ca3af",
 		grid: "rgba(156, 163, 175, 0.2)",
-		cursor: "rgba(255, 107, 26, 0.28)",
+		cursor: "rgba(96, 165, 250, 0.28)",
 		tooltip: "border border-gray-700 bg-gray-900 text-white",
 		radioIdle:
-			"border-gray-700 bg-gray-900 text-gray-300 hover:border-orange-400/50",
-		radioActive:
-			"border-orange-500/50 bg-orange-500/10 text-orange-200 shadow-sm",
+			"border-gray-700 bg-gray-900 text-gray-300 hover:border-blue-400/50",
+		radioActive: "border-blue-500/50 bg-blue-500/10 text-blue-200 shadow-sm",
 	},
 } as const;
 

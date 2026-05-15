@@ -35,6 +35,7 @@ export interface IOverviewData {
 export interface IWeeklyOverviewData {
 	distance: number;
 	duration: number;
+	activeDays: number;
 	weekStart: string;
 }
 

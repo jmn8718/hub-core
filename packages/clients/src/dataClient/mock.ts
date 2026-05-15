@@ -56,10 +56,30 @@ export class MockClient implements Client {
 		return {
 			success: true,
 			data: [
-				{ distance: 5000, duration: 3600, weekStart: "2024-12-02" },
-				{ distance: 6200, duration: 4200, weekStart: "2024-11-25" },
-				{ distance: 4500, duration: 3300, weekStart: "2024-11-18" },
-				{ distance: 7000, duration: 5100, weekStart: "2024-11-11" },
+				{
+					distance: 5000,
+					duration: 3600,
+					activeDays: 3,
+					weekStart: "2024-12-02",
+				},
+				{
+					distance: 6200,
+					duration: 4200,
+					activeDays: 4,
+					weekStart: "2024-11-25",
+				},
+				{
+					distance: 4500,
+					duration: 3300,
+					activeDays: 2,
+					weekStart: "2024-11-18",
+				},
+				{
+					distance: 7000,
+					duration: 5100,
+					activeDays: 5,
+					weekStart: "2024-11-11",
+				},
 			],
 		};
 	}
