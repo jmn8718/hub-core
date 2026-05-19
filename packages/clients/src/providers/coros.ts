@@ -280,8 +280,9 @@ export class CorosClient extends Base implements Client {
 	}
 
 	private getActivities(lastDate?: number) {
-		// add 1 day because coros filter by day precision
-		const from = lastDate ? dayjs(lastDate).add(1, "day").toDate() : undefined;
+		// COROS filters by day precision, so re-fetch the whole day and let
+		// provider-id dedupe handle already-known activities from earlier that day.
+		const from = lastDate ? dayjs(lastDate).startOf("day").toDate() : undefined;
 		return this.fetchActivities({
 			// if we have a from point, check few by few,
 			// and if there is no from then we want to fetch all

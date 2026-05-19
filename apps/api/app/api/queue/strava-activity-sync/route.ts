@@ -1,4 +1,7 @@
-import { syncStravaActivitiesForExternalId } from "@/lib/providers";
+import {
+	syncCorosActivitiesIfConfigured,
+	syncStravaActivitiesForExternalId,
+} from "@/lib/providers";
 import { handleStravaActivitySyncCallback } from "@/lib/queue";
 
 export const runtime = "nodejs";
@@ -9,6 +12,13 @@ export const POST = handleStravaActivitySyncCallback(
 		if (!synced) {
 			console.log(
 				`Skipping Strava activity sync for owner ${message.ownerId}: no stored token`,
+			);
+		}
+
+		const corosSynced = await syncCorosActivitiesIfConfigured();
+		if (!corosSynced) {
+			console.log(
+				`Skipping COROS follow-up sync for Strava webhook owner ${message.ownerId}: COROS is not configured`,
 			);
 		}
 	},

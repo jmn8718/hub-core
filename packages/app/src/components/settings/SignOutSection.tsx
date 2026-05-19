@@ -12,7 +12,7 @@ export function SignOutSection() {
 		setIsLoading(true);
 		client
 			.signout()
-			.catch((err) => {
+			.catch((err: unknown) => {
 				console.error(err);
 				const message = (err as Error).message;
 				toast.error(message, {

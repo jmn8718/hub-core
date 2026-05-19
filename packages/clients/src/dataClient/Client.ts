@@ -9,6 +9,7 @@ import type {
 	IActivityCreateInput,
 	ICloudSyncResult,
 	ICloudSyncStatus,
+	IConfiguredProvidersData,
 	IDailyOverviewData,
 	IDbGearWithDistance,
 	IGearCreateInput,
@@ -169,6 +170,11 @@ export abstract class Client {
 		provider: Providers,
 		force?: boolean,
 	): Promise<ProviderSuccessResponse>;
+	abstract getConfiguredProviders(): Promise<
+		ProviderSuccessResponse<{
+			data: IConfiguredProvidersData;
+		}>
+	>;
 	abstract providerSyncActivity(
 		provider: Providers,
 		activityId: string,

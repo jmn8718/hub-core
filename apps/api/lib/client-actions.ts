@@ -163,6 +163,13 @@ export async function handleClientAction(
 			const { limit } = payload as { limit?: number };
 			return withData(() => db.getWeeklyActivitiesOverview(limit));
 		}
+		case "getConfiguredProviders": {
+			return withData(async () => ({
+				providers: Object.values(Providers).filter((provider) =>
+					Boolean(getEnvProviderConfig(provider)),
+				),
+			}));
+		}
 		case "getActivities": {
 			const params = (payload ?? {}) as {
 				cursor?: string;

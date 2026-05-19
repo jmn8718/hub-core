@@ -385,3 +385,7 @@ export interface ISyncStateData {
 	lastPullCompletedAt: string | null;
 	updatedAt: string;
 }
+
+export interface IConfiguredProvidersData {
+	providers: Providers[];
+}

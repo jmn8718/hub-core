@@ -10,6 +10,7 @@ import type {
 	IActivityCreateInput,
 	ICloudSyncResult,
 	ICloudSyncStatus,
+	IConfiguredProvidersData,
 	IDailyOverviewData,
 	IDbGearWithDistance,
 	IGearCreateInput,
@@ -285,14 +286,19 @@ export class WebClient implements Client {
 		provider: Providers,
 		force = false,
 	): Promise<ProviderSuccessResponse> {
-		throw new Error("Not supported in the web client");
-		// const config = this._getStoredProviderConfig(provider);
-		// return this._execute("providerSync", {
-		// 	provider,
-		// 	force,
-		// 	credentials: config?.credentials,
-		// 	options: config?.options,
-		// });
+		const config = this._getStoredProviderConfig(provider);
+		return this._execute("providerSync", {
+			provider,
+			force,
+			credentials: config?.credentials,
+			options: config?.options,
+		});
+	}
+
+	async getConfiguredProviders(): Promise<
+		ProviderSuccessResponse<{ data: IConfiguredProvidersData }>
+	> {
+		return this._execute("getConfiguredProviders");
 	}
 
 	async providerSyncActivity(

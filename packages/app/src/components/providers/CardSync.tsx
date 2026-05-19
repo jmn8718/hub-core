@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 
 import { formatRelativeTime } from "@repo/dates";
-import { type Providers, StorageKeys } from "@repo/types";
+import { AppType, type Providers, StorageKeys } from "@repo/types";
 import { cn } from "@repo/ui";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import {
@@ -25,7 +25,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 	onSyncDone,
 }) => {
 	const { colors, isDarkMode } = useTheme();
-	const { client } = useDataClient();
+	const { client, type } = useDataClient();
 	const { getValue, setValue } = useStore();
 	const { setLocalLoading } = useLoading();
 	const [isLoading, setIsLoading] = useState(true);
@@ -46,11 +46,20 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 		isDarkMode ? "bg-gray-700" : "bg-gray-200",
 	);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		const getFromStore = async () => {
 			setIsLoading(true);
 			try {
+				if (type === AppType.WEB) {
+					setData({
+						lastSync: "",
+						isSyncing: false,
+						hasValidData: true,
+						error: "",
+					});
+					return;
+				}
+
 				const [storeLastSync, storeValidated] = await Promise.all([
 					getValue<string>(StorageKeys[`${provider}_LAST_SYNC`]),
 					getValue<boolean>(StorageKeys[`${provider}_VALIDATED`]),
@@ -77,7 +86,7 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 			setIsLoading(false);
 		};
 		void getFromStore();
-	}, [provider]);
+	}, [getValue, provider, type]);
 
 	const onSync = async () => {
 		setLocalLoading(true);

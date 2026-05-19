@@ -142,3 +142,14 @@ export async function syncStravaActivitiesForExternalId(
 	await scopedManager.sync(Providers.STRAVA);
 	return true;
 }
+
+export async function syncCorosActivitiesIfConfigured(): Promise<boolean> {
+	const config = envProviderConfigs[Providers.COROS];
+	if (!config) {
+		return false;
+	}
+
+	const manager = await getProviderManager();
+	await manager.sync(Providers.COROS);
+	return true;
+}

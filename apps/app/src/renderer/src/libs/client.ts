@@ -12,6 +12,7 @@ import {
 	type IActivityCreateInput,
 	type ICloudSyncResult,
 	type ICloudSyncStatus,
+	type IConfiguredProvidersData,
 	type IDailyOverviewData,
 	type IDbGearWithDistance,
 	type IGearCreateInput,
@@ -534,6 +535,17 @@ export class AppClient implements Client {
 				error: (err as Error).message,
 			};
 		}
+	}
+
+	async getConfiguredProviders(): Promise<
+		ProviderSuccessResponse<{ data: IConfiguredProvidersData }>
+	> {
+		return {
+			success: true,
+			data: {
+				providers: [],
+			},
+		};
 	}
 
 	async providerSyncActivity(
