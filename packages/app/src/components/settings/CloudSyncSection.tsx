@@ -1,6 +1,6 @@
 import { AppType, type ICloudSyncStatus } from "@repo/types";
 import { cn } from "@repo/ui";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { useTheme } from "../../contexts/ThemeContext.js";
 import { useDataClient, useLoading } from "../../contexts/index.js";
@@ -12,8 +12,12 @@ export function CloudSyncSection() {
 	const { isDarkMode } = useTheme();
 	const { setGlobalLoading } = useLoading();
 	const [isLoading, setIsLoading] = useState(true);
+	const [activeSyncAction, setActiveSyncAction] = useState<
+		null | "pull" | "sync"
+	>(null);
 	const [hasResolvedInitialStatus, setHasResolvedInitialStatus] =
 		useState(false);
+	const hasAttemptedAutoPullRef = useRef(false);
 	const [status, setStatus] = useState<ICloudSyncStatus>({
 		configured: false,
 		authenticated: false,
@@ -57,8 +61,46 @@ export function CloudSyncSection() {
 		void refreshStatus();
 	}, [refreshStatus, type]);
 
+	const handlePull = useCallback(
+		async ({ automatic = false }: { automatic?: boolean } = {}) => {
+			setActiveSyncAction("pull");
+			setGlobalLoading(
+				true,
+				automatic ? "Pulling remote changes" : "Pulling remote changes",
+			);
+			try {
+				const result = await client.pullCloud();
+				if (!result.success) {
+					throw new Error(result.error);
+				}
+				await refreshStatus();
+				if (!automatic) {
+					toast.success(
+						result.data.pulledRows > 0
+							? `Pulled ${result.data.pulledRows} remote rows across ${result.data.pulledTables} tables.`
+							: "No newer remote changes were available.",
+						{
+							transition: Bounce,
+						},
+					);
+				}
+			} catch (error) {
+				toast.error((error as Error).message, {
+					hideProgressBar: false,
+					closeOnClick: false,
+					transition: Bounce,
+				});
+			} finally {
+				setActiveSyncAction(null);
+				setGlobalLoading(false);
+			}
+		},
+		[client, refreshStatus, setGlobalLoading],
+	);
+
 	const handleSync = async () => {
-		setGlobalLoading(true, "Syncing local data to cloud");
+		setActiveSyncAction("sync");
+		setGlobalLoading(true, "Syncing local and remote data");
 		try {
 			const result = await client.syncCloud();
 			if (!result.success) {
@@ -78,6 +120,7 @@ export function CloudSyncSection() {
 				transition: Bounce,
 			});
 		} finally {
+			setActiveSyncAction(null);
 			setGlobalLoading(false);
 		}
 	};
@@ -106,6 +149,19 @@ export function CloudSyncSection() {
 		status.authenticated &&
 		syncValidation !== null &&
 		!syncValidation.compatible;
+	const canAutoPull =
+		hasResolvedInitialStatus &&
+		status.configured &&
+		status.authenticated &&
+		!hasSyncMismatch;
+
+	useEffect(() => {
+		if (!canAutoPull || hasAttemptedAutoPullRef.current) {
+			return;
+		}
+		hasAttemptedAutoPullRef.current = true;
+		void handlePull({ automatic: true });
+	}, [canAutoPull, handlePull]);
 
 	const skeletonClassName = cn(
 		"animate-pulse rounded-lg",
@@ -147,13 +203,26 @@ export function CloudSyncSection() {
 						)}
 						<div className="flex flex-wrap gap-3">
 							<Button
-								disabled={isLoading || hasSyncMismatch}
-								onClick={handleSync}
+								disabled={
+									isLoading || hasSyncMismatch || activeSyncAction !== null
+								}
+								onClick={() => void handlePull()}
 								variant="primary"
 							>
-								Sync local data to cloud
+								Pull remote changes
 							</Button>
-							<Button disabled={isLoading} onClick={handleSignOut}>
+							<Button
+								disabled={
+									isLoading || hasSyncMismatch || activeSyncAction !== null
+								}
+								onClick={handleSync}
+							>
+								Push and pull sync
+							</Button>
+							<Button
+								disabled={isLoading || activeSyncAction !== null}
+								onClick={handleSignOut}
+							>
 								Sign out
 							</Button>
 						</div>

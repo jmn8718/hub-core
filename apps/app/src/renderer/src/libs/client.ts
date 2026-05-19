@@ -781,6 +781,18 @@ export class AppClient implements Client {
 	async syncCloud(): Promise<
 		ProviderSuccessResponse<{ data: ICloudSyncResult }>
 	> {
+		return this._runCloudSync("sync");
+	}
+
+	async pullCloud(): Promise<
+		ProviderSuccessResponse<{ data: ICloudSyncResult }>
+	> {
+		return this._runCloudSync("pull");
+	}
+
+	private async _runCloudSync(
+		mode: "pull" | "sync",
+	): Promise<ProviderSuccessResponse<{ data: ICloudSyncResult }>> {
 		try {
 			if (!this._cloudConfig) {
 				throw new Error("Cloud sync is not configured in this desktop build");
@@ -796,7 +808,7 @@ export class AppClient implements Client {
 			}
 
 			const data = (await window.electron.ipcRenderer.invoke(
-				Channels.DB_CLOUD_SYNC,
+				mode === "pull" ? Channels.DB_CLOUD_PULL : Channels.DB_CLOUD_SYNC,
 				{
 					accessToken,
 					apiBaseUrl: this._cloudConfig.apiBaseUrl,
@@ -814,7 +826,6 @@ export class AppClient implements Client {
 			};
 		}
 	}
-
 	async signout(): Promise<undefined> {
 		if (!this._cloudConfig) {
 			return undefined;

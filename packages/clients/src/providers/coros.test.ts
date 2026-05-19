@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { dayjs } from "@repo/dates";
 import { createTestCacheDb, createTestDb } from "@repo/db/utils";
 import { ActivitySubType, ActivityType } from "@repo/types";
 import { describe, expect, test, vi } from "vitest";
@@ -131,6 +132,24 @@ describe.sequential("coros client", () => {
 			);
 			expect(row).not.toHaveProperty("gears");
 		});
+	});
+
+	test("re-fetches the full day for same-day incremental coros sync", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+		const lastTimestamp = Date.UTC(2026, 4, 19, 8, 30, 0);
+
+		await client.sync({ lastTimestamp });
+
+		expect(corosMock.getActivitiesList).toHaveBeenCalled();
+		expect(corosMock.getActivitiesList).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				from: dayjs(lastTimestamp).startOf("day").toDate(),
+			}),
+		);
 	});
 
 	test("maps indoor running activities to indoor subtype", async () => {

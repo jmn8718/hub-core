@@ -480,6 +480,15 @@ export class MockClient implements Client {
 		};
 	}
 
+	async pullCloud(): Promise<
+		ProviderSuccessResponse<{ data: ICloudSyncResult }>
+	> {
+		return {
+			success: false,
+			error: "Cloud sync is not supported in the mock client",
+		};
+	}
+
 	async signout(): Promise<undefined> {}
 	getDebugInfo(): ProviderSuccessResponse<{ data: string[] }> {
 		return {

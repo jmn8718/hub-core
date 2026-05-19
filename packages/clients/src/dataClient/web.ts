@@ -419,6 +419,15 @@ export class WebClient implements Client {
 		};
 	}
 
+	async pullCloud(): Promise<
+		ProviderSuccessResponse<{ data: ICloudSyncResult }>
+	> {
+		return {
+			success: false,
+			error: "Cloud sync is not supported in the web client",
+		};
+	}
+
 	async signout(): Promise<undefined> {
 		const userId = await this._getOfflineUserId();
 		const result = await this._supabase.auth.signOut();

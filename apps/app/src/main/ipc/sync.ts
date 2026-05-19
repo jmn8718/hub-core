@@ -324,89 +324,83 @@ ipcMain.handle(
 	},
 );
 
-ipcMain.handle(
-	Channels.DB_CLOUD_SYNC,
-	async (
-		_event,
+async function runCloudSync(params: {
+	accessToken: string;
+	apiBaseUrl: string;
+	mode: "pull" | "sync";
+}): Promise<ICloudSyncResult> {
+	if (!params.accessToken) {
+		throw new Error("Missing Supabase access token");
+	}
+	if (!params.apiBaseUrl) {
+		throw new Error("Missing API base URL");
+	}
+
+	const baseUrl = params.apiBaseUrl.replace(/\/$/, "");
+	const db = getDb();
+	const localContract = getDesktopSyncContract();
+	const validation = await requestJson<ISyncValidateData>(
+		`${baseUrl}/api/sync/validate`,
 		{
-			accessToken,
-			apiBaseUrl,
-		}: {
-			accessToken: string;
-			apiBaseUrl: string;
+			accessToken: params.accessToken,
+			body: localContract,
 		},
-	): Promise<ICloudSyncResult> => {
-		if (!accessToken) {
-			throw new Error("Missing Supabase access token");
-		}
-		if (!apiBaseUrl) {
-			throw new Error("Missing API base URL");
-		}
-
-		const baseUrl = apiBaseUrl.replace(/\/$/, "");
-		const db = getDb();
-		const localContract = getDesktopSyncContract();
-		const validation = await requestJson<ISyncValidateData>(
-			`${baseUrl}/api/sync/validate`,
-			{
-				accessToken,
-				body: localContract,
-			},
+	);
+	const validationData = validation.data;
+	if (!validationData) {
+		throw new Error("Sync validation returned no data");
+	}
+	if (!validationData.userId) {
+		throw new Error("Sync validation did not return an internal user id");
+	}
+	if (!validationData.compatible) {
+		throw new Error(
+			validationData.reasons.join(". ") ||
+				"Desktop and server sync conditions do not match",
 		);
-		const validationData = validation.data;
-		if (!validationData) {
-			throw new Error("Sync validation returned no data");
-		}
-		if (!validationData.userId) {
-			throw new Error("Sync validation did not return an internal user id");
-		}
-		if (!validationData.compatible) {
-			throw new Error(
-				validationData.reasons.join(". ") ||
-					"Desktop and server sync conditions do not match",
-			);
-		}
+	}
 
-		const start = await requestJson<never>(`${baseUrl}/api/sync/start`, {
-			accessToken,
-			body: {
-				clientId: localContract.clientId,
-				schemaVersion: localContract.schemaVersion,
-			},
-		});
+	const start = await requestJson<never>(`${baseUrl}/api/sync/start`, {
+		accessToken: params.accessToken,
+		body: {
+			clientId: localContract.clientId,
+			schemaVersion: localContract.schemaVersion,
+		},
+	});
 
-		const syncSessionId = start.syncSessionId;
-		const allowedTables = start.allowedTables ?? [];
-		const batchLimit = start.batchLimit ?? db.getSyncBatchLimit();
-		const userId = validationData.userId;
-		const existingSyncState = await db.getSyncState({ userId });
-		const syncMode: ICloudSyncResult["syncMode"] =
-			existingSyncState &&
-			existingSyncState.lastSchemaVersion === localContract.schemaVersion &&
-			existingSyncState.lastPushCompletedAt &&
-			existingSyncState.lastPullCompletedAt
-				? "delta"
-				: "full";
-		const pushUpdatedAfter =
-			syncMode === "delta"
-				? (existingSyncState?.lastPushCompletedAt ?? undefined)
-				: undefined;
-		const pullUpdatedAfter =
-			syncMode === "delta"
-				? (existingSyncState?.lastPullCompletedAt ?? undefined)
-				: undefined;
+	const syncSessionId = start.syncSessionId;
+	const allowedTables = start.allowedTables ?? [];
+	const batchLimit = start.batchLimit ?? db.getSyncBatchLimit();
+	const userId = validationData.userId;
+	const existingSyncState = await db.getSyncState({ userId });
+	const syncMode: ICloudSyncResult["syncMode"] =
+		existingSyncState &&
+		existingSyncState.lastSchemaVersion === localContract.schemaVersion &&
+		existingSyncState.lastPushCompletedAt &&
+		existingSyncState.lastPullCompletedAt
+			? "delta"
+			: "full";
+	const pushUpdatedAfter =
+		syncMode === "delta"
+			? (existingSyncState?.lastPushCompletedAt ?? undefined)
+			: undefined;
+	const pullUpdatedAfter =
+		syncMode === "delta"
+			? (existingSyncState?.lastPullCompletedAt ?? undefined)
+			: undefined;
 
-		if (!syncSessionId) {
-			throw new Error("Sync start did not return a session id");
-		}
+	if (!syncSessionId) {
+		throw new Error("Sync start did not return a session id");
+	}
 
-		let syncedRows = 0;
-		let syncedTables = 0;
-		let pushedRows = 0;
-		let pushedTables = 0;
-		let pulledRows = 0;
-		let pulledTables = 0;
+	let syncedRows = 0;
+	let syncedTables = 0;
+	let pushedRows = 0;
+	let pushedTables = 0;
+	let pulledRows = 0;
+	let pulledTables = 0;
 
+	if (params.mode === "sync") {
 		for (const table of allowedTables) {
 			let offset = 0;
 			let batchIndex = 0;
@@ -424,7 +418,7 @@ ipcMain.handle(
 				}
 
 				await requestJson<never>(`${baseUrl}/api/sync/push`, {
-					accessToken,
+					accessToken: params.accessToken,
 					body: {
 						syncSessionId,
 						table,
@@ -445,79 +439,121 @@ ipcMain.handle(
 				pushedTables += 1;
 			}
 		}
+	}
 
-		for (const table of allowedTables) {
-			let offset = 0;
-			let pulledAnyRow = false;
+	for (const table of allowedTables) {
+		let offset = 0;
+		let pulledAnyRow = false;
 
-			while (true) {
-				const pull = await requestJson<ISyncPullData>(
-					`${baseUrl}/api/sync/pull`,
-					{
-						accessToken,
-						body: {
-							syncSessionId,
-							table,
-							limit: batchLimit,
-							offset,
-							updatedAfter: pullUpdatedAfter,
-						},
+		while (true) {
+			const pull = await requestJson<ISyncPullData>(
+				`${baseUrl}/api/sync/pull`,
+				{
+					accessToken: params.accessToken,
+					body: {
+						syncSessionId,
+						table,
+						limit: batchLimit,
+						offset,
+						updatedAfter: pullUpdatedAfter,
 					},
-				);
+				},
+			);
 
-				const rows = pull.data?.rows ?? [];
-				if (rows.length === 0) {
-					break;
-				}
-
-				await db.applySyncRows({
-					table,
-					rows,
-					userId,
-				});
-
-				pulledAnyRow = true;
-				syncedRows += rows.length;
-				pulledRows += rows.length;
-				offset = pull.data?.nextOffset ?? offset + rows.length;
-
-				if (!pull.data?.hasMore) {
-					break;
-				}
+			const rows = pull.data?.rows ?? [];
+			if (rows.length === 0) {
+				break;
 			}
 
-			if (pulledAnyRow) {
-				syncedTables += 1;
-				pulledTables += 1;
+			await db.applySyncRows({
+				table,
+				rows,
+				userId,
+			});
+
+			pulledAnyRow = true;
+			syncedRows += rows.length;
+			pulledRows += rows.length;
+			offset = pull.data?.nextOffset ?? offset + rows.length;
+
+			if (!pull.data?.hasMore) {
+				break;
 			}
 		}
 
-		await requestJson<never>(`${baseUrl}/api/sync/finish`, {
-			accessToken,
-			body: {
-				syncSessionId,
-			},
-		});
+		if (pulledAnyRow) {
+			syncedTables += 1;
+			pulledTables += 1;
+		}
+	}
 
-		const completedAt = new Date().toISOString();
-		await db.upsertSyncState({
-			userId,
-			lastSyncSessionId: syncSessionId,
-			lastSchemaVersion: localContract.schemaVersion,
-			lastSyncedAt: completedAt,
-			lastPushCompletedAt: completedAt,
-			lastPullCompletedAt: completedAt,
-		});
-
-		return {
+	await requestJson<never>(`${baseUrl}/api/sync/finish`, {
+		accessToken: params.accessToken,
+		body: {
 			syncSessionId,
-			syncedRows,
-			syncedTables,
-			pushedRows,
-			pushedTables,
-			pulledRows,
-			pulledTables,
-			syncMode,
-		};
-	},
+		},
+	});
+
+	const completedAt = new Date().toISOString();
+	await db.upsertSyncState({
+		userId,
+		lastSyncSessionId: syncSessionId,
+		lastSchemaVersion: localContract.schemaVersion,
+		lastSyncedAt: completedAt,
+		lastPushCompletedAt:
+			params.mode === "sync"
+				? completedAt
+				: (existingSyncState?.lastPushCompletedAt ?? null),
+		lastPullCompletedAt: completedAt,
+	});
+
+	return {
+		direction: params.mode,
+		syncSessionId,
+		syncedRows,
+		syncedTables,
+		pushedRows,
+		pushedTables,
+		pulledRows,
+		pulledTables,
+		syncMode,
+	};
+}
+
+ipcMain.handle(
+	Channels.DB_CLOUD_SYNC,
+	async (
+		_event,
+		{
+			accessToken,
+			apiBaseUrl,
+		}: {
+			accessToken: string;
+			apiBaseUrl: string;
+		},
+	): Promise<ICloudSyncResult> =>
+		runCloudSync({
+			accessToken,
+			apiBaseUrl,
+			mode: "sync",
+		}),
+);
+
+ipcMain.handle(
+	Channels.DB_CLOUD_PULL,
+	async (
+		_event,
+		{
+			accessToken,
+			apiBaseUrl,
+		}: {
+			accessToken: string;
+			apiBaseUrl: string;
+		},
+	): Promise<ICloudSyncResult> =>
+		runCloudSync({
+			accessToken,
+			apiBaseUrl,
+			mode: "pull",
+		}),
 );

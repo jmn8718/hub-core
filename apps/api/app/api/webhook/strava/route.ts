@@ -35,20 +35,20 @@ export async function POST(req: NextRequest): Promise<Response> {
 		let recordEvent = true;
 		const ownerId = body.owner_id.toString();
 
-		if (body.object_type === "activity" && body.aspect_type === "create") {
+		if (body.object_type === "activity") {
 			const result = await dbClient
 				.select({ id: webhooks.id })
 				.from(webhooks)
 				.where(
 					and(
+						eq(webhooks.object_type, body.object_type),
 						eq(webhooks.object_id, body.object_id.toString()),
-						eq(webhooks.aspect_type, body.aspect_type),
 					),
 				)
 				.limit(1);
 
 			if (result.length === 1) {
-				console.log(`Existing event for ${body.object_id}`);
+				console.log(`Existing webhook already recorded for ${body.object_id}`);
 				console.log(result);
 				recordEvent = false;
 			}

@@ -365,6 +365,7 @@ export interface ICloudSyncStatus {
 }
 
 export interface ICloudSyncResult {
+	direction: "pull" | "sync";
 	syncSessionId: string;
 	syncedTables: number;
 	syncedRows: number;

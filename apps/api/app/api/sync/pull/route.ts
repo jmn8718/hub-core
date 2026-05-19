@@ -34,6 +34,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 			table: payload.table,
 			limit: payload.limit,
 			offset: payload.offset,
+			updatedAfter: payload.updatedAfter,
 		});
 		return NextResponse.json({
 			success: true,

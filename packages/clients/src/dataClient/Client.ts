@@ -215,6 +215,11 @@ export abstract class Client {
 			data: ICloudSyncResult;
 		}>
 	>;
+	abstract pullCloud(): Promise<
+		ProviderSuccessResponse<{
+			data: ICloudSyncResult;
+		}>
+	>;
 	abstract signout(): Promise<undefined>;
 
 	abstract getDebugInfo(): ProviderSuccessResponse<{ data: string[] }>;
