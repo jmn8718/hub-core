@@ -15,6 +15,9 @@ export function CloudSyncSection() {
 	const [activeSyncAction, setActiveSyncAction] = useState<
 		null | "pull" | "sync"
 	>(null);
+	const [isAuthenticating, setIsAuthenticating] = useState(false);
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
 	const [hasResolvedInitialStatus, setHasResolvedInitialStatus] =
 		useState(false);
 	const hasAttemptedAutoPullRef = useRef(false);
@@ -140,6 +143,31 @@ export function CloudSyncSection() {
 		}
 	};
 
+	const handleSignIn = async () => {
+		setIsAuthenticating(true);
+		setIsLoading(true);
+		try {
+			const result = await client.signInCloud(email, password);
+			if (!result.success) {
+				throw new Error(result.error);
+			}
+			await refreshStatus();
+			setPassword("");
+			toast.success("Cloud session established.", {
+				transition: Bounce,
+			});
+		} catch (error) {
+			toast.error((error as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+			setIsLoading(false);
+		} finally {
+			setIsAuthenticating(false);
+		}
+	};
+
 	if (!isLoading && !status.configured) {
 		return null;
 	}
@@ -167,6 +195,7 @@ export function CloudSyncSection() {
 		"animate-pulse rounded-lg",
 		isDarkMode ? "bg-gray-700/70" : "bg-gray-200",
 	);
+	const isAuthFormDisabled = isLoading || isAuthenticating;
 
 	return (
 		<SectionContainer title="Cloud Sync">
@@ -228,14 +257,59 @@ export function CloudSyncSection() {
 						</div>
 					</>
 				) : (
-					<div className="space-y-3 text-sm text-muted-foreground">
-						<p>
-							The desktop app no longer provides an in-app cloud login form.
-						</p>
-						<p>
-							Cloud sync remains available only when this desktop already has a
-							valid cloud session.
-						</p>
+					<div className="space-y-4">
+						<div className="space-y-1 text-sm text-muted-foreground">
+							<p>Sign in to restore this desktop cloud session.</p>
+							<p>
+								Once authenticated, you can pull remote changes or run a full
+								push and pull sync from this page.
+							</p>
+						</div>
+						<div className="grid gap-3 md:max-w-md">
+							<label className="grid gap-2">
+								<span className="text-sm font-medium">Email</span>
+								<input
+									type="email"
+									autoComplete="email"
+									value={email}
+									onChange={(event) => setEmail(event.target.value)}
+									placeholder="you@example.com"
+									disabled={isAuthFormDisabled}
+									className={cn(
+										"w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500",
+										isDarkMode
+											? "border-gray-600 bg-gray-700 text-white focus:border-blue-500"
+											: "border-gray-300 bg-white text-gray-900 focus:border-blue-500",
+									)}
+								/>
+							</label>
+							<label className="grid gap-2">
+								<span className="text-sm font-medium">Password</span>
+								<input
+									type="password"
+									autoComplete="current-password"
+									value={password}
+									onChange={(event) => setPassword(event.target.value)}
+									placeholder="Enter your cloud password"
+									disabled={isAuthFormDisabled}
+									className={cn(
+										"w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500",
+										isDarkMode
+											? "border-gray-600 bg-gray-700 text-white focus:border-blue-500"
+											: "border-gray-300 bg-white text-gray-900 focus:border-blue-500",
+									)}
+								/>
+							</label>
+							<div className="flex flex-wrap gap-3">
+								<Button
+									disabled={isAuthFormDisabled || !email.trim() || !password}
+									onClick={handleSignIn}
+									variant="primary"
+								>
+									Sign in to cloud sync
+								</Button>
+							</div>
+						</div>
 					</div>
 				)}
 			</div>
