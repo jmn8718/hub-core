@@ -392,6 +392,21 @@ export async function handleClientAction(
 				}
 			});
 		}
+		case "exportActivityManual": {
+			const { target, activityId } = payload as {
+				target?: Providers;
+				activityId?: string;
+			};
+			const providerEnum = ensureProvider(target);
+			const id = ensureString(activityId, "activity id");
+			return withVoid(async () => {
+				const manager = await getProviderManager();
+				await manager.exportActivityManual({
+					target: providerEnum,
+					activityId: id,
+				});
+			});
+		}
 		case "getInbodyData": {
 			const { type } = payload as { type?: string };
 			const inbodyType = ensureString(type, "inbody type") as InbodyType;

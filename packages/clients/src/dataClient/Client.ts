@@ -28,6 +28,7 @@ import type {
 } from "@repo/types";
 
 export abstract class Client {
+	abstract readonly isBrowserClient?: boolean;
 	abstract getDataOverview(params: { limit?: number }): Promise<
 		ProviderSuccessResponse<{
 			data: IOverviewData[];
@@ -243,16 +244,18 @@ export abstract class Client {
 	}): Promise<ProviderSuccessResponse<{ data: { exists: boolean } }>>;
 
 	abstract uploadActivityFile(params: {
-		provider: Providers;
-		providerActivityId: string;
+		provider?: Providers;
+		providerActivityId?: string;
 		target: Providers;
-		downloadPath: string;
+		downloadPath?: string;
+		fileName?: string;
+		fileBytes?: Uint8Array;
 	}): Promise<ProviderSuccessResponse>;
 
 	abstract downloadActivityFile(params: {
 		provider: Providers;
 		providerActivityId: string;
-		downloadPath: string;
+		downloadPath?: string;
 	}): Promise<ProviderSuccessResponse>;
 
 	abstract exportActivityManual(params: {

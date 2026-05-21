@@ -1,3 +1,6 @@
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, extname, join } from "node:path";
 import type { CacheDb, Db, IInsertActivityPayload } from "@repo/db";
 import {
 	type ActivityRegenerationSummary,
@@ -365,6 +368,42 @@ export class ProviderManager {
 		);
 	}
 
+	public async uploadActivityFileFromPath(params: {
+		target: Providers;
+		filePath: string;
+	}) {
+		const targetClient = this._getProvider(params.target);
+		const activityId = await targetClient.uploadActivity(params.filePath);
+		return this.syncActivity(params.target, activityId);
+	}
+
+	public async downloadActivityFileAsBuffer(params: {
+		provider: Providers;
+		providerActivityId: string;
+	}) {
+		const client = this._getProvider(params.provider);
+		const tempDirectory = await mkdtemp(
+			join(tmpdir(), "hub-core-provider-download-"),
+		);
+
+		try {
+			const filePath = client.generateActivityFilePath(
+				tempDirectory,
+				params.providerActivityId,
+			);
+			await client.downloadActivity(params.providerActivityId, tempDirectory);
+			const fileBytes = await readFile(filePath);
+
+			return {
+				fileName: basename(filePath),
+				fileBytes,
+				contentType: this._resolveActivityContentType(filePath),
+			};
+		} finally {
+			await rm(tempDirectory, { recursive: true, force: true });
+		}
+	}
+
 	public exportActivityManual(params: {
 		target: Providers;
 		activityId: string;
@@ -587,5 +626,16 @@ export class ProviderManager {
 		} while (cursor);
 
 		return summary;
+	}
+
+	private _resolveActivityContentType(filePath: string) {
+		const extension = extname(filePath).toLowerCase();
+		if (extension === ".tcx") {
+			return "application/vnd.garmin.tcx+xml";
+		}
+		if (extension === ".gpx") {
+			return "application/gpx+xml";
+		}
+		return "application/octet-stream";
 	}
 }

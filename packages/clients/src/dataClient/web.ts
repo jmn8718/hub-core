@@ -52,6 +52,7 @@ type StoredProviderConfig = {
 };
 
 export class WebClient implements Client {
+	readonly isBrowserClient = true;
 	private readonly _supabase: SupabaseClient;
 	private readonly _apiBaseUrl: string;
 	private readonly _apiRootUrl: string;
@@ -478,31 +479,131 @@ export class WebClient implements Client {
 		provider: Providers;
 		activityId: string;
 	}): Promise<ProviderSuccessResponse<{ data: { exists: boolean } }>> {
-		throw new Error("Not implemented in the web client");
+		return Promise.resolve({
+			success: true,
+			data: { exists: false },
+		});
 	}
 
-	async uploadActivityFile(_params: {
-		provider: Providers;
-		providerActivityId: string;
+	async uploadActivityFile(params: {
+		provider?: Providers;
+		providerActivityId?: string;
 		target: Providers;
-		downloadPath: string;
+		downloadPath?: string;
+		fileName?: string;
+		fileBytes?: Uint8Array;
 	}): Promise<ProviderSuccessResponse> {
-		throw new Error("Not implemented in the web client");
+		try {
+			if (this._isOffline()) {
+				return {
+					success: false,
+					error: OFFLINE_WRITE_ERROR,
+				};
+			}
+			if (!params.fileBytes?.length) {
+				return {
+					success: false,
+					error: "Missing upload file",
+				};
+			}
+
+			const formData = new FormData();
+			formData.set("target", params.target);
+			formData.set(
+				"file",
+				new Blob([params.fileBytes], { type: "application/octet-stream" }),
+				params.fileName ?? "activity-upload.fit",
+			);
+
+			const response = await this._fetchAuthorized(
+				"/api/provider-files/upload",
+				{
+					method: "POST",
+					body: formData,
+				},
+			);
+			if (!response.ok) {
+				return {
+					success: false,
+					error: await this._readResponseError(
+						response,
+						"Upload request failed",
+					),
+				};
+			}
+
+			return {
+				success: true,
+			};
+		} catch (error) {
+			return {
+				success: false,
+				error: (error as Error).message,
+			};
+		}
 	}
 
-	async downloadActivityFile(_params: {
+	async downloadActivityFile(params: {
 		provider: Providers;
 		providerActivityId: string;
-		downloadPath: string;
+		downloadPath?: string;
 	}): Promise<ProviderSuccessResponse> {
-		throw new Error("Not implemented in the web client");
+		try {
+			if (this._isOffline()) {
+				return {
+					success: false,
+					error: OFFLINE_WRITE_ERROR,
+				};
+			}
+
+			const query = new URLSearchParams({
+				provider: params.provider,
+				providerActivityId: params.providerActivityId,
+			});
+			const response = await this._fetchAuthorized(
+				`/api/provider-files/download?${query.toString()}`,
+				{ method: "GET" },
+			);
+			if (!response.ok) {
+				return {
+					success: false,
+					error: await this._readResponseError(
+						response,
+						"Download request failed",
+					),
+				};
+			}
+
+			const blob = await response.blob();
+			const fileName =
+				this._extractFileName(response.headers.get("content-disposition")) ??
+				`${params.providerActivityId}.fit`;
+			const objectUrl = URL.createObjectURL(blob);
+			const anchor = document.createElement("a");
+			anchor.href = objectUrl;
+			anchor.download = fileName;
+			anchor.style.display = "none";
+			document.body.append(anchor);
+			anchor.click();
+			anchor.remove();
+			window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+
+			return {
+				success: true,
+			};
+		} catch (error) {
+			return {
+				success: false,
+				error: (error as Error).message,
+			};
+		}
 	}
 
-	async exportActivityManual(_params: {
+	async exportActivityManual(params: {
 		target: Providers;
 		activityId: string;
 	}): Promise<ProviderSuccessResponse> {
-		throw new Error("Not implemented in the web client");
+		return this._execute("exportActivityManual", params);
 	}
 
 	public exportActivityObsidian(_params: {
@@ -590,6 +691,40 @@ export class WebClient implements Client {
 				error: (error as Error).message,
 			};
 		}
+	}
+
+	private async _fetchAuthorized(
+		path: string,
+		init: RequestInit,
+	): Promise<Response> {
+		const accessToken = await this._getAccessToken();
+		const headers = new Headers(init.headers ?? {});
+		headers.set("Authorization", `Bearer ${accessToken}`);
+		return fetch(`${this._apiRootUrl}${path}`, {
+			...init,
+			headers,
+		});
+	}
+
+	private async _readResponseError(
+		response: Response,
+		fallback: string,
+	): Promise<string> {
+		const json = (await response.json().catch(() => null)) as {
+			error?: string;
+		} | null;
+		return json?.error || fallback;
+	}
+
+	private _extractFileName(contentDisposition: string | null): string | null {
+		if (!contentDisposition) {
+			return null;
+		}
+		const match = contentDisposition.match(
+			/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i,
+		);
+		const rawValue = match?.[1] ?? match?.[2];
+		return rawValue ? decodeURIComponent(rawValue) : null;
 	}
 
 	private async _executeCached<TResponse>(

@@ -1,4 +1,4 @@
-import { ActivityType, Providers, StorageKeys } from "@repo/types";
+import { ActivityType, AppType, Providers, StorageKeys } from "@repo/types";
 import { cn } from "@repo/ui";
 import {
 	Download,
@@ -53,7 +53,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	refreshData,
 }) => {
 	const { setLocalLoading } = useLoading();
-	const { client } = useDataClient();
+	const { client, type } = useDataClient();
 	const { getValue } = useStore();
 	const [loading, setLoading] = useState(false);
 	const [hasDownloadFile, setHasDownloadFile] = useState(false);
@@ -118,6 +118,10 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			setHasDownloadFile(false);
 			return;
 		}
+		if (type === AppType.WEB) {
+			setHasDownloadFile(false);
+			return;
+		}
 		const downloadsFolder = await getValue<string>(StorageKeys.DOWNLOAD_FOLDER);
 		if (!downloadsFolder) {
 			setHasDownloadFile(false);
@@ -128,6 +132,10 @@ const ProviderRow: FC<ProviderRowProps> = ({
 
 	const checkAvailableUploadSource = async () => {
 		if (hasConnection || provider !== Providers.GARMIN) {
+			setAvailableUploadSource(null);
+			return;
+		}
+		if (type === AppType.WEB) {
 			setAvailableUploadSource(null);
 			return;
 		}
@@ -192,6 +200,51 @@ const ProviderRow: FC<ProviderRowProps> = ({
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const handleUpload = async () => {
+		if (type === AppType.WEB) {
+			const input = document.createElement("input");
+			input.type = "file";
+			input.accept = ".fit,.tcx,.gpx";
+
+			const selectedFile = await new Promise<File | null>((resolve) => {
+				input.addEventListener(
+					"change",
+					() => {
+						resolve(input.files?.[0] ?? null);
+					},
+					{ once: true },
+				);
+				input.addEventListener("cancel", () => resolve(null), {
+					once: true,
+				} as AddEventListenerOptions);
+				input.click();
+			});
+			if (!selectedFile) return;
+
+			setLocalLoading(true);
+			setLoading(true);
+
+			const result = await client.uploadActivityFile({
+				target: provider,
+				fileName: selectedFile.name,
+				fileBytes: new Uint8Array(await selectedFile.arrayBuffer()),
+			});
+			if (!result.success) {
+				toast.error(result.error, {
+					transition: Bounce,
+				});
+			} else {
+				toast.success("Upload completed", {
+					transition: Bounce,
+				});
+				notifyFileStateChange();
+			}
+
+			setLocalLoading(false);
+			setLoading(false);
+			refreshData();
+			return;
+		}
+
 		if (!availableUploadSource) return;
 		const downloadsFolder = await getValue<string>(StorageKeys.DOWNLOAD_FOLDER);
 		if (!downloadsFolder) return;
@@ -222,8 +275,11 @@ const ProviderRow: FC<ProviderRowProps> = ({
 
 	const handleDownload = async () => {
 		if (!connectionId) return;
-		const downloadsFolder = await getValue<string>(StorageKeys.DOWNLOAD_FOLDER);
-		if (!downloadsFolder) return;
+		let downloadsFolder: string | undefined;
+		if (type === AppType.DESKTOP) {
+			downloadsFolder = await getValue<string>(StorageKeys.DOWNLOAD_FOLDER);
+			if (!downloadsFolder) return;
+		}
 
 		setLocalLoading(true);
 		setLoading(true);
@@ -231,7 +287,7 @@ const ProviderRow: FC<ProviderRowProps> = ({
 		const result = await client.downloadActivityFile({
 			provider,
 			providerActivityId: connectionId,
-			downloadPath: downloadsFolder,
+			...(downloadsFolder ? { downloadPath: downloadsFolder } : {}),
 		});
 		if (!result.success) {
 			toast.error(result.error, {
@@ -253,7 +309,8 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	};
 
 	const showUploadButton = !hasConnection && provider === Providers.GARMIN;
-	const canUploadFromFile = showUploadButton && !!availableUploadSource;
+	const canUploadFromFile =
+		showUploadButton && (type === AppType.WEB || !!availableUploadSource);
 	return (
 		<div className="flex flex-row items-center">
 			{hasConnection ? (

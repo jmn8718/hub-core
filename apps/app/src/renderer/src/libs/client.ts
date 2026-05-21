@@ -48,6 +48,7 @@ function maskEmail(email: string) {
 }
 
 export class AppClient implements Client {
+	readonly isBrowserClient = false;
 	private readonly _cloudConfig = getCloudConfig();
 
 	async getDataOverview({ limit }: { limit?: number }): Promise<
@@ -921,16 +922,29 @@ export class AppClient implements Client {
 	}
 
 	async uploadActivityFile(params: {
-		provider: Providers;
-		providerActivityId: string;
+		provider?: Providers;
+		providerActivityId?: string;
 		target: Providers;
-		downloadPath: string;
+		downloadPath?: string;
+		fileName?: string;
+		fileBytes?: Uint8Array;
 	}): Promise<ProviderSuccessResponse> {
 		try {
-			await window.electron.ipcRenderer.invoke(
-				Channels.ACTIVITY_UPLOAD_FILE,
-				params,
-			);
+			if (
+				!params.provider ||
+				!params.providerActivityId ||
+				!params.downloadPath
+			) {
+				throw new Error(
+					"Desktop upload requires provider, activity id, and download path",
+				);
+			}
+			await window.electron.ipcRenderer.invoke(Channels.ACTIVITY_UPLOAD_FILE, {
+				provider: params.provider,
+				providerActivityId: params.providerActivityId,
+				target: params.target,
+				downloadPath: params.downloadPath,
+			});
 			return {
 				success: true,
 			};
@@ -945,12 +959,19 @@ export class AppClient implements Client {
 	async downloadActivityFile(params: {
 		provider: Providers;
 		providerActivityId: string;
-		downloadPath: string;
+		downloadPath?: string;
 	}): Promise<ProviderSuccessResponse> {
 		try {
+			if (!params.downloadPath) {
+				throw new Error("Desktop download requires a download path");
+			}
 			await window.electron.ipcRenderer.invoke(
 				Channels.ACTIVITY_DOWNLOAD_FILE,
-				params,
+				{
+					provider: params.provider,
+					providerActivityId: params.providerActivityId,
+					downloadPath: params.downloadPath,
+				},
 			);
 			return {
 				success: true,

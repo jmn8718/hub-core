@@ -29,6 +29,7 @@ import type {
 import type { Client } from "./Client.js";
 
 export class MockClient implements Client {
+	readonly isBrowserClient = false;
 	private gears: IDbGearWithDistance[] = [];
 	private stravaSubscriptions: StravaPushSubscription[] = [];
 
@@ -540,10 +541,12 @@ export class MockClient implements Client {
 	}
 
 	async uploadActivityFile(params: {
-		provider: Providers;
-		providerActivityId: string;
+		provider?: Providers;
+		providerActivityId?: string;
 		target: Providers;
-		downloadPath: string;
+		downloadPath?: string;
+		fileName?: string;
+		fileBytes?: Uint8Array;
 	}): Promise<ProviderSuccessResponse> {
 		return {
 			success: true,
@@ -553,7 +556,7 @@ export class MockClient implements Client {
 	async downloadActivityFile(params: {
 		provider: Providers;
 		providerActivityId: string;
-		downloadPath: string;
+		downloadPath?: string;
 	}): Promise<ProviderSuccessResponse> {
 		return {
 			success: true,

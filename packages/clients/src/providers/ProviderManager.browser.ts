@@ -69,6 +69,20 @@ export class ProviderManager {
 		throw new Error("Provider integrations are not available in the browser.");
 	}
 
+	uploadActivityFileFromPath(_params: {
+		target: Providers;
+		filePath: string;
+	}) {
+		throw new Error("Provider integrations are not available in the browser.");
+	}
+
+	downloadActivityFileAsBuffer(_params: {
+		provider: Providers;
+		providerActivityId: string;
+	}) {
+		throw new Error("Provider integrations are not available in the browser.");
+	}
+
 	exportActivityManual(_params: { target: Providers; activityId: string }) {
 		throw new Error("Provider integrations are not available in the browser.");
 	}
