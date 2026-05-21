@@ -1,10 +1,6 @@
 import { Providers, type StravaCredentials } from "@repo/types";
-import { Link2 } from "lucide-react";
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Routes as AppRoutes } from "../../constants.js";
 import { useDataClient } from "../../contexts/index.js";
-import { Button } from "../Button.js";
 import { InputField } from "./InputField.js";
 import { ProviderCredentialsCard } from "./ProviderCredentialsCard.js";
 
@@ -13,10 +9,26 @@ const isStravaCredentialsComplete = (credentials: StravaCredentials) =>
 	!!credentials.clientSecret &&
 	!!credentials.refreshToken;
 
-export function StravaCardInput() {
-	const { client } = useDataClient();
-	const navigate = useNavigate();
+interface StravaCardInputProps {
+	titleHref?: string;
+	cardTitle?: string;
+	showTitle?: boolean;
+	formSectionHasBorder?: boolean;
+	showSyncActionsSection?: boolean;
+	showActivitySyncAction?: boolean;
+	onStateChange?: () => void;
+}
 
+export function StravaCardInput({
+	titleHref,
+	cardTitle,
+	showTitle,
+	formSectionHasBorder,
+	showSyncActionsSection,
+	showActivitySyncAction,
+	onStateChange,
+}: StravaCardInputProps) {
+	const { client } = useDataClient();
 	const initialCredentials = useMemo<StravaCredentials>(
 		() => ({
 			clientId: "",
@@ -62,6 +74,13 @@ export function StravaCardInput() {
 				validateSuccessTooltip: "Strava credentials validated",
 				saveToast: () => "Strava credentials stored",
 			}}
+			cardTitle={cardTitle}
+			titleHref={titleHref}
+			showTitle={showTitle}
+			formSectionHasBorder={formSectionHasBorder}
+			showSyncActionsSection={showSyncActionsSection}
+			showActivitySyncAction={showActivitySyncAction}
+			onStateChange={onStateChange}
 			renderFields={({ credentials, onChange }) => (
 				<>
 					<InputField
@@ -96,18 +115,6 @@ export function StravaCardInput() {
 						onChange={(value) => onChange("refreshToken", value)}
 						placeholder="Enter Strava refresh token"
 					/>
-					<div className="flex justify-start pt-3">
-						<Button
-							variant="ghost"
-							className="rounded-lg px-3 py-2"
-							onClick={() => navigate(AppRoutes.STRAVA)}
-						>
-							<span className="inline-flex items-center gap-2">
-								<Link2 size={16} />
-								Manage Webhooks
-							</span>
-						</Button>
-					</div>
 				</>
 			)}
 		/>

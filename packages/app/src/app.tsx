@@ -83,8 +83,12 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										element={<Pages.ProvidersPage />}
 									/>
 									<Route
-										path={AppRoutes.STRAVA}
+										path={AppRoutes.STRAVA_WEBHOOKS}
 										element={<Pages.StravaPage />}
+									/>
+									<Route
+										path={AppRoutes.PROVIDER_DETAILS}
+										element={<Pages.ProviderDetailsPage />}
 									/>
 									<Route
 										path={AppRoutes.PROVIDER_ACTIVITY_SYNC}

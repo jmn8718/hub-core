@@ -5,6 +5,13 @@ import { ProviderCredentialsCard } from "./ProviderCredentialsCard.js";
 
 interface ProviderCardInputProps {
 	provider: Providers.COROS | Providers.GARMIN;
+	titleHref?: string;
+	cardTitle?: string;
+	showTitle?: boolean;
+	formSectionHasBorder?: boolean;
+	showSyncActionsSection?: boolean;
+	showActivitySyncAction?: boolean;
+	onStateChange?: () => void;
 }
 
 interface UsernamePasswordCredentials {
@@ -15,7 +22,16 @@ interface UsernamePasswordCredentials {
 const isCredentialComplete = (credentials: UsernamePasswordCredentials) =>
 	!!credentials.username && !!credentials.password;
 
-export function ProviderCardInput({ provider }: ProviderCardInputProps) {
+export function ProviderCardInput({
+	provider,
+	titleHref,
+	cardTitle,
+	showTitle,
+	formSectionHasBorder,
+	showSyncActionsSection,
+	showActivitySyncAction,
+	onStateChange,
+}: ProviderCardInputProps) {
 	const { client } = useDataClient();
 
 	const providerConnect = (credentials: LoginCredentials) => {
@@ -36,6 +52,13 @@ export function ProviderCardInput({ provider }: ProviderCardInputProps) {
 				saveToast: (credentials) =>
 					`Credentials ${credentials.username ? "stored" : "cleared"}`,
 			}}
+			cardTitle={cardTitle}
+			titleHref={titleHref}
+			showTitle={showTitle}
+			formSectionHasBorder={formSectionHasBorder}
+			showSyncActionsSection={showSyncActionsSection}
+			showActivitySyncAction={showActivitySyncAction}
+			onStateChange={onStateChange}
 			renderFields={({ credentials, onChange }) => (
 				<>
 					<InputField

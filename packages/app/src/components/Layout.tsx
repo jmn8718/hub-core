@@ -21,6 +21,7 @@ import { Bounce, ToastContainer, toast } from "react-toastify";
 import { Routes as AppRoutes } from "../constants.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
+import { parseProviderSlug } from "../utils/providers.js";
 import { Sidebar } from "./Sidebar.js";
 
 const OFFLINE_CACHE_HIT_EVENT = "hub-core:offline-cache-hit";
@@ -43,8 +44,14 @@ const getPageTitle = (pathname: string) => {
 	}
 	if (pathname === AppRoutes.ANALYTICS) return "Analytics";
 	if (pathname === AppRoutes.PROVIDERS) return "Providers";
-	if (pathname === AppRoutes.STRAVA) return "Strava";
-	if (pathname.startsWith("/providers/")) return "Provider Sync";
+	if (pathname === AppRoutes.STRAVA_WEBHOOKS) return "Strava Webhooks";
+	if (pathname.startsWith("/providers/")) {
+		const provider = parseProviderSlug(pathname.split("/")[2]);
+		if (provider) {
+			return provider;
+		}
+		return "Provider";
+	}
 	if (pathname === AppRoutes.GEAR) return "Gear";
 	if (pathname === AppRoutes.GEAR_ADD) return "Add Gear";
 	if (pathname.startsWith(`${AppRoutes.GEAR}/`)) return "Gear Details";

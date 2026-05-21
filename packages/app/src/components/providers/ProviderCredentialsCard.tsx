@@ -19,12 +19,11 @@ import {
 	XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import { Routes as AppRoutes } from "../../constants.js";
 import { useDataClient, useLoading, useStore } from "../../contexts/index.js";
 import { Box } from "../Box.js";
-import { H2 } from "../H2.js";
 import { SectionContainer } from "../SectionContainer.js";
 import { ActionButton } from "./ActionButton.js";
 import {
@@ -55,6 +54,13 @@ interface ProviderCredentialsCardProps<T> {
 		validateSuccessTooltip: string;
 		saveToast: (credentials: T) => string;
 	};
+	cardTitle?: string;
+	titleHref?: string;
+	showTitle?: boolean;
+	formSectionHasBorder?: boolean;
+	showSyncActionsSection?: boolean;
+	showActivitySyncAction?: boolean;
+	onStateChange?: () => void;
 }
 
 const VALIDATION_ERROR_TOOLTIP = "Validation failed - Click to retry";
@@ -76,7 +82,14 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 	renderFields,
 	isCredentialComplete,
 	labels,
+	cardTitle,
 	providerConnect,
+	titleHref,
+	showTitle = true,
+	formSectionHasBorder = true,
+	showSyncActionsSection = true,
+	showActivitySyncAction = true,
+	onStateChange,
 }: ProviderCredentialsCardProps<T>) {
 	const navigate = useNavigate();
 	const { setLocalLoading, isLocalLoading } = useLoading();
@@ -124,6 +137,7 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 				toast.success(labels.saveToast(newCredentials), {
 					transition: Bounce,
 				});
+				onStateChange?.();
 			} catch (error) {
 				toast.error((error as Error).message, {
 					hideProgressBar: false,
@@ -136,7 +150,14 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 				setLocalLoading(false);
 			}, 200);
 		},
-		[credentialsKey, labels, setLocalLoading, setValue, validatedKey],
+		[
+			credentialsKey,
+			labels,
+			onStateChange,
+			setLocalLoading,
+			setValue,
+			validatedKey,
+		],
 	);
 
 	const handleSave = useCallback(() => {
@@ -160,6 +181,7 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 			if (result.success) {
 				await setValue(validatedKey, true);
 				setValidationStatus("success");
+				onStateChange?.();
 				toast.success("Validated successfully", {
 					transition: Bounce,
 				});
@@ -182,6 +204,7 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 		hasChanges,
 		isCredentialComplete,
 		providerConnect,
+		onStateChange,
 		setLocalLoading,
 		setValue,
 		validatedKey,
@@ -255,57 +278,78 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 	};
 
 	const disabledAction = isLocalLoading || validationStatus !== "success";
+	const actionButtons = (
+		<div className="flex gap-2">
+			<ActionButton
+				icon={<Save size={20} />}
+				onClick={handleSave}
+				tooltip={labels.saveTooltip}
+				disabled={isLocalLoading || !hasChanges}
+			/>
+			{getValidationButton()}
+			<ActionButton
+				icon={<RotateCcw size={20} />}
+				onClick={handleClear}
+				tooltip={labels.clearTooltip}
+				disabled={isLocalLoading}
+			/>
+			{showActivitySyncAction ? (
+				<ActionButton
+					icon={<FileSearch size={20} />}
+					onClick={handleOpenActivitySync}
+					tooltip="Sync activity by provider ID"
+					disabled={isLocalLoading}
+				/>
+			) : null}
+		</div>
+	);
 
 	return (
-		<Box>
-			<SectionContainer hasBorder>
-				<div className="flex justify-between items-center mb-4">
-					<H2 text={provider} classes="font-bold uppercase" />
-					<div className="flex gap-2">
-						<ActionButton
-							icon={<Save size={20} />}
-							onClick={handleSave}
-							tooltip={labels.saveTooltip}
-							disabled={isLocalLoading || !hasChanges}
-						/>
-						{getValidationButton()}
-						<ActionButton
-							icon={<RotateCcw size={20} />}
-							onClick={handleClear}
-							tooltip={labels.clearTooltip}
-							disabled={isLocalLoading}
-						/>
-						<ActionButton
-							icon={<FileSearch size={20} />}
-							onClick={handleOpenActivitySync}
-							tooltip="Sync activity by provider ID"
-							disabled={isLocalLoading}
-						/>
+		<Box title={cardTitle}>
+			<SectionContainer hasBorder={formSectionHasBorder}>
+				{showTitle ? (
+					<div className="mb-4 flex items-center justify-between">
+						{titleHref ? (
+							<Link
+								to={titleHref}
+								className="text-2xl font-bold uppercase text-current transition-colors hover:opacity-70"
+							>
+								{provider}
+							</Link>
+						) : (
+							<div className="text-2xl font-bold uppercase text-current">
+								{provider}
+							</div>
+						)}
+						{actionButtons}
 					</div>
-				</div>
+				) : null}
 				<div className="max-w-2xl">
 					{renderFields({
 						credentials,
 						onChange: handleInputChange,
 					})}
 				</div>
+				{!showTitle ? <div className="pt-2">{actionButtons}</div> : null}
 			</SectionContainer>
-			<SectionContainer>
-				<div className="flex gap-4 items-center">
-					<ActionButton
-						icon={<FolderSync size={20} />}
-						onClick={handlePullGear}
-						text="Sync Gears"
-						disabled={disabledAction}
-					/>
-					<ActionButton
-						icon={<RefreshCw size={20} />}
-						onClick={handleSync}
-						text="Sync Activities"
-						disabled={disabledAction}
-					/>
-				</div>
-			</SectionContainer>
+			{showSyncActionsSection ? (
+				<SectionContainer>
+					<div className="flex gap-4 items-center">
+						<ActionButton
+							icon={<FolderSync size={20} />}
+							onClick={handlePullGear}
+							text="Sync Gears"
+							disabled={disabledAction}
+						/>
+						<ActionButton
+							icon={<RefreshCw size={20} />}
+							onClick={handleSync}
+							text="Sync Activities"
+							disabled={disabledAction}
+						/>
+					</div>
+				</SectionContainer>
+			) : null}
 		</Box>
 	);
 }

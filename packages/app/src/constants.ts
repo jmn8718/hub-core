@@ -7,6 +7,8 @@ export const Routes = {
 	TABLE: "/table",
 	PROVIDERS: "/providers",
 	STRAVA: "/providers/strava",
+	STRAVA_WEBHOOKS: "/providers/strava/webhooks",
+	PROVIDER_DETAILS: "/providers/:provider",
 	PROVIDER_ACTIVITY_SYNC: "/providers/:provider/activity-sync",
 	GEAR: "/gear",
 	GEAR_ADD: "/gear/add",

@@ -1,4 +1,5 @@
 import { Providers } from "@repo/types";
+import { Routes as AppRoutes } from "../constants.js";
 
 const GARMIN_ACTIVITY_URL = (activityId: string) =>
 	`https://connect.garmin.com/modern/activity/${activityId}`;
@@ -44,3 +45,19 @@ export const generateExternalGearLink = (
 			throw new Error(`Invalid provider ${provider}`);
 	}
 };
+
+const providerEntries = Object.values(Providers).map(
+	(provider): [string, Providers] => [provider.toLowerCase(), provider],
+);
+
+const providerMap = new Map<string, Providers>(providerEntries);
+
+export const getProviderSlug = (provider: Providers) => provider.toLowerCase();
+
+export const parseProviderSlug = (value?: string): Providers | undefined => {
+	if (!value) return undefined;
+	return providerMap.get(value.toLowerCase());
+};
+
+export const getProviderRoute = (provider: Providers) =>
+	AppRoutes.PROVIDER_DETAILS.replace(":provider", getProviderSlug(provider));

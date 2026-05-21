@@ -76,5 +76,32 @@ export function useProviderSyncActions({
 		}, 200);
 	}, [client, provider, setLocalLoading, setValue, validationStatus]);
 
-	return { handlePullGear, handleSync };
+	const handleSyncLatest = useCallback(async () => {
+		if (validationStatus !== "success") return;
+		setLocalLoading(true);
+
+		try {
+			const result = await client.providerSync(provider);
+			if (result.success) {
+				toast.success(`${provider} latest activity sync complete.`, {
+					transition: Bounce,
+				});
+				setValue(getLastSyncKey(provider), new Date().toISOString());
+			} else {
+				throw new Error(result.error);
+			}
+		} catch (error) {
+			toast.error((error as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		}
+
+		setTimeout(() => {
+			setLocalLoading(false);
+		}, 200);
+	}, [client, provider, setLocalLoading, setValue, validationStatus]);
+
+	return { handlePullGear, handleSync, handleSyncLatest };
 }
