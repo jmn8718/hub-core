@@ -332,11 +332,23 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 								)}
 							>
 								<tr className="border-b border-gray-200 dark:border-gray-700">
-									<th className="px-3 py-2 text-left">Week</th>
-									<th className="px-3 py-2 text-left">Distance</th>
-									<th className="px-3 py-2 text-left">Time</th>
-									<th className="px-3 py-2 text-center">Active Days</th>
-									<th className="px-3 py-2 text-center">Average Distance</th>
+									<th className="px-3 py-2 text-left whitespace-nowrap">
+										Week
+									</th>
+									<th className="px-3 py-2 text-left whitespace-nowrap">
+										Distance
+									</th>
+									<th className="px-3 py-2 text-left whitespace-nowrap">
+										Time
+									</th>
+									<th className="px-3 py-2 text-center whitespace-nowrap">
+										Active Days
+									</th>
+									<th className="px-3 py-2 text-center whitespace-nowrap">
+										<span className="block max-w-[7.5rem] overflow-hidden text-ellipsis whitespace-nowrap">
+											Avg Distance
+										</span>
+									</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -345,30 +357,38 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 										key={week.weekStart}
 										className="border-b border-gray-100 last:border-b-0 dark:border-gray-800"
 									>
-										<td className="px-3 py-2">
-											<span className="font-medium">
+										<td className="px-3 py-2 whitespace-nowrap">
+											<span className="font-medium whitespace-nowrap">
 												{formatWeekLabel(week.weekStart)}
 											</span>
 										</td>
-										<td className="px-3 py-2 text-left">
+										<td className="px-3 py-2 text-left whitespace-nowrap">
 											<ValueTrend
 												value={formatDistance(week.distance)}
 												formatter={formatDistance}
 												difference={week.distanceVariance}
 												percentageBase={week.previousDistance}
+												className="flex-nowrap whitespace-nowrap"
+												valueClassName="whitespace-nowrap"
+												trendClassName="whitespace-nowrap"
 												showArrows
 											/>
 										</td>
-										<td className="px-3 py-2 text-left">
+										<td className="px-3 py-2 text-left whitespace-nowrap">
 											<ValueTrend
 												value={formatDuration(Math.round(week.duration))}
 												formatter={formatDuration}
 												difference={week.durationVariance}
 												percentageBase={week.previousDuration}
+												className="flex-nowrap whitespace-nowrap"
+												valueClassName="whitespace-nowrap"
+												trendClassName="whitespace-nowrap"
 											/>
 										</td>
-										<td className="px-3 py-2 text-center">{week.activeDays}</td>
-										<td className="px-3 py-2 text-center">
+										<td className="px-3 py-2 text-center whitespace-nowrap">
+											{week.activeDays}
+										</td>
+										<td className="px-3 py-2 text-center whitespace-nowrap">
 											{formatDistance(week.averageDistance)}
 										</td>
 									</tr>
