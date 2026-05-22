@@ -186,7 +186,11 @@ export class CorosClient extends Base implements Client {
 
 	private _userId = "";
 
+	private _credentials?: LoginCredentials;
+
 	private _lastTokenRefreshed: Date | undefined;
+
+	private _refreshSessionPromise?: Promise<void>;
 
 	public static PROVIDER = Providers.COROS;
 
@@ -204,6 +208,7 @@ export class CorosClient extends Base implements Client {
 	}
 
 	async connect({ username, password }: LoginCredentials) {
+		this._credentials = { username, password };
 		try {
 			const result = await this._client.login(username, password);
 			this._userId = result.userId;
@@ -214,6 +219,85 @@ export class CorosClient extends Base implements Client {
 			this._signedIn = false;
 			console.error(error);
 			throw error;
+		}
+	}
+
+	private _isInvalidTokenError(error: unknown) {
+		if (!error || typeof error !== "object") return false;
+		const typedError = error as {
+			status?: number;
+			statusCode?: number;
+			message?: string;
+			response?: {
+				status?: number;
+				data?: unknown;
+			};
+			data?: unknown;
+		};
+		const status =
+			typedError.response?.status ?? typedError.status ?? typedError.statusCode;
+		if (status === 401) return true;
+		const messageParts = [
+			typedError.message,
+			typeof typedError.response?.data === "string"
+				? typedError.response.data
+				: undefined,
+			typeof typedError.data === "string" ? typedError.data : undefined,
+		].filter((value): value is string => Boolean(value));
+		if (messageParts.length === 0) return false;
+		return messageParts.some((message) =>
+			/access token is invalid|invalid token|unauthorized|token expired|code:\s*1019/i.test(
+				message,
+			),
+		);
+	}
+
+	private async _refreshSession() {
+		if (!this._credentials) {
+			throw new Error(
+				"COROS credentials are not available for session refresh",
+			);
+		}
+		if (
+			!this._refreshSessionPromise &&
+			this._credentials?.username &&
+			this._credentials?.password
+		) {
+			this._refreshSessionPromise = (async () => {
+				this._signedIn = false;
+				const result = await this._client.login(
+					this._credentials?.username,
+					this._credentials?.password,
+				);
+				this._userId = result.userId;
+				this._lastTokenRefreshed = new Date();
+				this._signedIn = true;
+				console.warn(
+					`${CorosClient.PROVIDER}: session refreshed after auth failure`,
+				);
+			})().finally(() => {
+				this._refreshSessionPromise = undefined;
+			});
+		}
+		return this._refreshSessionPromise;
+	}
+
+	private async _withSessionRetry<T>(
+		operation: string,
+		run: () => Promise<T>,
+		hasRetried = false,
+	): Promise<T> {
+		try {
+			return await run();
+		} catch (error) {
+			if (hasRetried || !this._isInvalidTokenError(error)) {
+				throw error;
+			}
+			console.warn(
+				`${CorosClient.PROVIDER}: auth failed during ${operation}, refreshing session`,
+			);
+			await this._refreshSession();
+			return this._withSessionRetry(operation, run, true);
 		}
 	}
 
@@ -232,12 +316,14 @@ export class CorosClient extends Base implements Client {
 			`${CorosClient.PROVIDER}: fetching activities ${page} ${size} ${from} ${to}`,
 		);
 
-		return this._client.getActivitiesList({
-			page,
-			size,
-			from,
-			to,
-		});
+		return this._withSessionRetry("getActivitiesList", () =>
+			this._client.getActivitiesList({
+				page,
+				size,
+				from,
+				to,
+			}),
+		);
 	}
 
 	private async fetchActivities({
@@ -304,9 +390,11 @@ export class CorosClient extends Base implements Client {
 			if (cacheValue) return cacheValue;
 		}
 		const { frequencyList, graphList, gpsLightDuration, pauseList, ...data } =
-			await this._client.getActivityDetails(
-				id,
-				options?.sportType ? options.sportType.toString() : undefined,
+			await this._withSessionRetry("getActivityDetails", () =>
+				this._client.getActivityDetails(
+					id,
+					options?.sportType ? options.sportType.toString() : undefined,
+				),
 			);
 		if (data) {
 			this._cache.set<CorosActivityDetails>(
@@ -398,32 +486,31 @@ export class CorosClient extends Base implements Client {
 		});
 		const sportType =
 			sportTypeFromDb ?? mapDownloadSportType(activity.summary.sportType);
-		return this._client
-			.getActivityDownloadFile({
+		return this._withSessionRetry("getActivityDownloadFile", () =>
+			this._client.getActivityDownloadFile({
 				activityId,
 				fileType: CorosClient.EXTENSION,
 				sportType,
-			})
-			.then((fileUrl) => {
-				const filePath = this.generateActivityFilePath(
-					downloadPath,
-					activityId,
-				);
-				return downloadFile({
-					filePath,
-					fileUrl,
-				});
+			}),
+		).then((fileUrl) => {
+			const filePath = this.generateActivityFilePath(downloadPath, activityId);
+			return downloadFile({
+				filePath,
+				fileUrl,
 			});
+		});
 	}
 
 	async uploadActivity(filePath: string): Promise<string> {
 		if (!this._userId) {
-			const user = await this._client.getAccount();
+			const user = await this._withSessionRetry("getAccount", () =>
+				this._client.getAccount(),
+			);
 			this._userId = user.userId;
 		}
-		return this._client
-			.uploadActivityFile(filePath, this._userId)
-			.then((response) => response.data.id);
+		return this._withSessionRetry("uploadActivityFile", () =>
+			this._client.uploadActivityFile(filePath, this._userId),
+		).then((response) => response.data.id);
 	}
 
 	generateActivityFilePath(downloadPath: string, activityId: string) {
@@ -450,9 +537,11 @@ export class CorosClient extends Base implements Client {
 	}
 
 	async updateActivityName(activityId: string, name?: string | null) {
-		await this._client.updateActivityName({
-			labelId: activityId,
-			name: name ?? "",
-		});
+		await this._withSessionRetry("updateActivityName", () =>
+			this._client.updateActivityName({
+				labelId: activityId,
+				name: name ?? "",
+			}),
+		);
 	}
 }

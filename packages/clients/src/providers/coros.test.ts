@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { dayjs } from "@repo/dates";
 import { createTestCacheDb, createTestDb } from "@repo/db/utils";
 import { ActivitySubType, ActivityType } from "@repo/types";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { activities, activitiesData } from "../mocks/coros.js";
 import { CorosClient } from "./coros.js";
 
@@ -52,6 +52,10 @@ const createContext = async () => {
 };
 
 describe.sequential("coros client", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
 	test("passes sport type to coros file download", async () => {
 		const { client, db } = await (async () => {
 			const cache = await createTestCacheDb({
@@ -132,6 +136,63 @@ describe.sequential("coros client", () => {
 			);
 			expect(row).not.toHaveProperty("gears");
 		});
+	});
+
+	test("refreshes the session and retries when coros rejects the activities list", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+		corosMock.getActivitiesList.mockRejectedValueOnce({
+			message: "invalid token",
+			response: {
+				status: 401,
+			},
+		});
+
+		const data = await client.sync({});
+
+		expect(data.length).toEqual(activities.length);
+		expect(corosMock.login).toHaveBeenCalledTimes(2);
+		expect(corosMock.getActivitiesList).toHaveBeenCalledTimes(2);
+	});
+
+	test("refreshes the session for coros sdk access-token-invalid errors", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+		corosMock.getActivitiesList.mockRejectedValueOnce(
+			new Error("Coros API error: Access token is invalid (code: 1019)"),
+		);
+
+		const data = await client.sync({});
+
+		expect(data.length).toEqual(activities.length);
+		expect(corosMock.login).toHaveBeenCalledTimes(2);
+		expect(corosMock.getActivitiesList).toHaveBeenCalledTimes(2);
+	});
+
+	test("refreshes the session and retries when coros rejects activity details", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+		corosMock.getActivityDetails.mockRejectedValueOnce({
+			message: "invalid token",
+			response: {
+				status: 401,
+			},
+		});
+
+		const result = await client.syncActivity("464238568991129601");
+
+		expect(result.activity.providerActivity?.id).toBe("464238568991129601");
+		expect(corosMock.login).toHaveBeenCalledTimes(2);
+		expect(corosMock.getActivityDetails).toHaveBeenCalledTimes(2);
 	});
 
 	test("re-fetches the full day for same-day incremental coros sync", async () => {
