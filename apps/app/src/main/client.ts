@@ -66,17 +66,17 @@ export const initializeCorosClient = async () => {
 		Providers.COROS,
 		credentialsKey,
 		async () => {
-			try {
-				manager.initializeClient({ provider: Providers.COROS });
-				await manager.connect(Providers.COROS, corosCredentials);
-			} catch (error) {
-				console.warn("Error initializing Coros client:");
-				console.error(error);
-				storage.setValue(StorageKeys.COROS_VALIDATED, false);
-				throw error;
-			}
+			manager.initializeClient({ provider: Providers.COROS });
+			await manager.connect(Providers.COROS, corosCredentials);
+			storage.setValue(StorageKeys.COROS_VALIDATED, true);
 		},
-	);
+	).catch((error) => {
+		console.warn(
+			"Error initializing Coros client during startup; continuing without Coros:",
+		);
+		console.error(error);
+		storage.setValue(StorageKeys.COROS_VALIDATED, false);
+	});
 };
 
 export const initializeGarminClient = async () => {
@@ -89,17 +89,17 @@ export const initializeGarminClient = async () => {
 		Providers.GARMIN,
 		credentialsKey,
 		async () => {
-			try {
-				manager.initializeClient({ provider: Providers.GARMIN });
-				await manager.connect(Providers.GARMIN, garminCredentials);
-			} catch (error) {
-				console.warn("Error initializing Garmin client:");
-				console.error(error);
-				storage.setValue(StorageKeys.GARMIN_VALIDATED, false);
-				throw error;
-			}
+			manager.initializeClient({ provider: Providers.GARMIN });
+			await manager.connect(Providers.GARMIN, garminCredentials);
+			storage.setValue(StorageKeys.GARMIN_VALIDATED, true);
 		},
-	);
+	).catch((error) => {
+		console.warn(
+			"Error initializing Garmin client during startup; continuing without Garmin:",
+		);
+		console.error(error);
+		storage.setValue(StorageKeys.GARMIN_VALIDATED, false);
+	});
 };
 
 export const initializeStravaClient = async () => {
@@ -118,27 +118,27 @@ export const initializeStravaClient = async () => {
 		Providers.STRAVA,
 		credentialsKey,
 		async () => {
-			try {
-				console.log("Strava credentials loaded:", stravaCredentials);
-				manager.initializeClient({
-					provider: Providers.STRAVA,
-					options: {
-						clientId: stravaCredentials.clientId,
-						clientSecret: stravaCredentials.clientSecret,
-						redirectUri: stravaCredentials.redirectUri || "",
-					},
-				});
-				await manager.connect(Providers.STRAVA, {
-					refreshToken: stravaCredentials.refreshToken,
-				});
-			} catch (error) {
-				console.warn("Error initializing Strava client:");
-				console.error(error);
-				storage.setValue(StorageKeys.STRAVA_VALIDATED, false);
-				throw error;
-			}
+			console.log("Strava credentials loaded:", stravaCredentials);
+			manager.initializeClient({
+				provider: Providers.STRAVA,
+				options: {
+					clientId: stravaCredentials.clientId,
+					clientSecret: stravaCredentials.clientSecret,
+					redirectUri: stravaCredentials.redirectUri || "",
+				},
+			});
+			await manager.connect(Providers.STRAVA, {
+				refreshToken: stravaCredentials.refreshToken,
+			});
+			storage.setValue(StorageKeys.STRAVA_VALIDATED, true);
 		},
-	);
+	).catch((error) => {
+		console.warn(
+			"Error initializing Strava client during startup; continuing without Strava:",
+		);
+		console.error(error);
+		storage.setValue(StorageKeys.STRAVA_VALIDATED, false);
+	});
 };
 
 export const initializeClients = async () => {
