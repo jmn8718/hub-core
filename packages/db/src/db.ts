@@ -252,12 +252,66 @@ const startOfWeek = (dateValue: Date | number | string): Date => {
 	return date;
 };
 
+const localDateFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
+const formatUtcDateKey = (date: Date): string => {
+	const year = date.getUTCFullYear();
+	const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+	const day = String(date.getUTCDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+};
+
+const getLocalDateFormatter = (timezone: string): Intl.DateTimeFormat => {
+	const cached = localDateFormatterCache.get(timezone);
+	if (cached) {
+		return cached;
+	}
+	const formatter = new Intl.DateTimeFormat("en-CA", {
+		timeZone: timezone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	});
+	localDateFormatterCache.set(timezone, formatter);
+	return formatter;
+};
+
+const getLocalDateKey = (
+	timestamp: number,
+	timezone?: string | null,
+): string => {
+	const resolvedTimezone = timezone?.trim() || "UTC";
+	const sourceDate = new Date(timestamp);
+	try {
+		const parts =
+			getLocalDateFormatter(resolvedTimezone).formatToParts(sourceDate);
+		const year = parts.find((part) => part.type === "year")?.value;
+		const month = parts.find((part) => part.type === "month")?.value;
+		const day = parts.find((part) => part.type === "day")?.value;
+		if (year && month && day) {
+			return `${year}-${month}-${day}`;
+		}
+	} catch {
+		// Fall back to UTC when the stored timezone is invalid.
+	}
+	return formatUtcDateKey(sourceDate);
+};
+
+const startOfWeekFromDateKey = (dateKey: string): string => {
+	const [year, month, day] = dateKey.split("-").map(Number);
+	const date = new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1));
+	const weekday = date.getUTCDay();
+	const diff = weekday === 0 ? -6 : 1 - weekday;
+	date.setUTCDate(date.getUTCDate() + diff);
+	return formatUtcDateKey(date);
+};
+
 const fillEmptyWeeks = (
 	data: {
-		distance: string | number | null;
-		duration: string | number | null;
+		distance: number;
+		duration: number;
 		activeDays: number;
-		minTimestamp: string | number | null;
+		weekStart: string;
 	}[],
 	size = 4,
 ): IWeeklyOverviewData[] => {
@@ -274,17 +328,14 @@ const fillEmptyWeeks = (
 	}
 	// biome-ignore lint/complexity/noForEach: <explanation>
 	data.forEach((row) => {
-		if (row.minTimestamp === null || row.minTimestamp === undefined) {
+		if (!row.weekStart) {
 			return;
 		}
-		const weekStart = formatDate(startOfWeek(row.minTimestamp), {
-			format: "YYYY-MM-DD",
-		});
-		weeksMap.set(weekStart, {
-			distance: Number(row.distance ?? 0),
-			duration: Number(row.duration ?? 0),
+		weeksMap.set(row.weekStart, {
+			distance: row.distance,
+			duration: row.duration,
 			activeDays: row.activeDays,
-			weekStart,
+			weekStart: row.weekStart,
 		});
 	});
 	return Array.from(weeksMap.values());
@@ -699,16 +750,12 @@ export class Db {
 	}
 
 	async getWeeklyActivitiesOverview(limit = 4): Promise<IWeeklyOverviewData[]> {
-		const weekIdentifier = this._weekIdentifier().as("week");
-		const dayIdentifier = this._dayIdentifier().as("day");
-
-		const subquery = this._client
+		const rows = await this._client
 			.select({
-				distance: sum(activities.distance).as("distance"),
-				duration: sum(activities.duration).as("duration"),
-				timestamp: min(activities.timestamp).as("timestamp"),
-				week: weekIdentifier,
-				day: dayIdentifier,
+				timestamp: activities.timestamp,
+				timezone: activities.timezone,
+				distance: activities.distance,
+				duration: activities.duration,
 			})
 			.from(activities)
 			.where(
@@ -718,21 +765,35 @@ export class Db {
 					this._activeActivityCondition(),
 				),
 			)
-			.groupBy(({ week, day }) => [week, day])
-			.orderBy(desc(activities.timestamp))
-			.as("subquery");
+			.orderBy(desc(activities.timestamp));
 
-		const result = await this._client
-			.select({
-				distance: sum(subquery.distance),
-				duration: sum(subquery.duration),
-				activeDays: count(),
-				minTimestamp: min(subquery.timestamp),
-				week: subquery.week,
-			})
-			.from(subquery)
-			.groupBy(({ week }) => week)
-			.orderBy(desc(min(subquery.timestamp)));
+		const weekMap = new Map<
+			string,
+			{ distance: number; duration: number; days: Set<string> }
+		>();
+
+		for (const row of rows) {
+			const localDate = getLocalDateKey(row.timestamp, row.timezone);
+			const weekStart = startOfWeekFromDateKey(localDate);
+			const weekData = weekMap.get(weekStart) ?? {
+				distance: 0,
+				duration: 0,
+				days: new Set<string>(),
+			};
+			weekData.distance += row.distance ?? 0;
+			weekData.duration += row.duration ?? 0;
+			weekData.days.add(localDate);
+			weekMap.set(weekStart, weekData);
+		}
+
+		const result = Array.from(weekMap.entries()).map(
+			([weekStart, weekData]) => ({
+				weekStart,
+				distance: weekData.distance,
+				duration: weekData.duration,
+				activeDays: weekData.days.size,
+			}),
+		);
 
 		return fillEmptyWeeks(result, limit);
 	}

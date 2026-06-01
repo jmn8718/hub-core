@@ -13,6 +13,7 @@ import {
 	PlusSquare,
 	RefreshCw,
 	Settings,
+	Share2,
 } from "lucide-react";
 import type React from "react";
 import { useEffect, useLayoutEffect, useState } from "react";
@@ -43,6 +44,7 @@ const getPageTitle = (pathname: string) => {
 		return "Edit Inbody Entry";
 	}
 	if (pathname === AppRoutes.ANALYTICS) return "Analytics";
+	if (pathname === AppRoutes.SHARE) return "Share";
 	if (pathname === AppRoutes.PROVIDERS) return "Providers";
 	if (pathname === AppRoutes.STRAVA_WEBHOOKS) return "Strava Webhooks";
 	if (pathname.startsWith("/providers/")) {
@@ -250,6 +252,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 						hideOnWeb: true,
 					},
 					{ icon: Dumbbell, href: AppRoutes.GEAR, label: "Gear" },
+					{ icon: Share2, href: AppRoutes.SHARE, label: "Share" },
 				]}
 			/>
 			<div

@@ -98,6 +98,7 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										path={AppRoutes.ANALYTICS}
 										element={<Pages.AnalyticsPage />}
 									/>
+									<Route path={AppRoutes.SHARE} element={<Pages.SharePage />} />
 									<Route
 										path={`${AppRoutes.DETAILS}/:activityId`}
 										element={<Pages.ActivityDetailsPage />}

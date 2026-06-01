@@ -3,6 +3,7 @@ export const Routes = {
 	CALENDAR: "/calendar",
 	HOME: "/",
 	DATA: "/data",
+	SHARE: "/share",
 	DETAILS: "/details",
 	TABLE: "/table",
 	PROVIDERS: "/providers",

@@ -139,6 +139,94 @@ describe("db", () => {
 		expect(typeof result[0]!.activeDays).eq("number");
 	});
 
+	test("should bucket weekly overview by activity local timezone", async () => {
+		const isolatedDbDir = await mkdtemp(join(tmpdir(), "hub-core-weekly-db-"));
+		const isolatedDbUrl = `file:${join(isolatedDbDir, "test.sqlite")}`;
+		const isolatedClient = createDbClient({
+			url: isolatedDbUrl,
+			logger: false,
+		});
+		const isolatedDb = new Db(isolatedClient);
+
+		try {
+			await migrateDb(isolatedClient);
+
+			await isolatedDb.insertActivity({
+				activity: {
+					data: {
+						id: uuidv7(),
+						name: "Monday Morning China Run",
+						timestamp: new Date("2026-05-25T22:10:00.000Z").getTime(),
+						timezone: "Asia/Shanghai",
+						distance: 10010,
+						duration: 3029,
+						manufacturer: "manual",
+						device: "manual",
+						locationName: "Chaoyang",
+						locationCountry: "China",
+						type: ActivityType.RUN,
+						subtype: ActivitySubType.EASY_RUN,
+						notes: "",
+						insight: "",
+						description: "",
+						metadata: "{}",
+						isEvent: 0,
+						startLatitude: 0,
+						startLongitude: 0,
+					},
+				},
+			});
+
+			await isolatedDb.insertActivity({
+				activity: {
+					data: {
+						id: uuidv7(),
+						name: "Sunday Morning China Run",
+						timestamp: new Date("2026-05-23T22:09:00.000Z").getTime(),
+						timezone: "Asia/Shanghai",
+						distance: 10710,
+						duration: 3235,
+						manufacturer: "manual",
+						device: "manual",
+						locationName: "Chaoyang",
+						locationCountry: "China",
+						type: ActivityType.RUN,
+						subtype: ActivitySubType.EASY_RUN,
+						notes: "",
+						insight: "",
+						description: "",
+						metadata: "{}",
+						isEvent: 0,
+						startLatitude: 0,
+						startLongitude: 0,
+					},
+				},
+			});
+
+			vi.setSystemTime(new Date("2026-05-27T12:00:00.000Z"));
+
+			const result = await isolatedDb.getWeeklyActivitiesOverview(2);
+			const currentWeek = result.find(
+				(entry) => entry.weekStart === "2026-05-25",
+			);
+			const previousWeek = result.find(
+				(entry) => entry.weekStart === "2026-05-18",
+			);
+
+			expect(currentWeek).toBeDefined();
+			expect(currentWeek?.distance).eq(10010);
+			expect(currentWeek?.duration).eq(3029);
+			expect(currentWeek?.activeDays).eq(1);
+
+			expect(previousWeek).toBeDefined();
+			expect(previousWeek?.distance).eq(10710);
+			expect(previousWeek?.duration).eq(3235);
+			expect(previousWeek?.activeDays).eq(1);
+		} finally {
+			await rm(isolatedDbDir, { recursive: true, force: true });
+		}
+	});
+
 	test("should get daily overview data for range", async () => {
 		const result = await db.getDailyActivitiesOverview({
 			startDate: "2024-11-01",
