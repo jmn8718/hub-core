@@ -1118,7 +1118,8 @@ export class Db {
 			.select({
 				gearId: activityGears.gearId,
 				distance: sum(activities.distance).as("distance"),
-				count: count().as("count"),
+				duration: sum(activities.duration).as("duration"),
+				activities: count().as("activities"),
 			})
 			.from(activityGears)
 			.where(this._activeActivityGearCondition())
@@ -1137,6 +1138,8 @@ export class Db {
 					.select({
 						...getTableColumns(gears),
 						distance: sql`COALESCE(subquery.distance, 0)`.as("distance"),
+						duration: sql`COALESCE(subquery.duration, 0)`.as("duration"),
+						activities: sql`COALESCE(subquery.activities, 0)`.as("activities"),
 						providerConnections: gearConnections.connections,
 					})
 					.from(gears)
@@ -1147,6 +1150,8 @@ export class Db {
 					.select({
 						...getTableColumns(gears),
 						distance: sql`COALESCE(subquery.distance, 0)`.as("distance"),
+						duration: sql`COALESCE(subquery.duration, 0)`.as("duration"),
+						activities: sql`COALESCE(subquery.activities, 0)`.as("activities"),
 						providerConnections: gearConnections.connections,
 					})
 					.from(gears)
@@ -1167,11 +1172,15 @@ export class Db {
 		const data = dataRows.map((record) => {
 			const parsedRecord = record as unknown as {
 				distance: string | number | null;
+				duration: string | number | null;
+				activities: string | number | null;
 				providerConnections?: unknown;
 			} & IDbGearWithDistance;
 			return {
 				...parsedRecord,
 				distance: Number.parseFloat((parsedRecord.distance ?? 0).toString()),
+				duration: Number.parseFloat((parsedRecord.duration ?? 0).toString()),
+				activities: Number.parseInt((parsedRecord.activities ?? 0).toString()),
 				providerConnections: parseConnections(parsedRecord.providerConnections),
 			} as IDbGearWithDistance;
 		});
@@ -1204,7 +1213,8 @@ export class Db {
 			.select({
 				gearId: activityGears.gearId,
 				distance: sum(activities.distance).as("distance"),
-				count: count().as("count"),
+				duration: sum(activities.duration).as("duration"),
+				activities: count().as("activities"),
 			})
 			.from(activityGears)
 			.where(this._activeActivityGearCondition())
@@ -1222,6 +1232,8 @@ export class Db {
 			.select({
 				...getTableColumns(gears),
 				distance: sql`COALESCE(subquery.distance, 0)`.as("distance"),
+				duration: sql`COALESCE(subquery.duration, 0)`.as("duration"),
+				activities: sql`COALESCE(subquery.activities, 0)`.as("activities"),
 				providerConnections: gearConnections.connections,
 			})
 			.from(gears)
@@ -1235,6 +1247,8 @@ export class Db {
 		return {
 			...record,
 			distance: Number.parseFloat((record.distance ?? 0).toString()),
+			duration: Number.parseFloat((record.duration ?? 0).toString()),
+			activities: Number.parseInt((record.activities ?? 0).toString()),
 			providerConnections: record.providerConnections
 				? (JSON.parse(
 						record.providerConnections as string,

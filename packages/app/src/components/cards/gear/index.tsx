@@ -9,7 +9,7 @@ import {
 	useLoading,
 	useTheme,
 } from "../../../contexts/index.js";
-import { formatDistance } from "../../../utils/formatters.js";
+import { formatDistance, formatDuration } from "../../../utils/formatters.js";
 import { Box } from "../../Box.js";
 import { SectionContainer } from "../../SectionContainer.js";
 import { DatePicker } from "../../forms/DatePicker.js";
@@ -48,6 +48,8 @@ export const GearCard: FC<GearCardProps> = ({
 	const titleClassName = isWeb ? "text-[18px]" : "text-xl";
 	const detailTextClassName = isWeb ? "text-[13px]" : "text-sm";
 	const usageMetaTextClassName = isWeb ? "text-[11px]" : "text-xs";
+	const statLabelClassName = isWeb ? "text-[11px]" : "text-xs";
+	const statValueClassName = isWeb ? "text-[16px]" : "text-xl";
 
 	const refreshGear = async () => {
 		const result = await client.getGear(gearData.id);
@@ -137,7 +139,7 @@ export const GearCard: FC<GearCardProps> = ({
 			</div>
 			<div>
 				<SectionContainer hasBorder>
-					<div className="space-y-1">
+					<div className="space-y-3">
 						<DatePicker
 							date={gearData.dateBegin}
 							label="Start Date"
@@ -208,6 +210,48 @@ export const GearCard: FC<GearCardProps> = ({
 									{formatDistance(gearData.maximumDistance)}
 								</span>
 							)}
+						</div>
+						<div className="grid grid-cols-2 gap-3 pt-1">
+							<div className="min-w-0">
+								<div
+									className={cn(
+										statLabelClassName,
+										"font-medium uppercase tracking-wide",
+										isDarkMode ? "text-gray-300" : "text-gray-500",
+									)}
+								>
+									Activities
+								</div>
+								<div
+									className={cn(
+										statValueClassName,
+										"font-semibold leading-tight",
+										isDarkMode ? "text-white" : "text-gray-900",
+									)}
+								>
+									{gearData.activities}
+								</div>
+							</div>
+							<div className="min-w-0 text-right">
+								<div
+									className={cn(
+										statLabelClassName,
+										"font-medium uppercase tracking-wide",
+										isDarkMode ? "text-gray-300" : "text-gray-500",
+									)}
+								>
+									Duration
+								</div>
+								<div
+									className={cn(
+										statValueClassName,
+										"font-semibold leading-tight",
+										isDarkMode ? "text-white" : "text-gray-900",
+									)}
+								>
+									{formatDuration(gearData.duration)}
+								</div>
+							</div>
 						</div>
 					</div>
 				</SectionContainer>

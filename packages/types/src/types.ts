@@ -168,6 +168,8 @@ export interface IDbGear {
 
 export interface IDbGearWithDistance extends IDbGear {
 	distance: number;
+	activities: number;
+	duration: number;
 }
 
 export type GearsData = {

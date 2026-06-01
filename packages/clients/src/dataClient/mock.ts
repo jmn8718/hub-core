@@ -247,6 +247,8 @@ export class MockClient implements Client {
 			dateEnd: undefined,
 			maximumDistance: data.maximumDistance ?? 0,
 			distance: 0,
+			activities: 0,
+			duration: 0,
 			providerConnections: [],
 		};
 		this.gears = [newGear, ...this.gears];
