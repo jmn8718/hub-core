@@ -82,16 +82,23 @@ export const EditableText: FC<EditableTextProps> = ({
 
 	const displayValue = value || placeholder;
 	const formattedValue = formatText ? formatText(displayValue) : displayValue;
+	const isPlaceholderState = !value && Boolean(placeholder);
+	const ariaLabel = value
+		? placeholder
+			? `Edit ${placeholder}`
+			: "Edit text"
+		: placeholder || "Edit text";
 	return (
 		<button
 			type="button"
 			onClick={handleClick}
-			aria-label={placeholder ? `Edit ${placeholder}` : "Edit text"}
+			aria-label={ariaLabel}
 			className={cn(
 				"w-full min-h-8 rounded flex items-center px-2 py-1 text-left",
 				isDarkMode
 					? "hover:bg-gray-700 text-white"
 					: "hover:bg-gray-100 text-gray-900",
+				isPlaceholderState && (isDarkMode ? "text-gray-400" : "text-gray-400"),
 				className,
 			)}
 		>

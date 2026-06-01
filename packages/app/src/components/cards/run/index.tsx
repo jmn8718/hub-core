@@ -145,6 +145,7 @@ function RunningCardBody({ context, gears }: RunningBodyProps) {
 						<EditableText
 							value={locationName}
 							onSave={handleLocationNameChange}
+							placeholder="Location"
 							className="min-h-0 min-w-0 flex-1 px-0 py-0 hover:bg-transparent"
 						/>
 					</div>
@@ -155,6 +156,7 @@ function RunningCardBody({ context, gears }: RunningBodyProps) {
 						<EditableText
 							value={locationCountry}
 							onSave={handleLocationCountryChange}
+							placeholder="Country"
 							className="min-h-0 min-w-0 flex-1 px-0 py-0 hover:bg-transparent"
 						/>
 					</div>
