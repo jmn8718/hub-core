@@ -7,6 +7,7 @@ import {
 	ChartSpline,
 	Database,
 	Dumbbell,
+	GitCompareArrows,
 	Home,
 	Menu,
 	PanelLeftClose,
@@ -44,6 +45,7 @@ const getPageTitle = (pathname: string) => {
 		return "Edit Inbody Entry";
 	}
 	if (pathname === AppRoutes.ANALYTICS) return "Analytics";
+	if (pathname === AppRoutes.COMPARE) return "Compare";
 	if (pathname === AppRoutes.SHARE) return "Share";
 	if (pathname === AppRoutes.PROVIDERS) return "Providers";
 	if (pathname === AppRoutes.STRAVA_WEBHOOKS) return "Strava Webhooks";
@@ -245,6 +247,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 					{ icon: PlusSquare, href: AppRoutes.ADD, label: "Add Activity" },
 					{ icon: BookHeart, href: AppRoutes.INBODY, label: "Inbody" },
 					{ icon: ChartSpline, href: AppRoutes.ANALYTICS, label: "Analytics" },
+					{ icon: GitCompareArrows, href: AppRoutes.COMPARE, label: "Compare" },
 					{
 						icon: Atom,
 						href: AppRoutes.PROVIDERS,

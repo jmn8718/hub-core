@@ -1,4 +1,5 @@
 export { Home as AnalyticsPage } from "./Analytics.js";
+export { Compare as ComparePage } from "./Compare.js";
 export { Share as SharePage } from "./Share.js";
 export { Calendar as CalendarPage } from "./Calendar.js";
 export { Home as HomePage } from "./Home.js";

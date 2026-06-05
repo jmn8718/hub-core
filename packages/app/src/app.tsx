@@ -98,6 +98,10 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 										path={AppRoutes.ANALYTICS}
 										element={<Pages.AnalyticsPage />}
 									/>
+									<Route
+										path={AppRoutes.COMPARE}
+										element={<Pages.ComparePage />}
+									/>
 									<Route path={AppRoutes.SHARE} element={<Pages.SharePage />} />
 									<Route
 										path={`${AppRoutes.DETAILS}/:activityId`}

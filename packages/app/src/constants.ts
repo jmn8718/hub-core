@@ -1,6 +1,7 @@
 export const Routes = {
 	ANALYTICS: "/analytics",
 	CALENDAR: "/calendar",
+	COMPARE: "/compare",
 	HOME: "/",
 	DATA: "/data",
 	SHARE: "/share",
