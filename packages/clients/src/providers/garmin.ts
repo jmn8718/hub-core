@@ -241,6 +241,17 @@ function mapGear(gear: Gear): IInsertGearPayload {
 	};
 }
 
+function sanitizeGarminActivity(activity: IActivity): IActivity {
+	return Object.fromEntries(
+		Object.entries(activity).filter(
+			([key]) =>
+				key !== "isMultiSportParent" &&
+				key !== "accessControlRuleDTO" &&
+				key !== "userProfileId",
+		),
+	) as IActivity;
+}
+
 export class GarminClient extends Base implements Client {
 	private readonly _provider = Providers.GARMIN;
 
@@ -357,11 +368,11 @@ export class GarminClient extends Base implements Client {
 			`${GarminClient.PROVIDER}: fetching activities ${activitiesToFetch} ${start}`,
 		);
 
-		return this._client.getActivities(
-			start,
-			activitiesToFetch,
-			GarminActivityType.Running,
-		);
+		return this._client
+			.getActivities(start, activitiesToFetch, GarminActivityType.Running)
+			.then((activities) =>
+				activities.map((activity) => sanitizeGarminActivity(activity)),
+			);
 	}
 
 	private async getActivities({

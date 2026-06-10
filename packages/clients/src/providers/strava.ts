@@ -336,6 +336,20 @@ function mapActivity(activity: StravaActivity): IDbActivity {
 	};
 }
 
+function stripActivityMap(activity: StravaActivity): StravaActivity {
+	const {
+		map: _map,
+		athlete: _athlete,
+		achievement_count: _achievementCount,
+		kudos_count: _kudosCount,
+		comment_count: _commentCount,
+		athlete_count: _athleteCount,
+		photo_count: _photoCount,
+		...sanitized
+	} = activity;
+	return sanitized as StravaActivity;
+}
+
 function slugifyGearCode(value: string): string {
 	return value
 		.toLowerCase()
@@ -575,7 +589,7 @@ export class StravaClient extends Base implements Client {
 		});
 		return this._request<StravaActivity[]>(
 			`/athlete/activities?${query.toString()}`,
-		);
+		).then((activities) => activities.map(stripActivityMap));
 	}
 
 	async sync(params: {
@@ -814,7 +828,14 @@ export class StravaClient extends Base implements Client {
 
 		const data = await this._request<StravaActivity>(`/activities/${id}`);
 		if (data) {
-			this._cache.set<StravaActivity>(this._provider, "activity", id, data);
+			const sanitizedData = stripActivityMap(data);
+			this._cache.set<StravaActivity>(
+				this._provider,
+				"activity",
+				id,
+				sanitizedData,
+			);
+			return sanitizedData;
 		}
 		return data;
 	}
