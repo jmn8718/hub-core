@@ -102,7 +102,13 @@ export class WebClient implements Client {
 		);
 	}
 
-	async getWeeklyOverview({ limit }: { limit?: number }): Promise<
+	async getWeeklyOverview({
+		limit,
+		targetWeekStart,
+	}: {
+		limit?: number;
+		targetWeekStart?: string;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: IWeeklyOverviewData[];
 		}>
@@ -111,6 +117,7 @@ export class WebClient implements Client {
 			"getWeeklyOverview",
 			{
 				limit,
+				targetWeekStart,
 			},
 		);
 	}

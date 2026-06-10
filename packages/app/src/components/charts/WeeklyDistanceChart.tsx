@@ -37,31 +37,26 @@ type WeeklyDistanceData = IWeeklyOverviewData & {
 
 type WeeklyDistanceChartProps = {
 	onLoadingChange?: (isLoading: boolean) => void;
+	weekRange?: WeekRange;
+	weeks?: IWeeklyOverviewData[];
+	isLoading?: boolean;
+	targetWeekStart?: string;
 };
-
-const RANGE_OPTIONS: WeekRange[] = [8, 12, 16];
 
 const CHART_THEME = {
 	light: {
 		accent: "#2563eb",
-		area: "rgba(37, 99, 235, 0.22)",
 		axis: "#6b7280",
 		grid: "rgba(107, 114, 128, 0.24)",
 		cursor: "rgba(37, 99, 235, 0.28)",
 		tooltip: "bg-white text-gray-900 border border-blue-100",
-		radioIdle: "border-gray-200 bg-white text-gray-600 hover:border-blue-200",
-		radioActive: "border-blue-200 bg-blue-50 text-blue-700 shadow-sm",
 	},
 	dark: {
 		accent: "#60a5fa",
-		area: "rgba(96, 165, 250, 0.24)",
 		axis: "#9ca3af",
 		grid: "rgba(156, 163, 175, 0.2)",
 		cursor: "rgba(96, 165, 250, 0.28)",
 		tooltip: "border border-gray-700 bg-gray-900 text-white",
-		radioIdle:
-			"border-gray-700 bg-gray-900 text-gray-300 hover:border-blue-400/50",
-		radioActive: "border-blue-500/50 bg-blue-500/10 text-blue-200 shadow-sm",
 	},
 } as const;
 
@@ -100,58 +95,40 @@ const buildMonthLabel = (
 		: "";
 };
 
-const WeekRangeSelector = ({
-	selected,
-	onChange,
-	isDarkMode,
-}: {
-	selected: WeekRange;
-	onChange: (value: WeekRange) => void;
-	isDarkMode: boolean;
-}) => {
-	const palette = CHART_THEME[isDarkMode ? "dark" : "light"];
-
-	return (
-		<div
-			className="flex flex-wrap gap-2"
-			role="radiogroup"
-			aria-label="Weekly distance range"
-		>
-			{RANGE_OPTIONS.map((option) => {
-				const checked = option === selected;
-				return (
-					<label
-						key={option}
-						className={cn(
-							"inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold tracking-[0.18em] uppercase transition-colors",
-							checked ? palette.radioActive : palette.radioIdle,
-						)}
-					>
-						<input
-							type="radio"
-							name="weekly-distance-range"
-							value={option}
-							checked={checked}
-							onChange={() => onChange(option)}
-							className="sr-only"
-						/>
-						<span>{option} weeks</span>
-					</label>
-				);
-			})}
-		</div>
+const normalizeChartData = (weeks: IWeeklyOverviewData[]) => {
+	const sorted = [...weeks].sort(
+		(a, b) => dayjs(a.weekStart).valueOf() - dayjs(b.weekStart).valueOf(),
 	);
+	return sorted.map((entry, index, source) => ({
+		...entry,
+		index,
+		label: formatWeekRange(entry.weekStart),
+		monthLabel: buildMonthLabel(entry, index, source),
+	}));
+};
+
+const formatTargetWeekSummary = (value?: string) => {
+	if (!value) {
+		return "Current week";
+	}
+	return `Week of ${formatWeekRange(value)}`;
 };
 
 export const WeeklyDistanceChart: React.FC<WeeklyDistanceChartProps> = ({
 	onLoadingChange,
+	weekRange: providedWeekRange,
+	weeks: providedWeeks,
+	isLoading: providedIsLoading,
+	targetWeekStart,
 }) => {
 	const { isDarkMode } = useTheme();
 	const { client } = useDataClient();
 	const { setLocalLoading } = useLoading();
-	const [weekRange, setWeekRange] = useState<WeekRange>(8);
-	const [data, setData] = useState<WeeklyDistanceData[]>([]);
+	const [fetchedData, setFetchedData] = useState<WeeklyDistanceData[]>([]);
+	const [internalIsLoading, setInternalIsLoading] = useState(false);
 	const palette = CHART_THEME[isDarkMode ? "dark" : "light"];
+	const usesProvidedData = typeof providedWeeks !== "undefined";
+	const selectedWeekRange = providedWeekRange ?? 8;
 
 	const fetchData = useCallback(
 		async (
@@ -168,22 +145,16 @@ export const WeeklyDistanceChart: React.FC<WeeklyDistanceChartProps> = ({
 				setLocalLoading(true);
 			}
 			if (showLoading) {
+				setInternalIsLoading(true);
 				onLoadingChange?.(true);
 			}
 			try {
-				const result = await client.getWeeklyOverview({ limit: range });
+				const result = await client.getWeeklyOverview({
+					limit: range,
+					targetWeekStart,
+				});
 				if (result.success) {
-					const sorted = [...result.data].sort(
-						(a, b) =>
-							dayjs(a.weekStart).valueOf() - dayjs(b.weekStart).valueOf(),
-					);
-					const normalized = sorted.map((entry, index, source) => ({
-						...entry,
-						index,
-						label: formatWeekRange(entry.weekStart),
-						monthLabel: buildMonthLabel(entry, index, source),
-					}));
-					setData(normalized);
+					setFetchedData(normalizeChartData(result.data));
 				} else if (showErrors) {
 					toast.error(result.error, {
 						hideProgressBar: false,
@@ -206,23 +177,37 @@ export const WeeklyDistanceChart: React.FC<WeeklyDistanceChartProps> = ({
 						if (!onLoadingChange) {
 							setLocalLoading(false);
 						}
+						setInternalIsLoading(false);
 						onLoadingChange?.(false);
 					}, 500);
 				}
 			}
 		},
-		[client, onLoadingChange, setLocalLoading],
+		[client, onLoadingChange, setLocalLoading, targetWeekStart],
 	);
 
 	useEffect(() => {
-		fetchData(weekRange);
-	}, [fetchData, weekRange]);
+		if (usesProvidedData) {
+			return;
+		}
+		void fetchData(selectedWeekRange);
+	}, [fetchData, selectedWeekRange, usesProvidedData]);
 
-	useWebCachedReadRefresh(["getWeeklyOverview"], () =>
-		fetchData(weekRange, { showLoading: false, showErrors: false }),
+	useWebCachedReadRefresh(["getWeeklyOverview"], () => {
+		if (usesProvidedData) {
+			return;
+		}
+		return fetchData(selectedWeekRange, {
+			showLoading: false,
+			showErrors: false,
+		});
+	});
+
+	const chartData = useMemo(
+		() => (providedWeeks ? normalizeChartData(providedWeeks) : fetchedData),
+		[fetchedData, providedWeeks],
 	);
-
-	const chartData = useMemo(() => data, [data]);
+	const isLoading = providedIsLoading ?? internalIsLoading;
 	const yTicks = useMemo(
 		() => getTickValues(chartData.map((entry) => entry.distance)),
 		[chartData],
@@ -259,22 +244,22 @@ export const WeeklyDistanceChart: React.FC<WeeklyDistanceChartProps> = ({
 	return (
 		<Box classes="min-h-fit">
 			<div className="flex flex-col gap-5">
-				<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-					<div className="space-y-1">
-						<H2 text="Weekly Distance" />
-						<Text
-							className={isDarkMode ? "text-gray-400" : "text-gray-500"}
-							text={`Past ${weekRange} weeks`}
-						/>
-					</div>
-					<WeekRangeSelector
-						selected={weekRange}
-						onChange={setWeekRange}
-						isDarkMode={isDarkMode}
+				<div className="space-y-1">
+					<H2 text="Weekly Distance" />
+					<Text
+						className={isDarkMode ? "text-gray-400" : "text-gray-500"}
+						text={`Past ${selectedWeekRange} weeks · ${formatTargetWeekSummary(targetWeekStart)}`}
 					/>
 				</div>
 
-				{chartData.length === 0 ? (
+				{isLoading ? (
+					<div
+						className={cn(
+							"h-[22rem] animate-pulse rounded-2xl",
+							isDarkMode ? "bg-gray-800" : "bg-gray-100",
+						)}
+					/>
+				) : chartData.length === 0 ? (
 					<Text text="No weekly distance data available yet." />
 				) : (
 					<div className="h-[22rem]">

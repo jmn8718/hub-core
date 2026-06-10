@@ -134,17 +134,22 @@ type WeeklyOverviewListProps = {
 	limit?: number;
 	refreshToken?: number;
 	onLoadingChange?: (isLoading: boolean) => void;
+	weeks?: IWeeklyOverviewData[];
+	isLoading?: boolean;
 };
 
 export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 	limit,
 	onLoadingChange,
 	refreshToken,
+	weeks: providedWeeks,
+	isLoading: providedIsLoading,
 }) => {
 	const { client } = useDataClient();
 	const { isDarkMode } = useTheme();
-	const [weeks, setWeeks] = useState<IWeeklyOverviewData[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+	const [fetchedWeeks, setFetchedWeeks] = useState<IWeeklyOverviewData[]>([]);
+	const [internalIsLoading, setInternalIsLoading] = useState(true);
+	const usesProvidedData = typeof providedWeeks !== "undefined";
 
 	const fetchWeeklyData = useCallback(
 		async ({
@@ -155,13 +160,13 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 			showErrors?: boolean;
 		} = {}) => {
 			if (showLoading) {
-				setIsLoading(true);
+				setInternalIsLoading(true);
 				onLoadingChange?.(true);
 			}
 			try {
 				const result = await client.getWeeklyOverview({ limit: limit ?? 4 });
 				if (result.success) {
-					setWeeks(result.data);
+					setFetchedWeeks(result.data);
 				} else if (showErrors) {
 					toast.error(result.error, {
 						hideProgressBar: false,
@@ -180,7 +185,7 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 				});
 			} finally {
 				if (showLoading) {
-					setIsLoading(false);
+					setInternalIsLoading(false);
 					onLoadingChange?.(false);
 				}
 			}
@@ -190,12 +195,21 @@ export const WeeklyOverviewList: React.FC<WeeklyOverviewListProps> = ({
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
+		if (usesProvidedData) {
+			return;
+		}
 		fetchWeeklyData();
-	}, [fetchWeeklyData, refreshToken]);
+	}, [fetchWeeklyData, refreshToken, usesProvidedData]);
 
-	useWebCachedReadRefresh(["getWeeklyOverview"], () =>
-		fetchWeeklyData({ showLoading: false, showErrors: false }),
-	);
+	useWebCachedReadRefresh(["getWeeklyOverview"], () => {
+		if (usesProvidedData) {
+			return;
+		}
+		return fetchWeeklyData({ showLoading: false, showErrors: false });
+	});
+
+	const weeks = providedWeeks ?? fetchedWeeks;
+	const isLoading = providedIsLoading ?? internalIsLoading;
 
 	const displayRows = useMemo(() => {
 		const sortedAsc = [...weeks].sort(

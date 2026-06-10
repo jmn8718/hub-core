@@ -50,7 +50,13 @@ export class MockClient implements Client {
 		};
 	}
 
-	async getWeeklyOverview({ limit: _limit }: { limit?: number }): Promise<
+	async getWeeklyOverview({
+		limit: _limit,
+		targetWeekStart: _targetWeekStart,
+	}: {
+		limit?: number;
+		targetWeekStart?: string;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: IWeeklyOverviewData[];
 		}>

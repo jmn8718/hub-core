@@ -1,4 +1,4 @@
-import { dayjs, formatDate, monthsBefore, weeksBefore } from "@repo/dates";
+import { dayjs, formatDate, monthsBefore } from "@repo/dates";
 import type {
 	ActivitiesData,
 	ActivityMetadata,
@@ -306,6 +306,13 @@ const startOfWeekFromDateKey = (dateKey: string): string => {
 	return formatUtcDateKey(date);
 };
 
+const resolveWeekStart = (value?: string | Date): Date => {
+	const base = value ? dayjs(value).startOf("day") : dayjs().startOf("day");
+	const weekday = base.day();
+	const diff = weekday === 0 ? -6 : 1 - weekday;
+	return base.add(diff, "day").toDate();
+};
+
 const fillEmptyWeeks = (
 	data: {
 		distance: number;
@@ -314,10 +321,12 @@ const fillEmptyWeeks = (
 		weekStart: string;
 	}[],
 	size = 4,
+	targetWeekStart?: string,
 ): IWeeklyOverviewData[] => {
 	const weeksMap = new Map<string, IWeeklyOverviewData>();
+	const anchorWeek = dayjs(resolveWeekStart(targetWeekStart));
 	for (let i = 0; i < size; i++) {
-		const currentWeek = weeksBefore(i);
+		const currentWeek = anchorWeek.subtract(i, "week").toDate();
 		const key = formatDate(currentWeek, { format: "YYYY-MM-DD" });
 		weeksMap.set(key, {
 			distance: 0,
@@ -437,12 +446,6 @@ export class Db {
 		return this._dialect === "postgres"
 			? sql<string>`to_char(date_trunc('week', to_timestamp(${activities.timestamp} / 1000.0)), 'IYYY-IW')`
 			: sql<string>`strftime('%Y-%W', ${activities.timestamp} / 1000, 'unixepoch')`;
-	}
-
-	private _dayIdentifier() {
-		return this._dialect === "postgres"
-			? sql<string>`to_char(to_timestamp(${activities.timestamp} / 1000.0), 'YYYY-MM-DD')`
-			: sql<string>`strftime('%Y-%m-%d', ${activities.timestamp} / 1000, 'unixepoch')`;
 	}
 
 	async getOrCreateAppUser(params: {
@@ -749,7 +752,28 @@ export class Db {
 		return fillEmptyMonths(result, limit);
 	}
 
-	async getWeeklyActivitiesOverview(limit = 4): Promise<IWeeklyOverviewData[]> {
+	async getWeeklyActivitiesOverview({
+		limit = 4,
+		targetWeekStart,
+	}: {
+		limit?: number;
+		targetWeekStart?: string;
+	} = {}): Promise<IWeeklyOverviewData[]> {
+		const safeLimit = limit > 0 ? limit : 4;
+		const targetWeek = dayjs(resolveWeekStart(targetWeekStart));
+		const startBoundary = targetWeek
+			.subtract(safeLimit - 1, "week")
+			.startOf("day");
+		const endBoundary = targetWeek.add(6, "day").endOf("day");
+		const startWeekKey = formatDate(startBoundary.toDate(), {
+			format: "YYYY-MM-DD",
+		});
+		const endWeekKey = formatDate(targetWeek.toDate(), {
+			format: "YYYY-MM-DD",
+		});
+		const queryStartBoundary = startBoundary.subtract(1, "day");
+		const queryEndBoundary = endBoundary.add(1, "day");
+
 		const rows = await this._client
 			.select({
 				timestamp: activities.timestamp,
@@ -760,7 +784,8 @@ export class Db {
 			.from(activities)
 			.where(
 				and(
-					gte(activities.timestamp, weeksBefore(limit).getTime()),
+					gte(activities.timestamp, queryStartBoundary.valueOf()),
+					lte(activities.timestamp, queryEndBoundary.valueOf()),
 					eq(activities.type, ActivityType.RUN),
 					this._activeActivityCondition(),
 				),
@@ -775,6 +800,9 @@ export class Db {
 		for (const row of rows) {
 			const localDate = getLocalDateKey(row.timestamp, row.timezone);
 			const weekStart = startOfWeekFromDateKey(localDate);
+			if (weekStart < startWeekKey || weekStart > endWeekKey) {
+				continue;
+			}
 			const weekData = weekMap.get(weekStart) ?? {
 				distance: 0,
 				duration: 0,
@@ -795,7 +823,7 @@ export class Db {
 			}),
 		);
 
-		return fillEmptyWeeks(result, limit);
+		return fillEmptyWeeks(result, safeLimit, targetWeekStart);
 	}
 
 	async getDailyActivitiesOverview({
@@ -843,39 +871,53 @@ export class Db {
 
 		const startDateValue = startBoundary.startOf("day").toDate();
 		const endDateValue = endBoundary.endOf("day").toDate();
+		const startDateKey = formatDate(startDateValue, { format: "YYYY-MM-DD" });
+		const endDateKey = formatDate(endDateValue, { format: "YYYY-MM-DD" });
+		const queryStartBoundary = startBoundary.subtract(1, "day");
+		const queryEndBoundary = endBoundary.add(1, "day");
 
-		const dayIdentifier = this._dayIdentifier().as("day");
-
-		const subquery = this._client
+		const rows = await this._client
 			.select({
-				distance: min(activities.distance).as("distance"),
-				duration: min(activities.duration).as("duration"),
 				timestamp: activities.timestamp,
-				day: dayIdentifier,
+				timezone: activities.timezone,
+				distance: activities.distance,
+				duration: activities.duration,
 			})
 			.from(activities)
 			.where(
 				and(
-					gte(activities.timestamp, startDateValue.getTime()),
-					lte(activities.timestamp, endDateValue.getTime()),
+					gte(activities.timestamp, queryStartBoundary.valueOf()),
+					lte(activities.timestamp, queryEndBoundary.valueOf()),
 					eq(activities.type, ActivityType.RUN),
 					this._activeActivityCondition(),
 				),
 			)
-			.groupBy(activities.timestamp)
-			.orderBy(desc(activities.timestamp))
-			.as("daily_subquery");
+			.orderBy(asc(activities.timestamp));
 
-		const result = await this._client
-			.select({
-				date: subquery.day,
-				distance: sum(subquery.distance),
-				duration: sum(subquery.duration),
-				count: count(),
-			})
-			.from(subquery)
-			.groupBy(({ date }) => date)
-			.orderBy(asc(subquery.day));
+		const dayMap = new Map<string, IDailyOverviewData>();
+
+		for (const row of rows) {
+			const localDate = getLocalDateKey(row.timestamp, row.timezone);
+			if (localDate < startDateKey || localDate > endDateKey) {
+				continue;
+			}
+
+			const dayData = dayMap.get(localDate) ?? {
+				date: localDate,
+				distance: 0,
+				duration: 0,
+				count: 0,
+			};
+
+			dayData.distance += row.distance ?? 0;
+			dayData.duration += row.duration ?? 0;
+			dayData.count += 1;
+			dayMap.set(localDate, dayData);
+		}
+
+		const result = Array.from(dayMap.values()).sort((left, right) =>
+			left.date.localeCompare(right.date),
+		);
 
 		return fillEmptyDays(result, startDateValue, endDateValue);
 	}

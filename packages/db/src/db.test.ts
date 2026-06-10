@@ -205,7 +205,9 @@ describe("db", () => {
 
 			vi.setSystemTime(new Date("2026-05-27T12:00:00.000Z"));
 
-			const result = await isolatedDb.getWeeklyActivitiesOverview(2);
+			const result = await isolatedDb.getWeeklyActivitiesOverview({
+				limit: 2,
+			});
 			const currentWeek = result.find(
 				(entry) => entry.weekStart === "2026-05-25",
 			);
@@ -227,6 +229,77 @@ describe("db", () => {
 		}
 	});
 
+	test("should anchor weekly overview to the selected target week", async () => {
+		const date = new Date("2024-12-15T12:00:00.000Z");
+		vi.setSystemTime(date);
+
+		const result = await db.getWeeklyActivitiesOverview({
+			limit: 2,
+			targetWeekStart: "2024-12-02",
+		});
+
+		expect(result.length).eq(2);
+		expect(result[0]?.weekStart).eq("2024-12-02");
+		expect(result[1]?.weekStart).eq("2024-11-25");
+	});
+
+	test("should include sunday workouts in the anchored target week", async () => {
+		const isolatedDbDir = await mkdtemp(
+			join(tmpdir(), "hub-core-week-end-db-"),
+		);
+		const isolatedDbUrl = `file:${join(isolatedDbDir, "test.sqlite")}`;
+		const isolatedClient = createDbClient({
+			url: isolatedDbUrl,
+			logger: false,
+		});
+		const isolatedDb = new Db(isolatedClient);
+
+		try {
+			await migrateDb(isolatedClient);
+
+			await isolatedDb.insertActivity({
+				activity: {
+					data: {
+						id: uuidv7(),
+						name: "Sunday Evening Seoul Run",
+						timestamp: new Date("2026-06-07T09:00:00.000Z").getTime(),
+						timezone: "Asia/Seoul",
+						distance: 8170,
+						duration: 2442,
+						manufacturer: "manual",
+						device: "manual",
+						locationName: "Seoul",
+						locationCountry: "South Korea",
+						type: ActivityType.RUN,
+						subtype: ActivitySubType.EASY_RUN,
+						notes: "",
+						insight: "",
+						description: "",
+						metadata: "{}",
+						isEvent: 0,
+						startLatitude: 0,
+						startLongitude: 0,
+					},
+				},
+			});
+
+			const result = await isolatedDb.getWeeklyActivitiesOverview({
+				limit: 1,
+				targetWeekStart: "2026-06-01",
+			});
+
+			expect(result).toHaveLength(1);
+			expect(result[0]).toMatchObject({
+				weekStart: "2026-06-01",
+				distance: 8170,
+				duration: 2442,
+				activeDays: 1,
+			});
+		} finally {
+			await rm(isolatedDbDir, { recursive: true, force: true });
+		}
+	});
+
 	test("should get daily overview data for range", async () => {
 		const result = await db.getDailyActivitiesOverview({
 			startDate: "2024-11-01",
@@ -243,6 +316,67 @@ describe("db", () => {
 		expect(daySix?.date).eq("2024-11-06");
 		expect(daySix?.distance).eq(10694);
 		expect(daySix?.duration).eq(3061);
+	});
+
+	test("should bucket daily overview by activity local timezone", async () => {
+		const isolatedDbDir = await mkdtemp(join(tmpdir(), "hub-core-daily-db-"));
+		const isolatedDbUrl = `file:${join(isolatedDbDir, "test.sqlite")}`;
+		const isolatedClient = createDbClient({
+			url: isolatedDbUrl,
+			logger: false,
+		});
+		const isolatedDb = new Db(isolatedClient);
+
+		try {
+			await migrateDb(isolatedClient);
+
+			await isolatedDb.insertActivity({
+				activity: {
+					data: {
+						id: uuidv7(),
+						name: "Beijing Midnight Run",
+						timestamp: new Date("2026-05-25T16:10:00.000Z").getTime(),
+						timezone: "Asia/Shanghai",
+						distance: 10010,
+						duration: 3029,
+						manufacturer: "manual",
+						device: "manual",
+						locationName: "Chaoyang",
+						locationCountry: "China",
+						type: ActivityType.RUN,
+						subtype: ActivitySubType.EASY_RUN,
+						notes: "",
+						insight: "",
+						description: "",
+						metadata: "{}",
+						isEvent: 0,
+						startLatitude: 0,
+						startLongitude: 0,
+					},
+				},
+			});
+
+			const result = await isolatedDb.getDailyActivitiesOverview({
+				startDate: "2026-05-23",
+				endDate: "2026-05-26",
+			});
+
+			expect(result).toHaveLength(4);
+			expect(result[0]).toMatchObject({
+				date: "2026-05-23",
+				distance: 0,
+				duration: 0,
+				count: 0,
+			});
+			expect(result[3]).toMatchObject({
+				date: "2026-05-26",
+				distance: 10010,
+				duration: 3029,
+				count: 1,
+			});
+		} finally {
+			await rm(isolatedDbDir, { recursive: true, force: true });
+		}
 	});
 
 	test("should get activities with limit", async () => {

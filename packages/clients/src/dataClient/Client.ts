@@ -44,7 +44,10 @@ export abstract class Client {
 			data: IDailyOverviewData[];
 		}>
 	>;
-	abstract getWeeklyOverview(params: { limit?: number }): Promise<
+	abstract getWeeklyOverview(params: {
+		limit?: number;
+		targetWeekStart?: string;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: IWeeklyOverviewData[];
 		}>

@@ -160,8 +160,13 @@ export async function handleClientAction(
 			);
 		}
 		case "getWeeklyOverview": {
-			const { limit } = payload as { limit?: number };
-			return withData(() => db.getWeeklyActivitiesOverview(limit));
+			const { limit, targetWeekStart } = payload as {
+				limit?: number;
+				targetWeekStart?: string;
+			};
+			return withData(() =>
+				db.getWeeklyActivitiesOverview({ limit, targetWeekStart }),
+			);
 		}
 		case "getConfiguredProviders": {
 			return withData(async () => ({

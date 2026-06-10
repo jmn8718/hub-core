@@ -112,7 +112,13 @@ export class AppClient implements Client {
 		}
 	}
 
-	async getWeeklyOverview({ limit }: { limit?: number }): Promise<
+	async getWeeklyOverview({
+		limit,
+		targetWeekStart,
+	}: {
+		limit?: number;
+		targetWeekStart?: string;
+	}): Promise<
 		ProviderSuccessResponse<{
 			data: IWeeklyOverviewData[];
 		}>
@@ -122,6 +128,7 @@ export class AppClient implements Client {
 				Channels.DB_WEEKLY_OVERVIEW,
 				{
 					limit,
+					targetWeekStart,
 				},
 			);
 			return {

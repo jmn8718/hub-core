@@ -32,11 +32,13 @@ ipcMain.handle(
 		_event,
 		{
 			limit,
+			targetWeekStart,
 		}: {
 			limit?: number;
+			targetWeekStart?: string;
 		},
 	) => {
-		return getDb().getWeeklyActivitiesOverview(limit);
+		return getDb().getWeeklyActivitiesOverview({ limit, targetWeekStart });
 	},
 );
 
