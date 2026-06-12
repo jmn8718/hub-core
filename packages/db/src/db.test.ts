@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ActivitySubType, ActivityType, Providers } from "@repo/types";
+import { sql } from "drizzle-orm";
 import { uuidv7 } from "uuidv7";
 import {
 	afterAll,
@@ -18,6 +19,28 @@ import { createDbClient } from "./client";
 import { Db } from "./db";
 import { migrateDb } from "./migrations";
 import { clearData, importData } from "./tests/utils";
+
+async function ensureActivityLapsTable(
+	client: ReturnType<typeof createDbClient>,
+) {
+	await client.run(
+		sql.raw(`CREATE TABLE IF NOT EXISTS "activity_laps" (
+			"id" text PRIMARY KEY NOT NULL,
+			"activity_id" text NOT NULL,
+			"lap_number" integer NOT NULL,
+			"identifier" text DEFAULT '' NOT NULL,
+			"distance" real DEFAULT 0 NOT NULL,
+			"elapsed_time" integer DEFAULT 0 NOT NULL,
+			"moving_time" integer DEFAULT 0 NOT NULL,
+			"average_heart_rate" real,
+			"maximum_heart_rate" real,
+			"user_id" text,
+			"updated_at" text NOT NULL,
+			"deleted_at" text,
+			FOREIGN KEY ("activity_id") REFERENCES "activities"("id")
+		)`),
+	);
+}
 
 describe("db", () => {
 	let testDbDir: string | null = null;
@@ -40,6 +63,7 @@ describe("db", () => {
 		db = new Db(client);
 
 		await migrateDb(client).catch(console.error);
+		await ensureActivityLapsTable(client);
 		console.log("migrated db");
 		await clearData(client);
 		console.log("cleared db");
@@ -150,11 +174,11 @@ describe("db", () => {
 
 		try {
 			await migrateDb(isolatedClient);
+			await ensureActivityLapsTable(isolatedClient);
 
 			await isolatedDb.insertActivity({
 				activity: {
 					data: {
-						id: uuidv7(),
 						name: "Monday Morning China Run",
 						timestamp: new Date("2026-05-25T22:10:00.000Z").getTime(),
 						timezone: "Asia/Shanghai",
@@ -180,7 +204,6 @@ describe("db", () => {
 			await isolatedDb.insertActivity({
 				activity: {
 					data: {
-						id: uuidv7(),
 						name: "Sunday Morning China Run",
 						timestamp: new Date("2026-05-23T22:09:00.000Z").getTime(),
 						timezone: "Asia/Shanghai",
@@ -256,11 +279,11 @@ describe("db", () => {
 
 		try {
 			await migrateDb(isolatedClient);
+			await ensureActivityLapsTable(isolatedClient);
 
 			await isolatedDb.insertActivity({
 				activity: {
 					data: {
-						id: uuidv7(),
 						name: "Sunday Evening Seoul Run",
 						timestamp: new Date("2026-06-07T09:00:00.000Z").getTime(),
 						timezone: "Asia/Seoul",
@@ -329,11 +352,11 @@ describe("db", () => {
 
 		try {
 			await migrateDb(isolatedClient);
+			await ensureActivityLapsTable(isolatedClient);
 
 			await isolatedDb.insertActivity({
 				activity: {
 					data: {
-						id: uuidv7(),
 						name: "Beijing Midnight Run",
 						timestamp: new Date("2026-05-25T16:10:00.000Z").getTime(),
 						timezone: "Asia/Shanghai",
@@ -456,6 +479,226 @@ describe("db", () => {
 	test("should get one activity", async () => {
 		const result = await db.getActivity(activityId);
 		expect(result?.id).eq(activityId);
+		expect(result?.laps).toEqual([]);
+	});
+
+	test("should persist and read activity laps", async () => {
+		const createdActivityId = await db.insertActivity({
+			activity: {
+				data: {
+					name: "Lap Session",
+					timestamp: Date.now() + 10,
+					timezone: "Asia/Seoul",
+					distance: 10000,
+					duration: 2400,
+					manufacturer: "COROS",
+					device: "COROS PACE 2",
+					locationName: "",
+					locationCountry: "",
+					type: ActivityType.RUN,
+					subtype: ActivitySubType.EASY_RUN,
+					notes: "",
+					insight: "",
+					description: "",
+					metadata: {},
+					isEvent: 0,
+					startLatitude: 0,
+					startLongitude: 0,
+				},
+				providerActivity: {
+					id: "strava-lap-session",
+					provider: Providers.STRAVA,
+					original: false,
+					timestamp: Date.now() + 10,
+					data: "{}",
+				},
+			},
+			laps: [
+				{
+					lapNumber: 1,
+					identifier: "Warm Up",
+					distance: 2000,
+					elapsedTime: 620,
+					movingTime: 610,
+					averageHeartRate: 128.5,
+					maximumHeartRate: 141,
+				},
+				{
+					lapNumber: 2,
+					identifier: "Run",
+					distance: 8000,
+					elapsedTime: 1780,
+					movingTime: 1770,
+					averageHeartRate: 146.2,
+					maximumHeartRate: 163,
+				},
+			],
+		});
+
+		const result = await db.getActivity(createdActivityId);
+		expect(result?.laps).toHaveLength(2);
+		expect(result?.laps[0]).toMatchObject({
+			lapNumber: 1,
+			identifier: "Warm Up",
+			distance: 2000,
+			elapsedTime: 620,
+			movingTime: 610,
+			averageHeartRate: 128.5,
+			maximumHeartRate: 141,
+		});
+		expect(result?.laps[1]?.identifier).toBe("Run");
+	});
+
+	test("should edit a stored lap identifier", async () => {
+		const createdActivityId = await db.insertActivity({
+			activity: {
+				data: {
+					name: "Editable Lap Session",
+					timestamp: Date.now() + 11,
+					timezone: "Asia/Seoul",
+					distance: 4000,
+					duration: 1200,
+					manufacturer: "COROS",
+					device: "COROS PACE 2",
+					locationName: "",
+					locationCountry: "",
+					type: ActivityType.RUN,
+					subtype: ActivitySubType.EASY_RUN,
+					notes: "",
+					insight: "",
+					description: "",
+					metadata: {},
+					isEvent: 0,
+					startLatitude: 0,
+					startLongitude: 0,
+				},
+			},
+			laps: [
+				{
+					lapNumber: 1,
+					identifier: "Warm Up",
+					distance: 4000,
+					elapsedTime: 1200,
+					movingTime: 1190,
+				},
+			],
+		});
+
+		const before = await db.getActivity(createdActivityId);
+		const lapId = before?.laps[0]?.id;
+		expect(lapId).toBeTruthy();
+		if (!lapId) {
+			throw new Error("Expected lap id");
+		}
+
+		await db.editActivityLap(lapId, {
+			identifier: "Threshold",
+		});
+
+		const after = await db.getActivity(createdActivityId);
+		expect(after?.laps[0]?.identifier).toBe("Threshold");
+	});
+
+	test("should replace activity laps when a refreshed payload provides a new lap set", async () => {
+		const providerActivityId = "strava-lap-refresh";
+		const timestamp = Date.now() + 20;
+		const firstActivityId = await db.insertActivity({
+			activity: {
+				data: {
+					name: "Lap Refresh",
+					timestamp,
+					timezone: "Asia/Seoul",
+					distance: 5000,
+					duration: 1500,
+					manufacturer: "COROS",
+					device: "COROS PACE 2",
+					locationName: "",
+					locationCountry: "",
+					type: ActivityType.RUN,
+					subtype: ActivitySubType.EASY_RUN,
+					notes: "",
+					insight: "",
+					description: "",
+					metadata: {},
+					isEvent: 0,
+					startLatitude: 0,
+					startLongitude: 0,
+				},
+				providerActivity: {
+					id: providerActivityId,
+					provider: Providers.STRAVA,
+					original: false,
+					timestamp,
+					data: "{}",
+				},
+			},
+			laps: [
+				{
+					lapNumber: 1,
+					identifier: "Warm Up",
+					distance: 1000,
+					elapsedTime: 300,
+					movingTime: 295,
+				},
+			],
+		});
+
+		const secondActivityId = await db.insertActivity({
+			activity: {
+				data: {
+					name: "Lap Refresh",
+					timestamp,
+					timezone: "Asia/Seoul",
+					distance: 5000,
+					duration: 1500,
+					manufacturer: "COROS",
+					device: "COROS PACE 2",
+					locationName: "",
+					locationCountry: "",
+					type: ActivityType.RUN,
+					subtype: ActivitySubType.EASY_RUN,
+					notes: "",
+					insight: "",
+					description: "",
+					metadata: {},
+					isEvent: 0,
+					startLatitude: 0,
+					startLongitude: 0,
+				},
+				providerActivity: {
+					id: providerActivityId,
+					provider: Providers.STRAVA,
+					original: false,
+					timestamp,
+					data: "{}",
+				},
+			},
+			laps: [
+				{
+					lapNumber: 1,
+					identifier: "Speed",
+					distance: 2000,
+					elapsedTime: 540,
+					movingTime: 535,
+				},
+				{
+					lapNumber: 2,
+					identifier: "Rest",
+					distance: 3000,
+					elapsedTime: 960,
+					movingTime: 950,
+				},
+			],
+		});
+
+		expect(secondActivityId).toBe(firstActivityId);
+
+		const result = await db.getActivity(firstActivityId);
+		expect(result?.laps).toHaveLength(2);
+		expect(result?.laps.map((lap) => lap.identifier)).toEqual([
+			"Speed",
+			"Rest",
+		]);
 	});
 
 	test("should get gears with distance", async () => {

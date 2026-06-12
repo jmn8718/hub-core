@@ -63,6 +63,36 @@ export interface StravaMap {
 	resource_state: number;
 }
 
+export interface StravaLap {
+	id: number;
+	resource_state: number;
+	name: string;
+	activity?: {
+		id: number;
+		resource_state: number;
+	};
+	athlete?: {
+		id: number;
+		resource_state: number;
+	};
+	elapsed_time: number;
+	moving_time: number;
+	start_date: string;
+	start_date_local: string;
+	distance: number;
+	start_index?: number;
+	end_index?: number;
+	total_elevation_gain?: number;
+	average_speed?: number;
+	max_speed?: number;
+	average_cadence?: number;
+	device_watts?: boolean;
+	average_watts?: number;
+	lap_index: number;
+	average_heartrate?: number;
+	max_heartrate?: number;
+}
+
 export interface StravaActivity {
 	resource_state: number;
 	athlete: {
@@ -124,4 +154,5 @@ export interface StravaActivity {
 	has_kudoed: boolean;
 	device_name?: string;
 	embed_token?: string;
+	laps?: StravaLap[];
 }

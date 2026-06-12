@@ -178,6 +178,15 @@ export class WebClient implements Client {
 		return this._execute("editActivity", { id, data });
 	}
 
+	async editActivityLap(
+		id: string,
+		data: {
+			identifier?: string;
+		},
+	): Promise<ProviderSuccessResponse> {
+		return this._execute("editActivityLap", { id, data });
+	}
+
 	async deleteActivity(activityId: string): Promise<ProviderSuccessResponse> {
 		return this._execute("deleteActivity", { activityId });
 	}

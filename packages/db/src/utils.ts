@@ -1,6 +1,7 @@
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { sql } from "drizzle-orm";
 import { CacheDb } from "./cache";
 import { type DbClient, createDbClient } from "./client";
 import { Db } from "./db";
@@ -9,6 +10,7 @@ import {
 	activities,
 	activitiesConnection,
 	activityGears,
+	activityLaps,
 	gears,
 	gearsConnection,
 	profiles,
@@ -19,6 +21,7 @@ import {
 async function clearTestDb(client: DbClient): Promise<void> {
 	const clearActions = [
 		() => client.delete(activitiesConnection),
+		() => client.delete(activityLaps),
 		() => client.delete(gearsConnection),
 		() => client.delete(activityGears),
 		() => client.delete(gears),
@@ -31,6 +34,26 @@ async function clearTestDb(client: DbClient): Promise<void> {
 	for (const clearAction of clearActions) {
 		await clearAction();
 	}
+}
+
+async function ensureActivityLapsTable(client: DbClient): Promise<void> {
+	await client.run(
+		sql.raw(`CREATE TABLE IF NOT EXISTS "activity_laps" (
+			"id" text PRIMARY KEY NOT NULL,
+			"activity_id" text NOT NULL,
+			"lap_number" integer NOT NULL,
+			"identifier" text DEFAULT '' NOT NULL,
+			"distance" real DEFAULT 0 NOT NULL,
+			"elapsed_time" integer DEFAULT 0 NOT NULL,
+			"moving_time" integer DEFAULT 0 NOT NULL,
+			"average_heart_rate" real,
+			"maximum_heart_rate" real,
+			"user_id" text,
+			"updated_at" text NOT NULL,
+			"deleted_at" text,
+			FOREIGN KEY ("activity_id") REFERENCES "activities"("id")
+		)`),
+	);
 }
 
 async function createPreparedTestDbClient({
@@ -49,6 +72,7 @@ async function createPreparedTestDbClient({
 	});
 
 	await migrateDb(client);
+	await ensureActivityLapsTable(client);
 
 	if (clearDb) {
 		await clearTestDb(client);

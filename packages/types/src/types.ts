@@ -68,6 +68,17 @@ export type NonActivityMetadata = Record<string, unknown>;
 
 export type ActivityMetadata = NonActivityMetadata | SwimActivityMetadata;
 
+export interface IDbActivityLap {
+	id: string;
+	lapNumber: number;
+	identifier: string;
+	distance: number;
+	elapsedTime: number;
+	movingTime: number;
+	averageHeartRate?: number;
+	maximumHeartRate?: number;
+}
+
 type DbActivityBase = {
 	id: string;
 	name: string;
@@ -76,6 +87,7 @@ type DbActivityBase = {
 	distance: number;
 	duration: number;
 	manufacturer: string;
+	device?: string;
 	locationName: string;
 	locationCountry: string;
 	startLatitude: number;
@@ -146,6 +158,7 @@ export interface IConnection {
 export type DbActivityPopulated = IDbActivity & {
 	connections: IConnection[];
 	gears: IGear[];
+	laps: IDbActivityLap[];
 };
 
 export type ActivitiesData = {

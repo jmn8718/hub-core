@@ -9,6 +9,7 @@ import type {
 	IConnection,
 	IDailyOverviewData,
 	IDbActivity,
+	IDbActivityLap,
 	IDbGearWithDistance,
 	IGear,
 	IGearConnection,
@@ -54,16 +55,22 @@ import {
 	activities,
 	activitiesConnection,
 	activityGears,
+	activityLaps,
 	gears,
 	gearsConnection,
 	providerActivities,
 	providerGears,
 } from "./schemas/app";
-import type { IInsertActivityPayload, IInsertGearPayload } from "./types/index";
+import type {
+	IInsertActivityLapPayload,
+	IInsertActivityPayload,
+	IInsertGearPayload,
+} from "./types/index";
 
 interface IDbActivityRow {
 	gears: unknown;
 	connections: unknown;
+	laps?: unknown;
 	id: string;
 	name: string;
 	timestamp: number;
@@ -90,6 +97,7 @@ const SYNC_TABLES: SyncTableName[] = [
 	"activities",
 	"provider_activities",
 	"activities_connection",
+	"activity_laps",
 	"gears",
 	"provider_gears",
 	"gears_connection",
@@ -103,6 +111,7 @@ type SyncTableName =
 	| "activities"
 	| "provider_activities"
 	| "activities_connection"
+	| "activity_laps"
 	| "gears"
 	| "provider_gears"
 	| "gears_connection"
@@ -203,6 +212,7 @@ function mapActivityRow({
 	connections,
 	gears,
 	isEvent,
+	laps,
 	metadata,
 	...row
 }: IDbActivityRow): DbActivityPopulated {
@@ -211,6 +221,7 @@ function mapActivityRow({
 		metadata: normalizeMetadata(row.type, JSON.parse(metadata || "{}")),
 		isEvent: isEvent === 1 ? 1 : 0,
 		gears: (gears ? JSON.parse(gears as string) : []) as IGear[],
+		laps: (laps ? JSON.parse(laps as string) : []) as IDbActivityLap[],
 		connections: (connections
 			? JSON.parse(connections as string)
 			: []) as IConnection[],
@@ -621,6 +632,12 @@ export class Db {
 			: sql<string>`json_group_array(json_object('id', ${gears.id}, 'type', ${gears.type}))`;
 	}
 
+	private _activityLapsJson() {
+		return this._dialect === "postgres"
+			? sql<string>`coalesce(json_agg(json_build_object('id', ${activityLaps.id}, 'lapNumber', ${activityLaps.lapNumber}, 'identifier', ${activityLaps.identifier}, 'distance', ${activityLaps.distance}, 'elapsedTime', ${activityLaps.elapsedTime}, 'movingTime', ${activityLaps.movingTime}, 'averageHeartRate', ${activityLaps.averageHeartRate}, 'maximumHeartRate', ${activityLaps.maximumHeartRate}) order by ${activityLaps.lapNumber}, ${activityLaps.id}) filter (where ${activityLaps.id} is not null), '[]'::json)::text`
+			: sql<string>`json_group_array(json_object('id', ${activityLaps.id}, 'lapNumber', ${activityLaps.lapNumber}, 'identifier', ${activityLaps.identifier}, 'distance', ${activityLaps.distance}, 'elapsedTime', ${activityLaps.elapsedTime}, 'movingTime', ${activityLaps.movingTime}, 'averageHeartRate', ${activityLaps.averageHeartRate}, 'maximumHeartRate', ${activityLaps.maximumHeartRate}))`;
+	}
+
 	private _gearConnectionsJson() {
 		return this._dialect === "postgres"
 			? sql<string>`coalesce(json_agg(json_build_object('provider', ${providerGears.provider}, 'providerId', ${providerGears.providerId})) filter (where ${providerGears.id} is not null), '[]'::json)::text`
@@ -645,6 +662,10 @@ export class Db {
 
 	private _activeActivityGearCondition() {
 		return isNull(activityGears.deletedAt);
+	}
+
+	private _activeActivityLapCondition() {
+		return isNull(activityLaps.deletedAt);
 	}
 
 	private _activeActivitiesConnectionCondition() {
@@ -956,12 +977,24 @@ export class Db {
 				.groupBy(activityGears.activityId),
 		);
 
+		const groupedLaps = this._client.$with("groupedLaps").as(
+			this._client
+				.select({
+					activityId: activityLaps.activityId,
+					laps: this._activityLapsJson().as("laps"),
+				})
+				.from(activityLaps)
+				.where(this._activeActivityLapCondition())
+				.groupBy(activityLaps.activityId),
+		);
+
 		return this._client
-			.with(connections, groupedGears)
+			.with(connections, groupedGears, groupedLaps)
 			.select({
 				...getTableColumns(activities),
 				connections: connections.connections,
 				gears: groupedGears.gears,
+				laps: groupedLaps.laps,
 			})
 			.from(activities)
 			.where(
@@ -969,6 +1002,7 @@ export class Db {
 			)
 			.leftJoin(connections, eq(activities.id, connections.activityId))
 			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId))
+			.leftJoin(groupedLaps, eq(activities.id, groupedLaps.activityId))
 			.limit(1)
 			.then((data: IDbActivityRow[]) => {
 				if (!data[0]) return;
@@ -1353,6 +1387,22 @@ export class Db {
 			.where(eq(activities.id, id));
 	}
 
+	async editActivityLap(
+		id: string,
+		data: {
+			identifier?: string;
+		},
+	) {
+		const metadata = await this._buildSyncMetadata();
+		return this._client
+			.update(activityLaps)
+			.set({
+				...data,
+				...metadata,
+			})
+			.where(eq(activityLaps.id, id));
+	}
+
 	async createActivity(data: IActivityCreateInput) {
 		const timestamp = new Date(data.timestamp).getTime();
 		if (Number.isNaN(timestamp)) {
@@ -1428,7 +1478,45 @@ export class Db {
 		});
 	}
 
-	async insertActivity({ activity, gears }: IInsertActivityPayload) {
+	private async _replaceActivityLaps(params: {
+		activityId: string;
+		laps: IInsertActivityLapPayload[];
+	}) {
+		const timestamp = this._nowIso();
+		await this._client
+			.update(activityLaps)
+			.set({
+				deletedAt: timestamp,
+				updatedAt: timestamp,
+			})
+			.where(
+				and(
+					eq(activityLaps.activityId, params.activityId),
+					this._activeActivityLapCondition(),
+				),
+			);
+
+		if (params.laps.length === 0) {
+			return;
+		}
+
+		const metadata = await this._buildSyncMetadata();
+		await this._client.insert(activityLaps).values(
+			params.laps.map((lap) => ({
+				activityId: params.activityId,
+				lapNumber: lap.lapNumber,
+				identifier: lap.identifier,
+				distance: lap.distance,
+				elapsedTime: lap.elapsedTime,
+				movingTime: lap.movingTime,
+				averageHeartRate: lap.averageHeartRate ?? null,
+				maximumHeartRate: lap.maximumHeartRate ?? null,
+				...metadata,
+			})),
+		);
+	}
+
+	async insertActivity({ activity, laps, gears }: IInsertActivityPayload) {
 		let activityId = "";
 		const providerActivity = activity.providerActivity;
 		const hasMissingLocation =
@@ -1473,6 +1561,12 @@ export class Db {
 					)
 					.limit(1);
 				if (existingConnection[0]?.activityId) {
+					if (laps) {
+						await this._replaceActivityLaps({
+							activityId: existingConnection[0].activityId,
+							laps,
+						});
+					}
 					console.log(
 						`${providerActivity.id} provider activity already exists, skipping insert`,
 					);
@@ -1627,6 +1721,12 @@ export class Db {
 						...metadata,
 					});
 				}
+			});
+		}
+		if (laps) {
+			await this._replaceActivityLaps({
+				activityId,
+				laps,
 			});
 		}
 		if (gears && gears.length > 0) {
@@ -2250,6 +2350,18 @@ export class Db {
 					);
 				return (where ? query.where(where) : query).limit(limit).offset(offset);
 			}
+			case "activity_laps": {
+				const conditions = [
+					updatedAfter ? gt(activityLaps.updatedAt, updatedAfter) : undefined,
+					params.userId ? eq(activityLaps.userId, params.userId) : undefined,
+				].filter((condition) => condition !== undefined);
+				const where = conditions.length > 0 ? and(...conditions) : undefined;
+				const query = this._client
+					.select()
+					.from(activityLaps)
+					.orderBy(asc(activityLaps.activityId), asc(activityLaps.lapNumber));
+				return (where ? query.where(where) : query).limit(limit).offset(offset);
+			}
 			case "gears": {
 				const conditions = [
 					updatedAfter ? gt(gears.updatedAt, updatedAfter) : undefined,
@@ -2711,6 +2823,30 @@ export class Db {
 							activitiesConnection.providerActivityId,
 						],
 						set: {
+							userId: sql`excluded.user_id`,
+							updatedAt: sql`excluded.updated_at`,
+							deletedAt: sql`excluded.deleted_at`,
+						},
+					});
+				return;
+			}
+			case "activity_laps": {
+				const values = rows as Array<typeof activityLaps.$inferInsert>;
+				if (values.length === 0) return;
+				await tx
+					.insert(activityLaps)
+					.values(values)
+					.onConflictDoUpdate({
+						target: activityLaps.id,
+						set: {
+							activityId: sql`excluded.activity_id`,
+							lapNumber: sql`excluded.lap_number`,
+							identifier: sql`excluded.identifier`,
+							distance: sql`excluded.distance`,
+							elapsedTime: sql`excluded.elapsed_time`,
+							movingTime: sql`excluded.moving_time`,
+							averageHeartRate: sql`excluded.average_heart_rate`,
+							maximumHeartRate: sql`excluded.maximum_heart_rate`,
 							userId: sql`excluded.user_id`,
 							updatedAt: sql`excluded.updated_at`,
 							deletedAt: sql`excluded.deleted_at`,

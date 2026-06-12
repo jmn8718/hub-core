@@ -103,6 +103,36 @@ export const activityGears = pgTable(
 	],
 );
 
+export const activityLaps = pgTable(
+	"activity_laps",
+	{
+		id: text("id")
+			.primaryKey()
+			.$defaultFn(() => uuidv7()),
+		activityId: text("activity_id")
+			.references(() => activities.id)
+			.notNull(),
+		lapNumber: integer("lap_number").notNull(),
+		identifier: text("identifier").default("").notNull(),
+		distance: doublePrecision("distance").default(0).notNull(),
+		elapsedTime: integer("elapsed_time").default(0).notNull(),
+		movingTime: integer("moving_time").default(0).notNull(),
+		averageHeartRate: doublePrecision("average_heart_rate"),
+		maximumHeartRate: doublePrecision("maximum_heart_rate"),
+		userId: text("user_id"),
+		updatedAt: text("updated_at")
+			.notNull()
+			.default(sql`CURRENT_TIMESTAMP::text`),
+		deletedAt: text("deleted_at"),
+	},
+	(table) => [
+		index("activity_laps_activity_id_lap_number_idx").on(
+			table.activityId,
+			table.lapNumber,
+		),
+	],
+);
+
 export const activitiesConnection = pgTable(
 	"activities_connection",
 	{

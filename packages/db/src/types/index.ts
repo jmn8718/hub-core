@@ -1,4 +1,11 @@
-import type { IDbActivity, IDbGear, Providers } from "@repo/types";
+import type {
+	IDbActivity,
+	IDbActivityLap,
+	IDbGear,
+	Providers,
+} from "@repo/types";
+
+export interface IInsertActivityLapPayload extends Omit<IDbActivityLap, "id"> {}
 
 export interface IInsertActivityPayload {
 	activity: {
@@ -11,6 +18,7 @@ export interface IInsertActivityPayload {
 			data: string;
 		};
 	};
+	laps?: IInsertActivityLapPayload[];
 	gears?: IInsertGearPayload[];
 }
 

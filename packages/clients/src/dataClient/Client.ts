@@ -107,6 +107,12 @@ export abstract class Client {
 			isEvent?: 0 | 1;
 		},
 	): Promise<ProviderSuccessResponse>;
+	abstract editActivityLap(
+		id: string,
+		data: {
+			identifier?: string;
+		},
+	): Promise<ProviderSuccessResponse>;
 
 	abstract deleteActivity(activityId: string): Promise<ProviderSuccessResponse>;
 	abstract linkActivityConnection(

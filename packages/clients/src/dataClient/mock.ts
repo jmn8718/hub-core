@@ -190,6 +190,24 @@ export class MockClient implements Client {
 		}
 	}
 
+	async editActivityLap(
+		id: string,
+		data: {
+			identifier?: string;
+		},
+	): Promise<ProviderSuccessResponse> {
+		try {
+			return {
+				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
 	async getGears(_params: {
 		cursor?: string;
 		limit?: number;

@@ -3,6 +3,7 @@ import { formatDate, isAfter, isBefore } from "@repo/dates";
 import type {
 	CacheDb,
 	Db,
+	IInsertActivityLapPayload,
 	IInsertActivityPayload,
 	IInsertGearPayload,
 } from "@repo/db";
@@ -20,6 +21,7 @@ import {
 	type StravaActivity,
 	type StravaAthlete,
 	type StravaClientOptions,
+	type StravaLap,
 } from "@repo/types";
 import strava from "strava-v3/index.js";
 import { type Client, generateActivityFilePath } from "./Client.js";
@@ -336,6 +338,24 @@ function mapActivity(activity: StravaActivity): IDbActivity {
 	};
 }
 
+function mapLap(lap: StravaLap): IInsertActivityLapPayload {
+	return {
+		lapNumber: lap.lap_index,
+		identifier: lap.name?.trim() || `Lap ${lap.lap_index}`,
+		distance: lap.distance || 0,
+		elapsedTime: lap.elapsed_time || 0,
+		movingTime: lap.moving_time || 0,
+		averageHeartRate:
+			typeof lap.average_heartrate === "number" && lap.average_heartrate > 0
+				? lap.average_heartrate
+				: undefined,
+		maximumHeartRate:
+			typeof lap.max_heartrate === "number" && lap.max_heartrate > 0
+				? lap.max_heartrate
+				: undefined,
+	};
+}
+
 function stripActivityMap(activity: StravaActivity): StravaActivity {
 	const {
 		map: _map,
@@ -552,6 +572,18 @@ export class StravaClient extends Base implements Client {
 			});
 	}
 
+	private async fetchActivityLaps(
+		activity: StravaActivity,
+	): Promise<StravaLap[]> {
+		if (Array.isArray(activity.laps) && activity.laps.length > 0) {
+			return activity.laps;
+		}
+
+		return this._request<StravaLap[]>(`/activities/${activity.id}/laps`).catch(
+			() => [],
+		);
+	}
+
 	async connect(params: ApiCredentials): Promise<void> {
 		this._externalId = params.externalId;
 		if (params.refreshToken !== this._refreshToken) {
@@ -659,12 +691,13 @@ export class StravaClient extends Base implements Client {
 	}
 
 	async syncActivity(activityId: string): Promise<IInsertActivityPayload> {
-		const activity = await this.getActivity(activityId);
+		const activity = await this.getActivity(activityId, { force: true });
 		if (!activity) {
 			throw new Error(`Missing activity ${activityId}`);
 		}
 		try {
 			const dbActivity = mapActivity(activity);
+			const laps = await this.fetchActivityLaps(activity);
 			return {
 				activity: {
 					data: dbActivity,
@@ -677,6 +710,7 @@ export class StravaClient extends Base implements Client {
 						data: "{}", // JSON.stringify(activity),
 					},
 				},
+				laps: laps.map(mapLap),
 			};
 		} catch (err) {
 			console.error({

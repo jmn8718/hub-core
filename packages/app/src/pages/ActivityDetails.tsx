@@ -14,6 +14,7 @@ import { Bounce, toast } from "react-toastify";
 import { Box } from "../components/Box.js";
 import { Text } from "../components/Text.js";
 import { GearConnectionsSection } from "../components/cards/GearConnectionsSection.js";
+import { EditableText } from "../components/forms/EditableText.js";
 import { ActivityCard } from "../components/index.js";
 import { Routes } from "../constants.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
@@ -21,6 +22,7 @@ import { useLoading } from "../contexts/LoadingContext.js";
 import { useStore } from "../contexts/StoreContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
 import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
+import { formatDistance, formatDuration } from "../utils/formatters.js";
 import {
 	actionButtonBaseClass,
 	inputBaseClass,
@@ -165,6 +167,9 @@ export function ActivityDetails() {
 				showExtendedTextFields
 				onActivityRefresh={loadActivity}
 			/>
+			{activity.laps.length > 0 && (
+				<ActivityLapsSection activity={activity} reload={loadActivity} />
+			)}
 			{(activity.type === ActivityType.GYM ||
 				activity.type === ActivityType.SWIM) && (
 				<ActivityDateSection activity={activity} reload={loadActivity} />
@@ -241,6 +246,96 @@ export function ActivityDetails() {
 				hasConnections={activity.connections.length > 0}
 			/>
 		</div>
+	);
+}
+
+function ActivityLapsSection({
+	activity,
+	reload,
+}: {
+	activity: DbActivityPopulated;
+	reload: () => Promise<void>;
+}) {
+	const { client } = useDataClient();
+
+	const handleLapIdentifierSave =
+		(lapId: string, currentIdentifier: string) => async (value: string) => {
+			if (value === currentIdentifier) {
+				return;
+			}
+
+			const result = await client.editActivityLap(lapId, {
+				identifier: value,
+			});
+			if (!result.success) {
+				toast.error(result.error, { transition: Bounce });
+				return;
+			}
+
+			await reload();
+		};
+
+	return (
+		<Box
+			title="Laps"
+			description="Provider-reported lap splits for this activity."
+		>
+			<div className="space-y-3">
+				{activity.laps.map((lap) => (
+					<div
+						key={lap.id}
+						className="grid gap-3 rounded-md border border-slate-200/80 p-3 sm:grid-cols-[72px_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]"
+					>
+						<div className="space-y-1">
+							<Text
+								className="text-[11px] font-semibold uppercase tracking-[0.08em]"
+								variant="description"
+								text="Lap"
+							/>
+							<Text
+								className="text-base font-semibold"
+								text={`${lap.lapNumber}`}
+							/>
+						</div>
+						<div className="space-y-1">
+							<Text
+								className="text-[11px] font-semibold uppercase tracking-[0.08em]"
+								variant="description"
+								text="Identifier"
+							/>
+							<EditableText
+								value={lap.identifier}
+								onSave={handleLapIdentifierSave(lap.id, lap.identifier)}
+								placeholder={`Lap ${lap.lapNumber}`}
+								className="min-h-0 px-0 py-0 text-sm font-medium hover:bg-transparent"
+							/>
+						</div>
+						<div className="space-y-1">
+							<Text
+								className="text-[11px] font-semibold uppercase tracking-[0.08em]"
+								variant="description"
+								text="Distance / Time"
+							/>
+							<Text
+								className="text-sm"
+								text={`${formatDistance(lap.distance)} • ${formatDuration(lap.elapsedTime)}`}
+							/>
+						</div>
+						<div className="space-y-1">
+							<Text
+								className="text-[11px] font-semibold uppercase tracking-[0.08em]"
+								variant="description"
+								text="Heart Rate"
+							/>
+							<Text
+								className="text-sm"
+								text={`Avg ${lap.averageHeartRate ? `${Math.round(lap.averageHeartRate)} bpm` : "-"} • Max ${lap.maximumHeartRate ? `${Math.round(lap.maximumHeartRate)} bpm` : "-"}`}
+							/>
+						</div>
+					</div>
+				))}
+			</div>
+		</Box>
 	);
 }
 

@@ -46,6 +46,65 @@ const tokenResponse = (
 	};
 };
 
+const activityLapsData: Record<
+	string,
+	Array<{
+		id: number;
+		resource_state: number;
+		name: string;
+		elapsed_time: number;
+		moving_time: number;
+		start_date: string;
+		start_date_local: string;
+		distance: number;
+		lap_index: number;
+		average_heartrate?: number;
+		max_heartrate?: number;
+	}>
+> = {
+	"16198895522": [
+		{
+			id: 900000001,
+			resource_state: 2,
+			name: "Warm Up",
+			elapsed_time: 600,
+			moving_time: 590,
+			start_date: "2025-10-20T08:55:03Z",
+			start_date_local: "2025-10-20T17:55:03Z",
+			distance: 2000,
+			lap_index: 1,
+			average_heartrate: 129.4,
+			max_heartrate: 141,
+		},
+		{
+			id: 900000002,
+			resource_state: 2,
+			name: "Run",
+			elapsed_time: 1740,
+			moving_time: 1735,
+			start_date: "2025-10-20T09:05:03Z",
+			start_date_local: "2025-10-20T18:05:03Z",
+			distance: 6149.3,
+			lap_index: 2,
+			average_heartrate: 141.2,
+			max_heartrate: 157,
+		},
+		{
+			id: 900000003,
+			resource_state: 2,
+			name: "Rest",
+			elapsed_time: 1143,
+			moving_time: 1158,
+			start_date: "2025-10-20T09:34:03Z",
+			start_date_local: "2025-10-20T18:34:03Z",
+			distance: 4000,
+			lap_index: 3,
+			average_heartrate: 136.8,
+			max_heartrate: 148,
+		},
+	],
+};
+
 const createContext = async () => {
 	const cache = await createTestCacheDb({
 		clearDb: true,
@@ -202,6 +261,14 @@ describe.sequential("strava client connect()", () => {
 				return Promise.resolve({
 					ok: true,
 					json: () => Promise.resolve({ success: true }),
+				} as Response);
+			}
+			if (urlStr.includes("/activities/") && urlStr.endsWith("/laps")) {
+				const parts = urlStr.split("/");
+				const activityId = parts[parts.length - 2] as string;
+				return Promise.resolve({
+					ok: true,
+					json: () => Promise.resolve(activityLapsData[activityId] ?? []),
 				} as Response);
 			}
 			if (urlStr.includes("/activities/")) {
@@ -478,6 +545,22 @@ describe.sequential("strava client connect()", () => {
 		expect(result.activity.providerActivity?.id).toEqual(testActivityId);
 	});
 
+	test("maps Strava laps into the activity payload", async () => {
+		await client.connect({ refreshToken: "token" });
+		const result = await client.syncActivity("16198895522");
+
+		expect(result.laps).toHaveLength(3);
+		expect(result.laps?.[0]).toMatchObject({
+			lapNumber: 1,
+			identifier: "Warm Up",
+			distance: 2000,
+			elapsedTime: 600,
+			movingTime: 590,
+			averageHeartRate: 129.4,
+			maximumHeartRate: 141,
+		});
+	});
+
 	test("maps running metadata from strava activity details", async () => {
 		await client.connect({ refreshToken: "token" });
 		const testActivityId = "16198895522";
@@ -506,6 +589,12 @@ describe.sequential("strava client connect()", () => {
 		const testActivityId = "17682257288";
 		mockFetch.mockImplementation((url: RequestInfo) => {
 			const urlStr = typeof url === "string" ? url : url.url;
+			if (urlStr.includes("/activities/") && urlStr.endsWith("/laps")) {
+				return Promise.resolve({
+					ok: true,
+					json: () => Promise.resolve([]),
+				} as Response);
+			}
 			if (urlStr.includes(`/activities/${testActivityId}`)) {
 				return Promise.resolve({
 					ok: true,
@@ -645,6 +734,12 @@ describe.sequential("strava client connect()", () => {
 		const testActivityId = "17682257287";
 		mockFetch.mockImplementation((url: RequestInfo) => {
 			const urlStr = typeof url === "string" ? url : url.url;
+			if (urlStr.includes("/activities/") && urlStr.endsWith("/laps")) {
+				return Promise.resolve({
+					ok: true,
+					json: () => Promise.resolve([]),
+				} as Response);
+			}
 			if (urlStr.includes(`/activities/${testActivityId}`)) {
 				return Promise.resolve({
 					ok: true,

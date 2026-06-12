@@ -253,6 +253,22 @@ export async function handleClientAction(
 				}
 			});
 		}
+		case "editActivityLap": {
+			const { id, data } = payload as {
+				id?: string;
+				data?: Record<string, unknown>;
+			};
+			const lapId = ensureString(id, "lap id");
+			if (!data || typeof data !== "object") {
+				throw new Error("Missing lap payload");
+			}
+			const lapData = data as {
+				identifier?: string;
+			};
+			return withVoid(async () => {
+				await db.editActivityLap(lapId, lapData);
+			});
+		}
 		case "deleteActivity": {
 			const { activityId } = payload as { activityId?: string };
 			const id = ensureString(activityId, "activity id");
