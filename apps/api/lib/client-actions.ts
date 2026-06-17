@@ -8,6 +8,8 @@ import {
 	type IInbodyCreateInput,
 	type IInbodyUpdateInput,
 	type InbodyType,
+	type LapIdentifier,
+	type ProviderActivityLapBackfillSummary,
 	type ProviderSuccessResponse,
 	Providers,
 	type StravaClientOptions,
@@ -263,11 +265,9 @@ export async function handleClientAction(
 				throw new Error("Missing lap payload");
 			}
 			const lapData = data as {
-				identifier?: string;
+				identifier?: LapIdentifier;
 			};
-			return withVoid(async () => {
-				await db.editActivityLap(lapId, lapData);
-			});
+			return withData(() => db.editActivityLap(lapId, lapData));
 		}
 		case "deleteActivity": {
 			const { activityId } = payload as { activityId?: string };
@@ -411,6 +411,50 @@ export async function handleClientAction(
 					await manager.syncGears(providerEnum);
 					return;
 				}
+			});
+		}
+		case "providerBackfillActivityLaps": {
+			const { provider, credentials, options } = payload as {
+				provider?: Providers;
+				credentials?: ConnectCredentials;
+				options?: StravaClientOptions;
+			};
+			const providerEnum = ensureProvider(provider);
+			return withData<ProviderActivityLapBackfillSummary>(async () => {
+				const manager = await getProviderManager();
+				await connectProvider({
+					manager,
+					provider: providerEnum,
+					credentials,
+					options,
+				});
+				return manager.backfillActivityLaps(providerEnum);
+			});
+		}
+		case "providerSyncActivity": {
+			const { provider, activityId, credentials, options } = payload as {
+				provider?: Providers;
+				activityId?: string;
+				credentials?: ConnectCredentials;
+				options?: StravaClientOptions;
+			};
+			const providerEnum = ensureProvider(provider);
+			const targetActivityId = ensureString(activityId, "provider activity id");
+			return withData<string>(async () => {
+				const manager = await getProviderManager();
+				await connectProvider({
+					manager,
+					provider: providerEnum,
+					credentials,
+					options,
+				});
+				const id = await manager.syncActivity(providerEnum, targetActivityId);
+				if (!id) {
+					throw new Error(
+						"Provider activity sync did not return an activity id",
+					);
+				}
+				return id;
 			});
 		}
 		case "exportActivityManual": {

@@ -1,6 +1,6 @@
 import { formatRelativeTime } from "@repo/dates";
-import { AppType, type Providers, StorageKeys } from "@repo/types";
-import { FolderSync, RefreshCw } from "lucide-react";
+import { AppType, Providers, StorageKeys } from "@repo/types";
+import { DatabaseZap, FolderSync, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDataClient, useLoading, useStore } from "../../contexts/index.js";
 import { Box } from "../Box.js";
@@ -51,14 +51,18 @@ export function ProviderSyncActionsSection({
 		void loadState();
 	}, [getValue, provider, stateVersion, type]);
 
-	const { handlePullGear, handleSync, handleSyncLatest } =
-		useProviderSyncActions({
-			provider,
-			validationStatus: isReady ? "success" : "pending",
-			client,
-			setLocalLoading,
-			setValue,
-		});
+	const {
+		handlePullGear,
+		handleSync,
+		handleSyncLatest,
+		handleBackfillActivityLaps,
+	} = useProviderSyncActions({
+		provider,
+		validationStatus: isReady ? "success" : "pending",
+		client,
+		setLocalLoading,
+		setValue,
+	});
 
 	return (
 		<Box
@@ -86,6 +90,14 @@ export function ProviderSyncActionsSection({
 					text="Sync All Activities"
 					disabled={!isReady}
 				/>
+				{provider === Providers.STRAVA ? (
+					<ActionButton
+						icon={<DatabaseZap size={20} />}
+						onClick={handleBackfillActivityLaps}
+						text="Populate Missing Laps"
+						disabled={!isReady}
+					/>
+				) : null}
 			</div>
 		</Box>
 	);

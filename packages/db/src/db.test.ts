@@ -2,7 +2,12 @@ import "dotenv/config";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ActivitySubType, ActivityType, Providers } from "@repo/types";
+import {
+	ActivitySubType,
+	ActivityType,
+	LapIdentifier,
+	Providers,
+} from "@repo/types";
 import { sql } from "drizzle-orm";
 import { uuidv7 } from "uuidv7";
 import {
@@ -516,7 +521,7 @@ describe("db", () => {
 			laps: [
 				{
 					lapNumber: 1,
-					identifier: "Warm Up",
+					identifier: LapIdentifier.WARM_UP,
 					distance: 2000,
 					elapsedTime: 620,
 					movingTime: 610,
@@ -525,7 +530,7 @@ describe("db", () => {
 				},
 				{
 					lapNumber: 2,
-					identifier: "Run",
+					identifier: LapIdentifier.RUN,
 					distance: 8000,
 					elapsedTime: 1780,
 					movingTime: 1770,
@@ -539,14 +544,99 @@ describe("db", () => {
 		expect(result?.laps).toHaveLength(2);
 		expect(result?.laps[0]).toMatchObject({
 			lapNumber: 1,
-			identifier: "Warm Up",
+			identifier: LapIdentifier.WARM_UP,
 			distance: 2000,
 			elapsedTime: 620,
 			movingTime: 610,
 			averageHeartRate: 128.5,
 			maximumHeartRate: 141,
 		});
-		expect(result?.laps[1]?.identifier).toBe("Run");
+		expect(result?.laps[1]?.identifier).toBe(LapIdentifier.RUN);
+	});
+
+	test("should list provider activities that are missing laps", async () => {
+		const missingLapsActivityId = await db.insertActivity({
+			activity: {
+				data: {
+					name: "Missing Laps Session",
+					timestamp: Date.now() + 20,
+					timezone: "Asia/Seoul",
+					distance: 5000,
+					duration: 1500,
+					manufacturer: "STRAVA",
+					device: "manual",
+					locationName: "",
+					locationCountry: "",
+					type: ActivityType.RUN,
+					subtype: ActivitySubType.EASY_RUN,
+					notes: "",
+					insight: "",
+					description: "",
+					metadata: {},
+					isEvent: 0,
+					startLatitude: 0,
+					startLongitude: 0,
+				},
+				providerActivity: {
+					id: "strava-missing-laps",
+					provider: Providers.STRAVA,
+					original: false,
+					timestamp: Date.now() + 20,
+					data: "{}",
+				},
+			},
+		});
+
+		await db.insertActivity({
+			activity: {
+				data: {
+					name: "Has Laps Session",
+					timestamp: Date.now() + 21,
+					timezone: "Asia/Seoul",
+					distance: 6000,
+					duration: 1800,
+					manufacturer: "STRAVA",
+					device: "manual",
+					locationName: "",
+					locationCountry: "",
+					type: ActivityType.RUN,
+					subtype: ActivitySubType.EASY_RUN,
+					notes: "",
+					insight: "",
+					description: "",
+					metadata: {},
+					isEvent: 0,
+					startLatitude: 0,
+					startLongitude: 0,
+				},
+				providerActivity: {
+					id: "strava-has-laps",
+					provider: Providers.STRAVA,
+					original: false,
+					timestamp: Date.now() + 21,
+					data: "{}",
+				},
+			},
+			laps: [
+				{
+					lapNumber: 1,
+					identifier: LapIdentifier.RUN,
+					distance: 6000,
+					elapsedTime: 1800,
+					movingTime: 1790,
+					averageHeartRate: 144,
+					maximumHeartRate: 160,
+				},
+			],
+		});
+
+		const result = await db.getProviderActivitiesWithoutLaps(Providers.STRAVA);
+		expect(result).toEqual([
+			{
+				activityId: missingLapsActivityId,
+				providerActivityId: "strava-missing-laps",
+			},
+		]);
 	});
 
 	test("should edit a stored lap identifier", async () => {
@@ -576,7 +666,7 @@ describe("db", () => {
 			laps: [
 				{
 					lapNumber: 1,
-					identifier: "Warm Up",
+					identifier: LapIdentifier.WARM_UP,
 					distance: 4000,
 					elapsedTime: 1200,
 					movingTime: 1190,
@@ -591,12 +681,14 @@ describe("db", () => {
 			throw new Error("Expected lap id");
 		}
 
-		await db.editActivityLap(lapId, {
-			identifier: "Threshold",
+		const updatedLap = await db.editActivityLap(lapId, {
+			identifier: LapIdentifier.SPEED,
 		});
+		expect(updatedLap.identifier).toBe(LapIdentifier.SPEED);
+		expect(updatedLap.id).toBe(lapId);
 
 		const after = await db.getActivity(createdActivityId);
-		expect(after?.laps[0]?.identifier).toBe("Threshold");
+		expect(after?.laps[0]?.identifier).toBe(LapIdentifier.SPEED);
 	});
 
 	test("should replace activity laps when a refreshed payload provides a new lap set", async () => {
@@ -635,7 +727,7 @@ describe("db", () => {
 			laps: [
 				{
 					lapNumber: 1,
-					identifier: "Warm Up",
+					identifier: LapIdentifier.WARM_UP,
 					distance: 1000,
 					elapsedTime: 300,
 					movingTime: 295,
@@ -676,14 +768,14 @@ describe("db", () => {
 			laps: [
 				{
 					lapNumber: 1,
-					identifier: "Speed",
+					identifier: LapIdentifier.SPEED,
 					distance: 2000,
 					elapsedTime: 540,
 					movingTime: 535,
 				},
 				{
 					lapNumber: 2,
-					identifier: "Rest",
+					identifier: LapIdentifier.REST,
 					distance: 3000,
 					elapsedTime: 960,
 					movingTime: 950,
@@ -696,8 +788,8 @@ describe("db", () => {
 		const result = await db.getActivity(firstActivityId);
 		expect(result?.laps).toHaveLength(2);
 		expect(result?.laps.map((lap) => lap.identifier)).toEqual([
-			"Speed",
-			"Rest",
+			LapIdentifier.SPEED,
+			LapIdentifier.REST,
 		]);
 	});
 

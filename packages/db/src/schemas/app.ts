@@ -1,3 +1,4 @@
+import { LapIdentifier, lapIdentifierValues } from "@repo/types";
 import {
 	index,
 	integer,
@@ -122,7 +123,10 @@ export const activityLaps = sqliteTable(
 			.references(() => activities.id)
 			.notNull(),
 		lapNumber: integer("lap_number").notNull(),
-		identifier: text("identifier").default("").notNull(),
+		identifier: text("identifier", { enum: lapIdentifierValues })
+			.$type<LapIdentifier>()
+			.default(LapIdentifier.RUN)
+			.notNull(),
 		distance: real("distance").default(0).notNull(),
 		elapsedTime: integer("elapsed_time").default(0).notNull(),
 		movingTime: integer("moving_time").default(0).notNull(),

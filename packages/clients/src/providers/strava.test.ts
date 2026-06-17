@@ -7,6 +7,7 @@ import {
 	ActivitySubType,
 	ActivityType,
 	GearType,
+	LapIdentifier,
 	Providers,
 } from "@repo/types";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -552,7 +553,7 @@ describe.sequential("strava client connect()", () => {
 		expect(result.laps).toHaveLength(3);
 		expect(result.laps?.[0]).toMatchObject({
 			lapNumber: 1,
-			identifier: "Warm Up",
+			identifier: LapIdentifier.WARM_UP,
 			distance: 2000,
 			elapsedTime: 600,
 			movingTime: 590,

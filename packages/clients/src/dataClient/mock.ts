@@ -11,6 +11,7 @@ import type {
 	ICloudSyncStatus,
 	IConfiguredProvidersData,
 	IDailyOverviewData,
+	IDbActivityLap,
 	IDbGearWithDistance,
 	IGearCreateInput,
 	IInbodyCreateInput,
@@ -19,6 +20,8 @@ import type {
 	IOverviewData,
 	IWeeklyOverviewData,
 	InbodyType,
+	LapIdentifier,
+	ProviderActivityLapBackfillSummary,
 	ProviderSuccessResponse,
 	Providers,
 	StorageKeys,
@@ -193,12 +196,23 @@ export class MockClient implements Client {
 	async editActivityLap(
 		id: string,
 		data: {
-			identifier?: string;
+			identifier?: LapIdentifier;
+			activityId?: string;
 		},
-	): Promise<ProviderSuccessResponse> {
+	): Promise<ProviderSuccessResponse<{ data?: IDbActivityLap }>> {
 		try {
 			return {
 				success: true,
+				data: data.identifier
+					? ({
+							id,
+							lapNumber: 0,
+							identifier: data.identifier,
+							distance: 0,
+							elapsedTime: 0,
+							movingTime: 0,
+						} satisfies IDbActivityLap)
+					: undefined,
 			};
 		} catch (err) {
 			return {
@@ -405,6 +419,22 @@ export class MockClient implements Client {
 	async providerSync(): Promise<ProviderSuccessResponse> {
 		return {
 			success: true,
+		};
+	}
+
+	async providerBackfillActivityLaps(): Promise<
+		ProviderSuccessResponse<{
+			data: ProviderActivityLapBackfillSummary;
+		}>
+	> {
+		return {
+			success: true,
+			data: {
+				total: 0,
+				synced: 0,
+				failed: 0,
+				failures: [],
+			},
 		};
 	}
 

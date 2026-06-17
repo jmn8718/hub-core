@@ -103,5 +103,52 @@ export function useProviderSyncActions({
 		}, 200);
 	}, [client, provider, setLocalLoading, setValue, validationStatus]);
 
-	return { handlePullGear, handleSync, handleSyncLatest };
+	const handleBackfillActivityLaps = useCallback(async () => {
+		if (validationStatus !== "success") return;
+		setLocalLoading(true);
+
+		try {
+			const result = await client.providerBackfillActivityLaps(provider);
+			if (!result.success) {
+				throw new Error(result.error);
+			}
+
+			const summary = result.data;
+			if (summary.total === 0) {
+				toast.info("No Strava activities are missing laps.", {
+					transition: Bounce,
+				});
+			} else if (summary.failed > 0) {
+				toast.warn(
+					`Backfilled ${summary.synced}/${summary.total} activities. ${summary.failed} failed.`,
+					{ transition: Bounce },
+				);
+			} else {
+				toast.success(
+					`Backfilled laps for ${summary.synced} Strava activities.`,
+					{
+						transition: Bounce,
+					},
+				);
+			}
+			setValue(getLastSyncKey(provider), new Date().toISOString());
+		} catch (error) {
+			toast.error((error as Error).message, {
+				hideProgressBar: false,
+				closeOnClick: false,
+				transition: Bounce,
+			});
+		}
+
+		setTimeout(() => {
+			setLocalLoading(false);
+		}, 200);
+	}, [client, provider, setLocalLoading, setValue, validationStatus]);
+
+	return {
+		handlePullGear,
+		handleSync,
+		handleSyncLatest,
+		handleBackfillActivityLaps,
+	};
 }

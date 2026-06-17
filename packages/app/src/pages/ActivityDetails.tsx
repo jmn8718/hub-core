@@ -1,11 +1,17 @@
 import { dateWithTimezoneToUTC, formatDate } from "@repo/dates";
-import type { DbActivityPopulated, IDbGearWithDistance } from "@repo/types";
+import type {
+	DbActivityPopulated,
+	IDbActivityLap,
+	IDbGearWithDistance,
+} from "@repo/types";
 import {
 	ActivitySubType,
 	ActivityType,
 	AppType,
+	LapIdentifier,
 	Providers,
 	StorageKeys,
+	lapIdentifierValues,
 } from "@repo/types";
 import { cn } from "@repo/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -14,7 +20,6 @@ import { Bounce, toast } from "react-toastify";
 import { Box } from "../components/Box.js";
 import { Text } from "../components/Text.js";
 import { GearConnectionsSection } from "../components/cards/GearConnectionsSection.js";
-import { EditableText } from "../components/forms/EditableText.js";
 import { ActivityCard } from "../components/index.js";
 import { Routes } from "../constants.js";
 import { useDataClient } from "../contexts/DataClientContext.js";
@@ -39,6 +44,7 @@ export function ActivityDetails() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadError, setLoadError] = useState<string | null>(null);
 	const [isRegeneratingMetadata, setIsRegeneratingMetadata] = useState(false);
+	const [isPopulatingLaps, setIsPopulatingLaps] = useState(false);
 
 	const MAX_RETRIES = 3;
 	const RETRY_DELAY_MS = 1000;
@@ -158,6 +164,11 @@ export function ActivityDetails() {
 	const hasLongFormContent =
 		(activity.insight?.trim() ?? "").length > 0 ||
 		(activity.description?.trim() ?? "").length > 0;
+	const stravaConnection = activity.connections.find(
+		(connection) => connection.provider === Providers.STRAVA,
+	);
+	const canPopulateStravaLaps =
+		Boolean(stravaConnection?.id) && activity.laps.length === 0;
 
 	return (
 		<div className="space-y-4">
@@ -167,6 +178,52 @@ export function ActivityDetails() {
 				showExtendedTextFields
 				onActivityRefresh={loadActivity}
 			/>
+			{canPopulateStravaLaps && (
+				<Box
+					title="Laps"
+					description="Fetch provider-reported lap splits for this activity from Strava."
+				>
+					<div className="flex justify-end">
+						<button
+							type="button"
+							onClick={async () => {
+								if (!stravaConnection?.id) {
+									return;
+								}
+
+								setIsPopulatingLaps(true);
+								setLocalLoading(true);
+								try {
+									const result = await client.providerSyncActivity(
+										Providers.STRAVA,
+										stravaConnection.id,
+									);
+									if (!result.success) {
+										throw new Error(result.error);
+									}
+									await loadActivity();
+									toast.success("Strava laps populated.", {
+										transition: Bounce,
+									});
+								} catch (error) {
+									toast.error((error as Error).message, {
+										hideProgressBar: false,
+										closeOnClick: false,
+										transition: Bounce,
+									});
+								} finally {
+									setLocalLoading(false);
+									setIsPopulatingLaps(false);
+								}
+							}}
+							disabled={isPopulatingLaps}
+							className={cn(actionButtonBaseClass, colors.buttonSecondary)}
+						>
+							{isPopulatingLaps ? "Fetching laps..." : "Fetch laps"}
+						</button>
+					</div>
+				</Box>
+			)}
 			{activity.laps.length > 0 && (
 				<ActivityLapsSection activity={activity} reload={loadActivity} />
 			)}
@@ -254,86 +311,184 @@ function ActivityLapsSection({
 	reload,
 }: {
 	activity: DbActivityPopulated;
-	reload: () => Promise<void>;
+	reload: (options?: {
+		showLoading?: boolean;
+		showErrors?: boolean;
+	}) => Promise<void>;
 }) {
 	const { client } = useDataClient();
+	const { setLocalLoading, isLocalLoading } = useLoading();
+	const [lapIdentifiers, setLapIdentifiers] = useState<
+		Record<string, LapIdentifier>
+	>({});
+
+	useEffect(() => {
+		setLapIdentifiers(
+			Object.fromEntries(
+				activity.laps.map((lap) => [
+					lap.id,
+					lapIdentifierValues.includes(lap.identifier)
+						? lap.identifier
+						: LapIdentifier.RUN,
+				]),
+			),
+		);
+	}, [activity.laps]);
 
 	const handleLapIdentifierSave =
-		(lapId: string, currentIdentifier: string) => async (value: string) => {
+		(lapId: string, currentIdentifier: LapIdentifier) =>
+		async (value: LapIdentifier) => {
 			if (value === currentIdentifier) {
 				return;
 			}
 
-			const result = await client.editActivityLap(lapId, {
-				identifier: value,
-			});
-			if (!result.success) {
-				toast.error(result.error, { transition: Bounce });
-				return;
+			setLapIdentifiers((current) => ({
+				...current,
+				[lapId]: value,
+			}));
+			setLocalLoading(true);
+
+			try {
+				const result = await client.editActivityLap(lapId, {
+					identifier: value,
+					activityId: activity.id,
+				});
+				if (!result.success) {
+					console.error("[ActivityDetails] lap identifier save failed", {
+						activityId: activity.id,
+						lapId,
+						nextIdentifier: value,
+						error: result.error,
+					});
+					setLapIdentifiers((current) => ({
+						...current,
+						[lapId]: currentIdentifier,
+					}));
+					toast.error(result.error, {
+						hideProgressBar: false,
+						closeOnClick: false,
+						transition: Bounce,
+					});
+					return;
+				}
+
+				const persistedLap = result.data;
+				if (persistedLap) {
+					setLapIdentifiers((current) => ({
+						...current,
+						[persistedLap.id]: persistedLap.identifier,
+					}));
+				}
+
+				await reload({
+					showLoading: false,
+					showErrors: false,
+				});
+			} catch (error) {
+				console.error("[ActivityDetails] lap identifier save threw", {
+					activityId: activity.id,
+					lapId,
+					nextIdentifier: value,
+					error,
+				});
+				setLapIdentifiers((current) => ({
+					...current,
+					[lapId]: currentIdentifier,
+				}));
+				toast.error((error as Error).message, {
+					hideProgressBar: false,
+					closeOnClick: false,
+					transition: Bounce,
+				});
+			} finally {
+				setTimeout(() => setLocalLoading(false), 200);
 			}
-
-			await reload();
 		};
-
 	return (
 		<Box
 			title="Laps"
 			description="Provider-reported lap splits for this activity."
 		>
-			<div className="space-y-3">
-				{activity.laps.map((lap) => (
-					<div
-						key={lap.id}
-						className="grid gap-3 rounded-md border border-slate-200/80 p-3 sm:grid-cols-[72px_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]"
-					>
-						<div className="space-y-1">
-							<Text
-								className="text-[11px] font-semibold uppercase tracking-[0.08em]"
-								variant="description"
-								text="Lap"
-							/>
-							<Text
-								className="text-base font-semibold"
-								text={`${lap.lapNumber}`}
-							/>
-						</div>
-						<div className="space-y-1">
-							<Text
-								className="text-[11px] font-semibold uppercase tracking-[0.08em]"
-								variant="description"
-								text="Identifier"
-							/>
-							<EditableText
-								value={lap.identifier}
-								onSave={handleLapIdentifierSave(lap.id, lap.identifier)}
-								placeholder={`Lap ${lap.lapNumber}`}
-								className="min-h-0 px-0 py-0 text-sm font-medium hover:bg-transparent"
-							/>
-						</div>
-						<div className="space-y-1">
-							<Text
-								className="text-[11px] font-semibold uppercase tracking-[0.08em]"
-								variant="description"
-								text="Distance / Time"
-							/>
-							<Text
-								className="text-sm"
-								text={`${formatDistance(lap.distance)} • ${formatDuration(lap.elapsedTime)}`}
-							/>
-						</div>
-						<div className="space-y-1">
-							<Text
-								className="text-[11px] font-semibold uppercase tracking-[0.08em]"
-								variant="description"
-								text="Heart Rate"
-							/>
-							<Text
-								className="text-sm"
-								text={`Avg ${lap.averageHeartRate ? `${Math.round(lap.averageHeartRate)} bpm` : "-"} • Max ${lap.maximumHeartRate ? `${Math.round(lap.maximumHeartRate)} bpm` : "-"}`}
-							/>
-						</div>
-					</div>
-				))}
+			<div className="overflow-x-auto rounded-md border border-slate-200/80">
+				<table className="min-w-full border-collapse text-sm">
+					<thead className="bg-slate-50/80">
+						<tr className="border-b border-slate-200/80">
+							<th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+								Lap
+							</th>
+							<th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+								Distance
+							</th>
+							<th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+								Time
+							</th>
+							<th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+								Avg HR
+							</th>
+							<th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+								Max HR
+							</th>
+							<th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+								Identifier
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						{activity.laps.map((lap, index) => {
+							const selectedIdentifier =
+								lapIdentifiers[lap.id] ?? LapIdentifier.RUN;
+
+							return (
+								<tr
+									key={lap.id}
+									className={cn(
+										"border-b border-slate-200/80 align-middle last:border-b-0",
+										index % 2 === 0 ? "bg-white" : "bg-slate-50/40",
+									)}
+								>
+									<td className="px-4 py-3 font-semibold text-slate-700">
+										{lap.lapNumber}
+									</td>
+									<td className="px-4 py-3 text-slate-700">
+										{formatDistance(lap.distance)}
+									</td>
+									<td className="px-4 py-3 text-slate-700">
+										{formatDuration(lap.elapsedTime)}
+									</td>
+									<td className="px-4 py-3 text-slate-700">
+										{lap.averageHeartRate
+											? `${Math.round(lap.averageHeartRate)} bpm`
+											: "-"}
+									</td>
+									<td className="px-4 py-3 text-slate-700">
+										{lap.maximumHeartRate
+											? `${Math.round(lap.maximumHeartRate)} bpm`
+											: "-"}
+									</td>
+									<td className="px-4 py-3">
+										<select
+											value={selectedIdentifier}
+											onChange={(event) => {
+												void handleLapIdentifierSave(
+													lap.id,
+													selectedIdentifier,
+												)(event.target.value as LapIdentifier);
+											}}
+											disabled={isLocalLoading}
+											className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400"
+										>
+											{lapIdentifierValues.map((option) => (
+												<option key={option} value={option}>
+													{option}
+												</option>
+											))}
+										</select>
+									</td>
+								</tr>
+							);
+						})}
+					</tbody>
+				</table>
 			</div>
 		</Box>
 	);

@@ -12,6 +12,7 @@ import type {
 	ICloudSyncStatus,
 	IConfiguredProvidersData,
 	IDailyOverviewData,
+	IDbActivityLap,
 	IDbGearWithDistance,
 	IGearCreateInput,
 	IInbodyCreateInput,
@@ -19,7 +20,9 @@ import type {
 	IInbodyUpdateInput,
 	IOverviewData,
 	IWeeklyOverviewData,
+	LapIdentifier,
 	LoginCredentials,
+	ProviderActivityLapBackfillSummary,
 	ProviderSuccessResponse,
 	StravaClientOptions,
 	StravaCredentials,
@@ -181,10 +184,14 @@ export class WebClient implements Client {
 	async editActivityLap(
 		id: string,
 		data: {
-			identifier?: string;
+			identifier?: LapIdentifier;
+			activityId?: string;
 		},
-	): Promise<ProviderSuccessResponse> {
-		return this._execute("editActivityLap", { id, data });
+	): Promise<ProviderSuccessResponse<{ data?: IDbActivityLap }>> {
+		return this._execute<{ data?: IDbActivityLap }>("editActivityLap", {
+			id,
+			data,
+		});
 	}
 
 	async deleteActivity(activityId: string): Promise<ProviderSuccessResponse> {
@@ -312,6 +319,22 @@ export class WebClient implements Client {
 		});
 	}
 
+	async providerBackfillActivityLaps(provider: Providers): Promise<
+		ProviderSuccessResponse<{
+			data: ProviderActivityLapBackfillSummary;
+		}>
+	> {
+		const config = this._getStoredProviderConfig(provider);
+		return this._execute<{ data: ProviderActivityLapBackfillSummary }>(
+			"providerBackfillActivityLaps",
+			{
+				provider,
+				credentials: config?.credentials,
+				options: config?.options,
+			},
+		);
+	}
+
 	async getConfiguredProviders(): Promise<
 		ProviderSuccessResponse<{ data: IConfiguredProvidersData }>
 	> {
@@ -319,10 +342,16 @@ export class WebClient implements Client {
 	}
 
 	async providerSyncActivity(
-		_provider: Providers,
-		_activityId: string,
+		provider: Providers,
+		activityId: string,
 	): Promise<ProviderSuccessResponse<{ id: string }>> {
-		throw new Error("Not supported in the web client");
+		const config = this._getStoredProviderConfig(provider);
+		return this._execute<{ id: string }>("providerSyncActivity", {
+			provider,
+			activityId,
+			credentials: config?.credentials,
+			options: config?.options,
+		});
 	}
 
 	async providerPersistActivityCache(_params: {
@@ -661,12 +690,39 @@ export class WebClient implements Client {
 					error: "Empty response from server",
 				};
 			}
+			if (json.success) {
+				await this._invalidateCachedReads(action, payload);
+			}
 			return json;
 		} catch (error) {
 			return {
 				success: false,
 				error: (error as Error).message,
 			};
+		}
+	}
+
+	private async _invalidateCachedReads(
+		action: string,
+		payload: Record<string, unknown>,
+	): Promise<void> {
+		const userId = await this._getOfflineUserId();
+		if (!userId) {
+			return;
+		}
+
+		if (action === "editActivityLap") {
+			const data =
+				payload.data && typeof payload.data === "object"
+					? (payload.data as { activityId?: string })
+					: undefined;
+			if (!data?.activityId) {
+				return;
+			}
+
+			await this._offlineCache
+				.delete(userId, "getActivity", { activityId: data.activityId })
+				.catch(() => undefined);
 		}
 	}
 

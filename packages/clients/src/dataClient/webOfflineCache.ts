@@ -121,6 +121,25 @@ export class WebOfflineCache {
 		);
 	}
 
+	async delete(
+		userId: string,
+		action: string,
+		payload: Record<string, unknown>,
+	): Promise<void> {
+		const db = await this._open();
+		if (!db) {
+			return;
+		}
+
+		const key = createCacheKey(userId, action, payload);
+		await this._request(
+			db
+				.transaction(RESPONSE_STORE, "readwrite")
+				.objectStore(RESPONSE_STORE)
+				.delete(key),
+		);
+	}
+
 	async deleteUserData(userId: string): Promise<void> {
 		const db = await this._open();
 		if (!db) {

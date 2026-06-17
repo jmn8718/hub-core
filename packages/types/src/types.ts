@@ -3,6 +3,7 @@ import type {
 	ActivityType,
 	GearType,
 	InbodyType,
+	LapIdentifier,
 	Providers,
 } from "./enums.js";
 
@@ -24,6 +25,19 @@ export type ActivityRegenerationSummary = {
 	skipped: number;
 	failed: number;
 	failures: ActivityRegenerationFailure[];
+};
+
+export type ProviderActivityLapBackfillFailure = {
+	activityId: string;
+	providerActivityId: string;
+	error: string;
+};
+
+export type ProviderActivityLapBackfillSummary = {
+	total: number;
+	synced: number;
+	failed: number;
+	failures: ProviderActivityLapBackfillFailure[];
 };
 
 export interface IOverviewData {
@@ -71,7 +85,7 @@ export type ActivityMetadata = NonActivityMetadata | SwimActivityMetadata;
 export interface IDbActivityLap {
 	id: string;
 	lapNumber: number;
-	identifier: string;
+	identifier: LapIdentifier;
 	distance: number;
 	elapsedTime: number;
 	movingTime: number;
@@ -281,6 +295,7 @@ export type SyncTableName =
 	| "activities"
 	| "provider_activities"
 	| "activities_connection"
+	| "activity_laps"
 	| "gears"
 	| "provider_gears"
 	| "gears_connection"

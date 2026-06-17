@@ -84,6 +84,20 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
+	Channels.PROVIDERS_ACTIVITY_LAPS_BACKFILL,
+	async (
+		_event,
+		{
+			provider,
+		}: {
+			provider: Providers;
+		},
+	) => {
+		return manager.backfillActivityLaps(provider);
+	},
+);
+
+ipcMain.handle(
 	Channels.PROVIDERS_CONNECT,
 	async (
 		_event,

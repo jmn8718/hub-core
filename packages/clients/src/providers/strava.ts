@@ -22,6 +22,7 @@ import {
 	type StravaAthlete,
 	type StravaClientOptions,
 	type StravaLap,
+	normalizeLapIdentifier,
 } from "@repo/types";
 import strava from "strava-v3/index.js";
 import { type Client, generateActivityFilePath } from "./Client.js";
@@ -341,7 +342,7 @@ function mapActivity(activity: StravaActivity): IDbActivity {
 function mapLap(lap: StravaLap): IInsertActivityLapPayload {
 	return {
 		lapNumber: lap.lap_index,
-		identifier: lap.name?.trim() || `Lap ${lap.lap_index}`,
+		identifier: normalizeLapIdentifier(lap.name),
 		distance: lap.distance || 0,
 		elapsedTime: lap.elapsed_time || 0,
 		movingTime: lap.moving_time || 0,

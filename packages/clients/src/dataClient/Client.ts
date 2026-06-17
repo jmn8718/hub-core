@@ -11,6 +11,7 @@ import type {
 	ICloudSyncStatus,
 	IConfiguredProvidersData,
 	IDailyOverviewData,
+	IDbActivityLap,
 	IDbGearWithDistance,
 	IGearCreateInput,
 	IInbodyCreateInput,
@@ -19,6 +20,8 @@ import type {
 	IOverviewData,
 	IWeeklyOverviewData,
 	InbodyType,
+	LapIdentifier,
+	ProviderActivityLapBackfillSummary,
 	ProviderSuccessResponse,
 	Providers,
 	StorageKeys,
@@ -110,9 +113,10 @@ export abstract class Client {
 	abstract editActivityLap(
 		id: string,
 		data: {
-			identifier?: string;
+			identifier?: LapIdentifier;
+			activityId?: string;
 		},
-	): Promise<ProviderSuccessResponse>;
+	): Promise<ProviderSuccessResponse<{ data?: IDbActivityLap }>>;
 
 	abstract deleteActivity(activityId: string): Promise<ProviderSuccessResponse>;
 	abstract linkActivityConnection(
@@ -180,6 +184,11 @@ export abstract class Client {
 		provider: Providers,
 		force?: boolean,
 	): Promise<ProviderSuccessResponse>;
+	abstract providerBackfillActivityLaps(provider: Providers): Promise<
+		ProviderSuccessResponse<{
+			data: ProviderActivityLapBackfillSummary;
+		}>
+	>;
 	abstract getConfiguredProviders(): Promise<
 		ProviderSuccessResponse<{
 			data: IConfiguredProvidersData;

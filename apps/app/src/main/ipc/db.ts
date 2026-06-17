@@ -3,10 +3,12 @@ import {
 	type ActivityType,
 	Channels,
 	type IActivityCreateInput,
+	type IDbActivityLap,
 	type IGearCreateInput,
 	type IInbodyCreateInput,
 	type IInbodyUpdateInput,
 	type InbodyType,
+	type LapIdentifier,
 } from "@repo/types";
 import { ipcMain } from "electron";
 import { manager } from "../client.js";
@@ -160,6 +162,24 @@ ipcMain.handle(
 				if (updates.length === 0) return undefined;
 				return Promise.all(updates).then(() => undefined);
 			});
+	},
+);
+
+ipcMain.handle(
+	Channels.DB_ACTIVITY_LAP_EDIT,
+	async (
+		_event,
+		params: {
+			lapId: string;
+			data: {
+				identifier?: LapIdentifier;
+			};
+		},
+	): Promise<IDbActivityLap> => {
+		console.log("[desktop-ipc] editActivityLap request", params);
+		const updatedLap = await getDb().editActivityLap(params.lapId, params.data);
+		console.log("[desktop-ipc] editActivityLap response", updatedLap);
+		return updatedLap;
 	},
 );
 

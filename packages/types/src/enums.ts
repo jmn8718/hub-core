@@ -44,6 +44,38 @@ export enum ActivitySubType {
 	TRAIL = "trail",
 }
 
+export enum LapIdentifier {
+	RUN = "run",
+	SPEED = "speed",
+	REST = "rest",
+	WARM_UP = "warm up",
+}
+
+export const lapIdentifierValues = [
+	LapIdentifier.RUN,
+	LapIdentifier.SPEED,
+	LapIdentifier.REST,
+	LapIdentifier.WARM_UP,
+] as const;
+
+export const normalizeLapIdentifier = (
+	value?: string | null,
+): LapIdentifier => {
+	const normalizedValue = value?.trim().toLowerCase();
+	switch (normalizedValue) {
+		case LapIdentifier.SPEED:
+			return LapIdentifier.SPEED;
+		case LapIdentifier.REST:
+			return LapIdentifier.REST;
+		case "warmup":
+		case "warm-up":
+		case LapIdentifier.WARM_UP:
+			return LapIdentifier.WARM_UP;
+		default:
+			return LapIdentifier.RUN;
+	}
+};
+
 export enum Channels {
 	ACTIVITY_DOWNLOAD_FILE = "ACTIVITY_DOWNLOAD_FILE",
 	ACTIVITY_EXPORT_OBSIDIAN = "ACTIVITY_EXPORT_OBSIDIAN",
@@ -55,6 +87,7 @@ export enum Channels {
 	DB_ACTIVITIES_REGENERATE = "DB_ACTIVITIES_REGENERATE",
 	DB_ACTIVITY_METADATA_REGENERATE = "DB_ACTIVITY_METADATA_REGENERATE",
 	DB_ACTIVITY_EDIT = "DB_ACTIVITY_EDIT",
+	DB_ACTIVITY_LAP_EDIT = "DB_ACTIVITY_LAP_EDIT",
 	DB_ACTIVITY_DELETE = "DB_ACTIVITY_DELETE",
 	DB_ACTIVITY_CONNECTION_LINK = "DB_ACTIVITY_CONNECTION_LINK",
 	DB_ACTIVITY_CONNECTION_UNLINK = "DB_ACTIVITY_CONNECTION_UNLINK",
@@ -79,6 +112,7 @@ export enum Channels {
 	OPEN_LINK = "OPEN_LINK",
 	PROVIDERS_SYNC = "PROVIDERS_SYNC",
 	PROVIDERS_ACTIVITY_SYNC = "PROVIDERS_ACTIVITY_SYNC",
+	PROVIDERS_ACTIVITY_LAPS_BACKFILL = "PROVIDERS_ACTIVITY_LAPS_BACKFILL",
 	PROVIDERS_SYNC_GEAR = "PROVIDERS_SYNC_GEAR",
 	PROVIDERS_GEAR_STATUS_UPDATE = "PROVIDERS_GEAR_STATUS_UPDATE",
 	PROVIDERS_GEAR_CREATE = "PROVIDERS_GEAR_CREATE",

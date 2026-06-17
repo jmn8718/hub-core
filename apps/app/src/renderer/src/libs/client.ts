@@ -14,6 +14,7 @@ import {
 	type ICloudSyncStatus,
 	type IConfiguredProvidersData,
 	type IDailyOverviewData,
+	type IDbActivityLap,
 	type IDbGearWithDistance,
 	type IGearCreateInput,
 	type IInbodyCreateInput,
@@ -22,6 +23,8 @@ import {
 	type IOverviewData,
 	type IWeeklyOverviewData,
 	type InbodyType,
+	type LapIdentifier,
+	type ProviderActivityLapBackfillSummary,
 	type ProviderSuccessResponse,
 	type Providers,
 	type StorageKeys,
@@ -263,6 +266,40 @@ export class AppClient implements Client {
 				success: true,
 			};
 		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async editActivityLap(
+		id: string,
+		data: {
+			identifier?: LapIdentifier;
+			activityId?: string;
+		},
+	): Promise<ProviderSuccessResponse<{ data?: IDbActivityLap }>> {
+		try {
+			const updatedLap = (await window.electron.ipcRenderer.invoke(
+				Channels.DB_ACTIVITY_LAP_EDIT,
+				{
+					lapId: id,
+					data: {
+						identifier: data.identifier,
+					},
+				},
+			)) as Awaited<Promise<IDbActivityLap>>;
+			return {
+				success: true,
+				data: updatedLap,
+			};
+		} catch (err) {
+			console.error("[desktop-client] editActivityLap failed", {
+				id,
+				data,
+				error: (err as Error).message,
+			});
 			return {
 				success: false,
 				error: (err as Error).message,
@@ -536,6 +573,28 @@ export class AppClient implements Client {
 			});
 			return {
 				success: true,
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: (err as Error).message,
+			};
+		}
+	}
+
+	async providerBackfillActivityLaps(provider: Providers): Promise<
+		ProviderSuccessResponse<{
+			data: ProviderActivityLapBackfillSummary;
+		}>
+	> {
+		try {
+			const data = (await window.electron.ipcRenderer.invoke(
+				Channels.PROVIDERS_ACTIVITY_LAPS_BACKFILL,
+				{ provider },
+			)) as ProviderActivityLapBackfillSummary;
+			return {
+				success: true,
+				data,
 			};
 		} catch (err) {
 			return {

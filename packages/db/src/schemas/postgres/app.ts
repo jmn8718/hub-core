@@ -1,13 +1,17 @@
+import { LapIdentifier, lapIdentifierValues } from "@repo/types";
 import { sql } from "drizzle-orm";
 import {
 	doublePrecision,
 	index,
 	integer,
+	pgEnum,
 	pgTable,
 	primaryKey,
 	text,
 } from "drizzle-orm/pg-core";
 import { uuidv7 } from "uuidv7";
+
+export const lapIdentifierEnum = pgEnum("lap_identifier", lapIdentifierValues);
 
 export const activities = pgTable(
 	"activities",
@@ -113,7 +117,10 @@ export const activityLaps = pgTable(
 			.references(() => activities.id)
 			.notNull(),
 		lapNumber: integer("lap_number").notNull(),
-		identifier: text("identifier").default("").notNull(),
+		identifier: lapIdentifierEnum("identifier")
+			.$type<LapIdentifier>()
+			.default(LapIdentifier.RUN)
+			.notNull(),
 		distance: doublePrecision("distance").default(0).notNull(),
 		elapsedTime: integer("elapsed_time").default(0).notNull(),
 		movingTime: integer("moving_time").default(0).notNull(),

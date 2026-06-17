@@ -10,6 +10,7 @@ import {
 	type IConnection,
 	type IDbGearWithDistance,
 	type IGearConnection,
+	type ProviderActivityLapBackfillSummary,
 	Providers,
 	type StravaClientOptions,
 } from "@repo/types";
@@ -209,11 +210,49 @@ export class ProviderManager {
 			.then(this.insertInDatabase.bind(this));
 	}
 
+	public async backfillActivityLaps(
+		provider: Providers,
+	): Promise<ProviderActivityLapBackfillSummary> {
+		if (provider !== Providers.STRAVA) {
+			throw new Error(`${provider} does not support lap backfill`);
+		}
+		const client = this._getProvider(provider);
+		const activities =
+			await this._db.getProviderActivitiesWithoutLaps(provider);
+		const failures: ProviderActivityLapBackfillSummary["failures"] = [];
+		let synced = 0;
+
+		for (const activity of activities) {
+			try {
+				const payload = await client.syncActivity(activity.providerActivityId);
+				await this.insertInDatabase(payload);
+				synced += 1;
+			} catch (error) {
+				failures.push({
+					activityId: activity.activityId,
+					providerActivityId: activity.providerActivityId,
+					error: (error as Error).message,
+				});
+			}
+		}
+
+		return {
+			total: activities.length,
+			synced,
+			failed: failures.length,
+			failures,
+		};
+	}
+
 	public async persistActivityCache(params: {
 		provider: Providers;
 		providerActivityId: string;
 	}) {
 		const client = this._getProvider(params.provider);
+		if (params.provider === Providers.STRAVA) {
+			const payload = await client.syncActivity(params.providerActivityId);
+			await this.insertInDatabase(payload);
+		}
 		const details = await client.getActivity(params.providerActivityId, {
 			force: true,
 		});

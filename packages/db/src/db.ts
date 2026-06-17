@@ -21,9 +21,10 @@ import type {
 	ISyncStateData,
 	IWeeklyOverviewData,
 	InbodyType,
+	LapIdentifier,
 	Providers,
 } from "@repo/types";
-import { ActivityType } from "@repo/types";
+import { ActivityType, normalizeLapIdentifier } from "@repo/types";
 import {
 	and,
 	asc,
@@ -1390,17 +1391,39 @@ export class Db {
 	async editActivityLap(
 		id: string,
 		data: {
-			identifier?: string;
+			identifier?: LapIdentifier;
 		},
-	) {
+	): Promise<IDbActivityLap> {
 		const metadata = await this._buildSyncMetadata();
-		return this._client
+		await this._client
 			.update(activityLaps)
 			.set({
-				...data,
+				identifier:
+					typeof data.identifier === "undefined"
+						? undefined
+						: normalizeLapIdentifier(data.identifier),
 				...metadata,
 			})
 			.where(eq(activityLaps.id, id));
+
+		const row = await this._client.query.activityLaps.findFirst({
+			where: and(eq(activityLaps.id, id), this._activeActivityLapCondition()),
+		});
+		if (!row) {
+			throw new Error("Activity lap not found");
+		}
+
+		const updatedLap = {
+			id: row.id,
+			lapNumber: row.lapNumber,
+			identifier: row.identifier,
+			distance: row.distance,
+			elapsedTime: row.elapsedTime,
+			movingTime: row.movingTime,
+			averageHeartRate: row.averageHeartRate ?? undefined,
+			maximumHeartRate: row.maximumHeartRate ?? undefined,
+		};
+		return updatedLap;
 	}
 
 	async createActivity(data: IActivityCreateInput) {
@@ -1505,7 +1528,7 @@ export class Db {
 			params.laps.map((lap) => ({
 				activityId: params.activityId,
 				lapNumber: lap.lapNumber,
-				identifier: lap.identifier,
+				identifier: normalizeLapIdentifier(lap.identifier),
 				distance: lap.distance,
 				elapsedTime: lap.elapsedTime,
 				movingTime: lap.movingTime,
@@ -2021,6 +2044,37 @@ export class Db {
 					this._activeActivitiesConnectionCondition(),
 				),
 			);
+	}
+
+	getProviderActivitiesWithoutLaps(provider: Providers) {
+		return this._client
+			.select({
+				activityId: activitiesConnection.activityId,
+				providerActivityId: activitiesConnection.providerActivityId,
+			})
+			.from(activitiesConnection)
+			.leftJoin(
+				providerActivities,
+				and(
+					eq(providerActivities.id, activitiesConnection.providerActivityId),
+					this._activeProviderActivityCondition(),
+				),
+			)
+			.leftJoin(
+				activityLaps,
+				and(
+					eq(activityLaps.activityId, activitiesConnection.activityId),
+					this._activeActivityLapCondition(),
+				),
+			)
+			.where(
+				and(
+					eq(providerActivities.provider, provider),
+					this._activeActivitiesConnectionCondition(),
+					isNull(activityLaps.id),
+				),
+			)
+			.orderBy(asc(activitiesConnection.activityId));
 	}
 
 	getActivityByProviderActivityId(providerActivityId: string) {
