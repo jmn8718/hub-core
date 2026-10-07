@@ -568,6 +568,42 @@ describe.sequential("strava client connect()", () => {
 		expect(byId.get(stravaAppId)).toBe(true);
 	});
 
+	test("flags races from workout_type and surfaces from sport_type", async () => {
+		await client.connect({ refreshToken: "token" });
+		const runId = "16198895522";
+		const rideId = "14917221023";
+		const run = activitiesData[runId];
+		const ride = activitiesData[rideId];
+		const original = {
+			runWorkout: run.workout_type,
+			runSport: run.sport_type,
+			rideWorkout: ride.workout_type,
+		};
+		try {
+			run.workout_type = 1; // run race
+			let result = await client.syncActivity(runId);
+			expect(result.activity.data.isEvent).toBe(1);
+			expect(result.activity.data.subtype).toBe(ActivitySubType.ROAD);
+
+			run.workout_type = 2; // long run: not an event
+			run.sport_type = "TrailRun";
+			result = await client.syncActivity(runId);
+			expect(result.activity.data.isEvent).toBe(0);
+			expect(result.activity.data.subtype).toBe(ActivitySubType.TRAIL);
+
+			ride.workout_type = 10; // default ride: not an event
+			result = await client.syncActivity(rideId);
+			expect(result.activity.data.isEvent).toBe(0);
+			ride.workout_type = 11; // ride race
+			result = await client.syncActivity(rideId);
+			expect(result.activity.data.isEvent).toBe(1);
+		} finally {
+			run.workout_type = original.runWorkout;
+			run.sport_type = original.runSport;
+			ride.workout_type = original.rideWorkout;
+		}
+	});
+
 	test("maps Strava laps into the activity payload", async () => {
 		await client.connect({ refreshToken: "token" });
 		const result = await client.syncActivity("16198895522");

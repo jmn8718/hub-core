@@ -69,6 +69,16 @@ type StravaWebCreateGearResponse = {
 
 const STRAVA_BIKE_FRAME_TYPE_ROAD = "3";
 
+// Keeps the status so callers (and rate-limit handling) can tell a 429 or a
+// 401 from a parsing failure, without dumping the whole Response to logs.
+function stravaHttpError(res: Response, url: string) {
+	const error = new Error(
+		`Strava request failed: ${res.status} ${res.statusText} (${url})`,
+	) as Error & { status: number };
+	error.status = res.status;
+	return error;
+}
+
 // Strava holds the original record only when the activity was not recorded
 // by a device whose own provider (Garmin, COROS) is synced separately.
 function isStravaOriginal(manufacturer: string) {
@@ -137,16 +147,28 @@ function mapManualActivityType(type: ActivityType): string {
 	}
 }
 
+// Strava workout_type: 1 = run race, 11 = ride race; 2 long run, 3 run
+// workout, 10 default ride, 12 ride workout. sport_type carries the surface.
+const STRAVA_RACE_WORKOUT_TYPES = new Set([1, 11]);
+
+function isStravaRace(activity: StravaActivity) {
+	return (
+		typeof activity.workout_type === "number" &&
+		STRAVA_RACE_WORKOUT_TYPES.has(activity.workout_type)
+	);
+}
+
 function mapActivitySubtype(activity: StravaActivity): ActivitySubType {
-	if (activity.trainer) {
+	const sportType = activity.sport_type.toLowerCase();
+	if (activity.trainer || sportType === "virtualrun") {
 		return ActivitySubType.INDOOR;
 	}
-	switch (activity.sport_type.toLowerCase()) {
-		case "race":
-			return ActivitySubType.ROAD;
-		default:
-			return ActivitySubType.EASY_RUN;
+	if (sportType === "trailrun") {
+		return ActivitySubType.TRAIL;
 	}
+	return isStravaRace(activity)
+		? ActivitySubType.ROAD
+		: ActivitySubType.EASY_RUN;
 }
 
 function buildMetadataForActivity(
@@ -339,7 +361,7 @@ function mapActivity(activity: StravaActivity): IDbActivity {
 		locationName: activity.location_city || "",
 		startLatitude: activity.start_latlng[0] || 0,
 		startLongitude: activity.start_latlng[1] || 0,
-		isEvent: activity.workout_type ? 1 : 0,
+		isEvent: isStravaRace(activity) ? 1 : 0,
 		metadata: buildMetadataForActivity(type, activity),
 		type,
 		subtype,
@@ -537,7 +559,6 @@ export class StravaClient extends Base implements Client {
 			expires_at: newToken.expires_at,
 			token_type: newToken.token_type,
 		};
-		await this.getTokenFromDb(this._provider).then(console.debug);
 		return `${this._auth.token_type} ${this._auth.access_token}`;
 	}
 
@@ -554,8 +575,7 @@ export class StravaClient extends Base implements Client {
 			)
 			.then((res) => {
 				if (!res.ok) {
-					console.error(res);
-					throw new Error("Failed to fetch");
+					throw stravaHttpError(res, url);
 				}
 				return res.json();
 			});

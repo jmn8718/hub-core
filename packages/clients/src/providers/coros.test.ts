@@ -334,7 +334,11 @@ describe.sequential("coros client", () => {
 		};
 		const result = await client.syncActivity(bikeActivityId, 200);
 		expect(result.activity.data.type).toBe(ActivityType.BIKE);
-		expect(result.activity.data.metadata?.averageSpeed).toBe(650);
+		// 650 = 6.50 km/h in hundredths of km/h, stored as metres per second.
+		expect(result.activity.data.metadata?.averageSpeed).toBeCloseTo(
+			650 / 100 / 3.6,
+			5,
+		);
 		expect(result.activity.data.metadata?.averageHeartRate).toBe(142);
 		expect(result.activity.data.metadata?.maximumHeartRate).toBe(176);
 	});

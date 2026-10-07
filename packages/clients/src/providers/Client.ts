@@ -14,6 +14,9 @@ export function generateActivityFilePath(
 	activityId: string,
 	extension: FileExtensions,
 ) {
+	if (!/^[A-Za-z0-9._-]+$/.test(activityId) || activityId.startsWith(".")) {
+		throw new Error(`Invalid activity id for a file name: ${activityId}`);
+	}
 	const downloadFolderPath = join(downloadPath, folder);
 	if (!existsSync(downloadFolderPath)) {
 		mkdirSync(downloadFolderPath, { recursive: true });

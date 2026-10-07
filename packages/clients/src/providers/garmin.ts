@@ -327,9 +327,10 @@ export class GarminClient extends Base implements Client {
 						return;
 					}
 				} catch (tokenError) {
+					// Do not log the error object: it carries the request config
+					// including the Authorization header.
 					console.warn(
-						`${GarminClient.PROVIDER}: failed to restore session from saved tokens, performing new login`,
-						tokenError,
+						`${GarminClient.PROVIDER}: failed to restore session from saved tokens, performing new login (${(tokenError as Error)?.message ?? "unknown error"})`,
 					);
 					// Fall through to login with credentials
 				}
@@ -368,7 +369,9 @@ export class GarminClient extends Base implements Client {
 
 			console.log(`${GarminClient.PROVIDER}: client connected`);
 		} catch (error) {
-			console.error(error);
+			console.error(
+				`${GarminClient.PROVIDER}: connect failed: ${(error as Error)?.message ?? "unknown error"}`,
+			);
 			throw error;
 		}
 	}
@@ -411,9 +414,11 @@ export class GarminClient extends Base implements Client {
 	private async getActivities({
 		size = 2,
 		lastId,
+		lastTimestamp,
 	}: {
 		size?: number;
 		lastId?: string;
+		lastTimestamp?: number;
 	}) {
 		console.debug(
 			`${GarminClient.PROVIDER}: fetching activities with size ${size}, and ${lastId}`,
@@ -429,14 +434,33 @@ export class GarminClient extends Base implements Client {
 						(activity) => activity.activityId.toString() === lastId,
 					)
 				: -1;
-			const newActivities =
+			let newActivities =
 				lastIdIndex === -1 ? activities : activities.slice(0, lastIdIndex);
+			// If the last known activity was deleted on Garmin its id never shows
+			// up; stop once the page reaches activities older than it instead of
+			// walking the whole history.
+			let reachedKnownHistory = lastIdIndex !== -1;
+			if (lastTimestamp !== undefined && lastIdIndex === -1) {
+				const isNewer = (activity: IActivity) => {
+					const startedAt = Date.parse(
+						`${activity.startTimeGMT ?? ""}`.replace(/Z?$/, "Z"),
+					);
+					return Number.isNaN(startedAt) || startedAt > lastTimestamp;
+				};
+				const olderIndex = newActivities.findIndex(
+					(activity) => !isNewer(activity),
+				);
+				if (olderIndex !== -1) {
+					newActivities = newActivities.slice(0, olderIndex);
+					reachedKnownHistory = true;
+				}
+			}
 			console.debug(
 				`${GarminClient.PROVIDER}: new activities ${newActivities.length} from ${lastIdIndex}`,
 			);
 
 			data.push(...newActivities);
-			keepFetching = lastIdIndex === -1 && newActivities.length === size;
+			keepFetching = !reachedKnownHistory && newActivities.length === size;
 			page += 1;
 			console.debug(
 				GarminClient.PROVIDER,
@@ -499,12 +523,15 @@ export class GarminClient extends Base implements Client {
 
 	async sync({
 		id,
+		lastTimestamp,
 	}: {
 		id?: string;
+		lastTimestamp?: number;
 	}): Promise<IInsertActivityPayload[]> {
 		const newActivities = await this.getActivities({
-			size: id ? 3 : 100,
+			size: id ? 20 : 100,
 			lastId: id,
+			lastTimestamp,
 		});
 		console.log(
 			`${GarminClient.PROVIDER}: ${newActivities.length} new activities from id: ${id}`,
@@ -623,41 +650,44 @@ export class GarminClient extends Base implements Client {
 		);
 	}
 
-	uploadActivity(filePath: string): Promise<string> {
-		return this._client.uploadActivity(filePath).then(
-			(uploadResult) =>
-				new Promise((resolve, reject) => {
-					setTimeout(() => {
-						this._client
-							.getUploadActivityDetails(
-								uploadResult.detailedImportResult.creationDate,
-								uploadResult.detailedImportResult.uploadUuid.uuid,
-							)
-							.then(({ detailedImportResult }) => {
-								if (
-									detailedImportResult.successes.length > 0 &&
-									detailedImportResult.successes[0]
-								) {
-									return resolve(
-										detailedImportResult.successes[0].internalId.toString(),
-									);
-								}
-								if (
-									detailedImportResult.failures.length > 0 &&
-									detailedImportResult.failures[0] &&
-									detailedImportResult.failures[0].messages &&
-									detailedImportResult.failures[0].messages[0]
-								) {
-									return resolve(
-										detailedImportResult.failures[0].messages[0].content,
-									);
-								}
-								console.error(detailedImportResult);
-								throw new Error("No upload success");
-							})
-							.catch(reject);
-					}, 1000);
-				}),
+	async uploadActivity(filePath: string): Promise<string> {
+		const uploadResult = await this._client.uploadActivity(filePath);
+		const { creationDate, uploadUuid } = uploadResult.detailedImportResult;
+		const delays = [1000, 2000, 3000, 5000, 8000];
+
+		for (const delay of delays) {
+			await new Promise((resolve) => setTimeout(resolve, delay));
+			const { detailedImportResult } =
+				await this._client.getUploadActivityDetails(
+					creationDate,
+					uploadUuid.uuid,
+				);
+			const success = detailedImportResult.successes[0];
+			if (success) {
+				return success.internalId.toString();
+			}
+			const failure = detailedImportResult.failures[0] as
+				| {
+						internalId?: number | string | null;
+						messages?: { content?: string; code?: number }[];
+				  }
+				| undefined;
+			if (failure) {
+				const message =
+					failure.messages?.[0]?.content ?? "Garmin rejected the upload";
+				// A duplicate still tells us which activity it matched.
+				if (failure.internalId && /duplicate/i.test(message)) {
+					console.warn(
+						`${GarminClient.PROVIDER}: upload matched existing activity ${failure.internalId} (${message})`,
+					);
+					return failure.internalId.toString();
+				}
+				throw new Error(`${GarminClient.PROVIDER}: upload failed: ${message}`);
+			}
+			// Still processing: wait and ask again.
+		}
+		throw new Error(
+			`${GarminClient.PROVIDER}: upload is still processing after ${delays.length} checks`,
 		);
 	}
 

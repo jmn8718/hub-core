@@ -56,17 +56,17 @@ Status legend: `[ ]` open · `[x]` fixed · `[-]` won't fix / accepted.
 
 ## Providers (packages/clients)
 
-- [ ] `ProviderManager.insertInDatabase` swallows every DB error → success reported on failure. `ProviderManager.ts:178`.
-- [ ] Garmin upload resolves failure messages as activity ids; status read once after 1 s. `garmin.ts:645-654`.
-- [ ] COROS pace fallback stores m/s in a s/km field; COROS bike speed unit differs from Garmin/Strava. `coros.ts:126-133`.
-- [ ] Strava `_request` discards HTTP status → rate limits undetectable; `console.error(res)` dumps the Response. `strava.ts:549-571`.
-- [ ] Strava race/subtype reads `sport_type` instead of `workout_type`; default rides become events. `strava.ts:133-142, 335`.
-- [ ] Garmin incremental sync pages the whole history 3 at a time when `lastId` was deleted on Garmin. `garmin.ts:425-447`.
-- [ ] Strava refresh logs the full token row. `strava.ts:533`.
-- [ ] `persistActivityCache` costs three Strava calls and mutates the DB. `ProviderManager.ts:252`.
-- [ ] `generateActivityFilePath` uses unsanitized ids and non-recursive `mkdirSync`. `Client.ts:17`.
-- [ ] Garmin token restore logs the Axios error including the Authorization header. `garmin.ts:329, 370`.
-- [ ] COROS full-sync paging relies on `dataList.length === size` instead of `totalPage`.
+- [x] `ProviderManager.insertInDatabase` swallows every DB error → success reported on failure. _Fixed: insert errors propagate; bulk `sync` tolerates per-activity failures, logs them, and throws a summary ("N of M activities failed to save") so the UI shows it._
+- [x] Garmin upload resolves failure messages as activity ids; status read once after 1 s. _Fixed: polls the upload status with backoff (1–8 s, five checks); failures reject with Garmin's message, a duplicate resolves to the matched activity id._
+- [x] COROS pace fallback stores m/s in a s/km field; COROS bike speed unit differs from Garmin/Strava. _Fixed from real payloads: runs keep COROS's s/km with a `duration/(distance/1000)` fallback; rides convert hundredths of km/h to m/s with a `distance/duration` fallback; zero speeds are omitted. Test updated._
+- [x] Strava `_request` discards HTTP status → rate limits undetectable; `console.error(res)` dumps the Response. _Fixed: errors carry `status` and the URL; no Response dump. The download script's rate-limit halt now works._
+- [x] Strava race/subtype reads `sport_type` instead of `workout_type`; default rides become events. _Fixed: races are `workout_type` 1 (run) or 11 (ride) → event + road subtype; `TrailRun` → trail, `VirtualRun`/trainer → indoor; tested._
+- [x] Garmin incremental sync pages the whole history 3 at a time when `lastId` was deleted on Garmin. _Fixed: incremental pages are 20 and listing stops once activities older than the last known timestamp appear; tested._
+- [x] Strava refresh logs the full token row. _Fixed: line removed._
+- [x] `persistActivityCache` costs three Strava calls and mutates the DB. _Fixed: one forced detail fetch and a cache write, no DB mutation._
+- [x] `generateActivityFilePath` uses unsanitized ids and non-recursive `mkdirSync`. _Fixed: ids must match `[A-Za-z0-9._-]+` and not start with a dot; folders are created recursively._
+- [x] Garmin token restore logs the Axios error including the Authorization header. _Fixed: messages only._
+- [x] COROS full-sync paging relies on `dataList.length === size` instead of `totalPage`. _Fixed: uses `pageNumber < totalPage` when the API provides them, falling back to the length check._
 
 ## Electron app (apps/app)
 

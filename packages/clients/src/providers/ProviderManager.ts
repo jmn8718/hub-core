@@ -175,32 +175,46 @@ export class ProviderManager {
 		await this._db.deleteGearConnection({ gearId, provider });
 	}
 
+	// Errors propagate: a caller that reports "done" must not do so when the
+	// local insert failed. Bulk sync tolerates individual failures below.
 	private insertInDatabase(payload: IInsertActivityPayload) {
-		return this._queue
-			.add(() => this._db.insertActivity(payload))
-			.catch((err) => {
-				console.error(err);
-				console.debug(payload);
-				console.error(err);
-			});
+		return this._queue.add(() => this._db.insertActivity(payload));
 	}
 
-	public sync(provider: Providers, force = false) {
+	public async sync(provider: Providers, force = false) {
 		const client = this._getProvider(provider);
-		return (
-			force
-				? client.sync({})
-				: this._db
-						.getLastProviderActivity(provider)
-						.then((lastDbProviderActivity) =>
-							client.sync({
-								id: lastDbProviderActivity?.id,
-								lastTimestamp: lastDbProviderActivity?.timestamp,
-							}),
-						)
-		).then((activities) =>
-			pMap(activities, this.insertInDatabase.bind(this), { concurrency: 1 }),
+		const activities = force
+			? await client.sync({})
+			: await this._db
+					.getLastProviderActivity(provider)
+					.then((lastDbProviderActivity) =>
+						client.sync({
+							id: lastDbProviderActivity?.id,
+							lastTimestamp: lastDbProviderActivity?.timestamp,
+						}),
+					);
+
+		const failures: string[] = [];
+		const inserted = await pMap(
+			activities,
+			(payload) =>
+				this.insertInDatabase(payload).catch((error) => {
+					const providerActivityId = payload.activity.providerActivity?.id;
+					console.error(
+						`${provider}: failed to save activity ${providerActivityId ?? "?"}`,
+						error,
+					);
+					failures.push(providerActivityId ?? "unknown");
+					return undefined;
+				}),
+			{ concurrency: 1 },
 		);
+		if (failures.length > 0) {
+			throw new Error(
+				`${provider}: ${failures.length} of ${activities.length} activities failed to save (${failures.slice(0, 5).join(", ")}${failures.length > 5 ? ", ..." : ""})`,
+			);
+		}
+		return inserted;
 	}
 
 	public syncActivity(provider: Providers, activityId: string) {
@@ -249,10 +263,8 @@ export class ProviderManager {
 		providerActivityId: string;
 	}) {
 		const client = this._getProvider(params.provider);
-		if (params.provider === Providers.STRAVA) {
-			const payload = await client.syncActivity(params.providerActivityId);
-			await this.insertInDatabase(payload);
-		}
+		// One detail fetch, no database mutation: this persists the provider's
+		// payload and nothing else (lap refresh is backfillActivityLaps).
 		const details = await client.getActivity(params.providerActivityId, {
 			force: true,
 		});

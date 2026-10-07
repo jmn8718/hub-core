@@ -124,13 +124,28 @@ function buildMetadataForActivity(params: {
 	maximumHeartRate?: number | null;
 }): ActivityMetadata | undefined {
 	const metadata: Record<string, number> = {};
-	const averageSpeed =
-		params.averageSpeed || (params.distance || 0) / (params.duration || 1);
+	const distance = params.distance || 0;
+	const duration = params.duration || 0;
+	// COROS reports run speed in seconds per km and ride speed in hundredths
+	// of km/h (verified against real payloads). Local metadata uses seconds
+	// per km for runs and metres per second for rides, like Garmin and Strava.
 	if (params.type === ActivityType.RUN) {
-		metadata.averagePace = averageSpeed;
+		const pace =
+			params.averageSpeed && params.averageSpeed > 0
+				? params.averageSpeed
+				: distance > 0
+					? duration / (distance / 1000)
+					: 0;
+		if (pace > 0) metadata.averagePace = pace;
 	}
 	if (params.type === ActivityType.BIKE) {
-		metadata.averageSpeed = averageSpeed;
+		const speed =
+			params.averageSpeed && params.averageSpeed > 0
+				? params.averageSpeed / 100 / 3.6
+				: duration > 0
+					? distance / duration
+					: 0;
+		if (speed > 0) metadata.averageSpeed = speed;
 	}
 	if (params.averageHeartRate && params.averageHeartRate > 0) {
 		metadata.averageHeartRate = params.averageHeartRate;
@@ -395,7 +410,11 @@ export class CorosClient extends Base implements Client {
 					pageNumber: activities.pageNumber,
 					totalPage: activities.totalPage,
 				});
-				keepFetching = activities.dataList.length === activitiesToFetch;
+				keepFetching =
+					activities.totalPage !== undefined &&
+					activities.pageNumber !== undefined
+						? activities.pageNumber < activities.totalPage
+						: activities.dataList.length === activitiesToFetch;
 				page += 1;
 			} else {
 				keepFetching = false;

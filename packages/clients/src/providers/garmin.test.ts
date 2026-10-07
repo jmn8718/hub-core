@@ -168,6 +168,30 @@ describe.sequential("garmin client", () => {
 		}
 	});
 
+	test("stops an incremental sync at the last known timestamp when that activity is gone", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+		// Newest first, like Garmin: one new activity, then older history.
+		getActivitiesMock.mockResolvedValue([
+			{ ...activities[0], startTimeGMT: "2026-10-05T23:00:00.0" },
+			{ ...activities[1], startTimeGMT: "2026-09-01T06:00:00.0" },
+		]);
+		const data = await client.sync({
+			id: "deleted-on-garmin",
+			lastTimestamp: Date.parse("2026-10-01T00:00:00.000Z"),
+		});
+		expect(data).toHaveLength(1);
+		expect(data[0]?.activity.providerActivity?.id).toBe(
+			activities[0].activityId.toString(),
+		);
+		// One page was enough: no walk through the whole history 3 at a time.
+		expect(getActivitiesMock).toHaveBeenCalledTimes(1);
+		expect(getActivitiesMock).toHaveBeenCalledWith(0, 20);
+	});
+
 	test("returns empty list when last id already synced", async () => {
 		const { client } = await createContext();
 		await client.connect({
