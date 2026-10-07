@@ -1,3 +1,4 @@
+import { formatDate } from "@repo/dates";
 import {
 	ActivitySubType,
 	ActivityType,
@@ -6,7 +7,7 @@ import {
 } from "@repo/types";
 import { cn } from "@repo/ui";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import { Box, Button, Text } from "../components/index.js";
@@ -73,6 +74,14 @@ const dateKey = (date: Date) => {
 };
 
 const formatDateParam = (date: Date) => dateKey(date);
+
+// Activities are bucketed on the calendar day where they happened, in the
+// activity's own timezone, matching the analytics overviews.
+const activityDateKey = (activity: DbActivityPopulated) =>
+	formatDate(activity.timestamp, {
+		format: "YYYY-MM-DD",
+		timezone: activity.timezone || undefined,
+	});
 
 const formatMonthLabel = (date: Date) =>
 	new Intl.DateTimeFormat(undefined, {
@@ -174,9 +183,8 @@ const getWeekTotals = (activities: DbActivityPopulated[]) => ({
 	activities: activities.length,
 	distance: activities.reduce((sum, activity) => sum + activity.distance, 0),
 	duration: activities.reduce((sum, activity) => sum + activity.duration, 0),
-	activeDays: new Set(
-		activities.map((activity) => dateKey(new Date(activity.timestamp))),
-	).size,
+	activeDays: new Set(activities.map((activity) => activityDateKey(activity)))
+		.size,
 });
 
 const CalendarTotalsSkeleton = ({ isDarkMode }: { isDarkMode: boolean }) => (
@@ -276,6 +284,7 @@ export function Calendar() {
 		);
 	}, [selectedTypes]);
 
+	const latestRequestRef = useRef(0);
 	const fetchActivities = useCallback(
 		async ({
 			showLoading = true,
@@ -288,36 +297,42 @@ export function Calendar() {
 				setGlobalLoading(true);
 				setIsLoading(true);
 			}
-			const result = await client.getActivities({
-				limit: 500,
-				startDate: formatDateParam(gridStart),
-				endDate: formatDateParam(gridEnd),
-			});
+			const requestId = ++latestRequestRef.current;
+			try {
+				// The query filters by the server's calendar days while the grid
+				// buckets by activity-local day, so fetch one extra day each side;
+				// activities outside the grid simply map to days that are not shown.
+				const result = await client.getActivities({
+					limit: 500,
+					startDate: formatDateParam(addDays(gridStart, -1)),
+					endDate: formatDateParam(addDays(gridEnd, 1)),
+				});
+				// A newer month was requested meanwhile: let that request drive state.
+				if (requestId !== latestRequestRef.current) return;
 
-			if (!result.success) {
-				if (showErrors) {
-					toast.error(result.error, {
-						hideProgressBar: false,
-						closeOnClick: false,
-						transition: Bounce,
-					});
+				if (!result.success) {
+					if (showErrors) {
+						toast.error(result.error, {
+							hideProgressBar: false,
+							closeOnClick: false,
+							transition: Bounce,
+						});
+					}
+					setAllActivities([]);
+					return;
 				}
-				setAllActivities([]);
+
+				const sorted = [...result.data.data].sort(
+					(a, b) =>
+						new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+				);
+				setAllActivities(sorted);
+			} finally {
+				// Loading belongs to this request, stale or not: always release it.
 				if (showLoading) {
 					setIsLoading(false);
 					setGlobalLoading(false);
 				}
-				return;
-			}
-
-			const sorted = [...result.data.data].sort(
-				(a, b) =>
-					new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-			);
-			setAllActivities(sorted);
-			if (showLoading) {
-				setIsLoading(false);
-				setGlobalLoading(false);
 			}
 		},
 		[client, gridEnd, gridStart, setGlobalLoading],
@@ -340,7 +355,7 @@ export function Calendar() {
 	const activityMap = useMemo(() => {
 		const grouped = new Map<string, DbActivityPopulated[]>();
 		for (const activity of activities) {
-			const key = dateKey(new Date(activity.timestamp));
+			const key = activityDateKey(activity);
 			const existing = grouped.get(key) ?? [];
 			existing.push(activity);
 			grouped.set(key, existing);
@@ -362,13 +377,11 @@ export function Calendar() {
 
 	const monthActivities = useMemo(
 		() =>
-			activities.filter((activity) => {
-				const activityDate = new Date(activity.timestamp);
-				return (
-					activityDate.getFullYear() === cursorMonth.getFullYear() &&
-					activityDate.getMonth() === cursorMonth.getMonth()
-				);
-			}),
+			activities.filter(
+				(activity) =>
+					activityDateKey(activity).slice(0, 7) ===
+					dateKey(cursorMonth).slice(0, 7),
+			),
 		[activities, cursorMonth],
 	);
 

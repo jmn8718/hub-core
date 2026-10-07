@@ -40,13 +40,11 @@ export function InbodyEdit() {
 	const originSelectedType = resolveInbodyType(locationState?.selectedType);
 	const returnTo = locationState?.returnTo ?? Routes.INBODY;
 
-	useEffect(() => {
-		if (!locationRecord || !id || locationRecord.id !== id) {
-			navigate(returnTo, { replace: true });
-		}
-	}, [id, locationRecord, navigate, returnTo]);
-
-	const initialRecord = locationRecord;
+	const initialRecord =
+		locationRecord && id && locationRecord.id === id
+			? locationRecord
+			: undefined;
+	const [isResolving, setIsResolving] = useState(!initialRecord);
 
 	const [entryType, setEntryType] = useState<InbodyType>(
 		initialRecord?.type ?? originSelectedType ?? InbodyType.BASIC,
@@ -59,6 +57,37 @@ export function InbodyEdit() {
 			? createMeasurementValuesFromData(initialRecord)
 			: createEmptyMeasurementValues(),
 	);
+
+	// Deep links and page reloads arrive without router state: look the record
+	// up by id instead of bouncing the user back to the list.
+	useEffect(() => {
+		if (initialRecord || !id) {
+			if (!id) navigate(returnTo, { replace: true });
+			return;
+		}
+		let cancelled = false;
+		const resolve = async () => {
+			for (const type of Object.values(InbodyType)) {
+				const result = await client.getInbodyData({ type });
+				if (cancelled) return;
+				const found = result.success
+					? result.data.find((record) => record.id === id)
+					: undefined;
+				if (found) {
+					setEntryType(found.type);
+					setTimestamp(toDateTimeLocal(found.timestamp));
+					setValues(createMeasurementValuesFromData(found));
+					setIsResolving(false);
+					return;
+				}
+			}
+			navigate(returnTo, { replace: true });
+		};
+		void resolve();
+		return () => {
+			cancelled = true;
+		};
+	}, [client, id, initialRecord, navigate, returnTo]);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const inputClass = cn(inputBaseClass, "text-base", colors.input);
@@ -160,6 +189,14 @@ export function InbodyEdit() {
 			setIsSubmitting(false);
 		}
 	};
+
+	if (isResolving) {
+		return (
+			<Box title="Edit measurement">
+				<p className={cn("text-sm", colors.description)}>Loading record...</p>
+			</Box>
+		);
+	}
 
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">

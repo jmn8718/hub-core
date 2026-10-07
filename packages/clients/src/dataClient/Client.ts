@@ -73,7 +73,7 @@ export abstract class Client {
 		limit?: number;
 		offset?: number;
 		type?: ActivityType;
-		subtype?: ActivitySubType;
+		subtype?: ActivitySubType | null;
 		startDate?: string;
 		endDate?: string;
 		search?: string;
@@ -106,7 +106,7 @@ export abstract class Client {
 			description?: string;
 			name?: string;
 			type?: ActivityType;
-			subtype?: ActivitySubType;
+			subtype?: ActivitySubType | null;
 			isEvent?: 0 | 1;
 		},
 	): Promise<ProviderSuccessResponse>;

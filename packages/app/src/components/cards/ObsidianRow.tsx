@@ -225,8 +225,13 @@ const ObsidianRow: React.FC<ObsidianRowProps> = ({ data, gears }) => {
 
 		if (content.length > 0) {
 			const result = await client.exportActivityObsidian({
-				folderPath: `${obsidianFolder}/${formatDate(data.timestamp, { format: "YYYY" })}/${formatDate(data.timestamp, { format: "YYYY-MM" })}`,
-				fileName: formatDate(data.timestamp, { format: "YYYY-MM-DD" }),
+				// Same timezone as the note's date line, so the folder and file name
+				// agree with the content and do not shift with the machine zone.
+				folderPath: `${obsidianFolder}/${formatDate(data.timestamp, { format: "YYYY", timezone: data.timezone })}/${formatDate(data.timestamp, { format: "YYYY-MM", timezone: data.timezone })}`,
+				fileName: formatDate(data.timestamp, {
+					format: "YYYY-MM-DD",
+					timezone: data.timezone,
+				}),
 				fileFormat: "md",
 				content,
 			});

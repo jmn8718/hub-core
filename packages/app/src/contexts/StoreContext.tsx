@@ -5,6 +5,8 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useMemo,
+	useRef,
 	useState,
 } from "react";
 import { useDataClient } from "./DataClientContext.js";
@@ -58,12 +60,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 		[client, setValue],
 	);
 
-	const getValue = async <T = Value>(
-		key: StorageKeys,
-	): Promise<T | undefined> => {
-		if (store[key]) return store[key] as T;
-		return getFromStore<T>(key);
-	};
+	// Read the latest store through a ref so getValue keeps its identity across
+	// store updates; consumers list it in effect deps and must not re-run
+	// (and reset their local form state) on every store write.
+	const storeRef = useRef(store);
+	storeRef.current = store;
+	const getValue = useCallback(
+		async <T = Value>(key: StorageKeys): Promise<T | undefined> => {
+			const current = storeRef.current[key];
+			if (current) return current as T;
+			return getFromStore<T>(key);
+		},
+		[getFromStore],
+	);
 
 	useEffect(() => {
 		getFromStore(StorageKeys.DOWNLOAD_FOLDER, true);
@@ -74,14 +83,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 		getFromStore(StorageKeys.DEFAULT_COUNTRY, true);
 	}, [getFromStore]);
 
+	const contextValue = useMemo(
+		() => ({ store, setValue, getValue }),
+		[store, setValue, getValue],
+	);
+
 	return (
-		<StoreContext.Provider
-			value={{
-				store,
-				setValue,
-				getValue,
-			}}
-		>
+		<StoreContext.Provider value={contextValue}>
 			{children}
 		</StoreContext.Provider>
 	);

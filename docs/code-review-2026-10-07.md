@@ -90,19 +90,19 @@ Status legend: `[ ]` open · `[x]` fixed · `[-]` won't fix / accepted.
 
 ## UI (packages/app)
 
-- [ ] Calendar and Share bucket by machine-local day instead of activity timezone. `pages/Calendar.tsx:343`, `pages/Share.tsx:340`.
-- [ ] Compare "Max activity distance" includes all sport types while other metrics are run-only. `pages/Compare.tsx:291`.
-- [ ] Loaders without cancellation → stale responses win (Calendar, Compare, DataList, Inbody, Analytics). 
-- [ ] ActivityDetails retry loop not tied to the current route; not-found delayed 3 s. `pages/ActivityDetails.tsx:74-112`.
-- [ ] Subtype cannot be cleared to None. `pages/ActivityDetails.tsx:958`.
-- [ ] `StoreContext.getValue` recreated every render → effects re-run and revert unsaved credential input. `contexts/StoreContext.tsx:61`.
-- [ ] Obsidian export path uses machine timezone while content uses activity timezone. `components/cards/ObsidianRow.tsx:228`.
-- [ ] Activity filter leaks the "NONE" placeholder into the subtype filter. `components/filters/Activities.tsx:148`.
-- [ ] Credential validation error state has no retry handler. `components/providers/ProviderCredentialsCard.tsx:240`.
-- [ ] DailyActivitySummary refetches per keystroke with no ordering guard. `components/DailyActivitySummary.tsx:90`.
-- [ ] `formatPace` one second low for exact paces (5:00 → 4:59). `utils/formatters.ts:28`.
-- [ ] ProviderRow file-exists cache never invalidated on folder change. `components/cards/ProviderRow.tsx:18`.
-- [ ] Gears refresh re-fetches from the stored cursor and replaces the list; no pagination beyond 50. `pages/Gears.tsx:63-77`.
-- [ ] Share: year select rendered twice. `pages/Share.tsx:749`. _URL `value` validation fixed alongside item 11: months limited to 01–12, week values round-trip checked (rejects W53 in 52-week years)._
-- [ ] InbodyEdit depends entirely on router state. `pages/InbodyEdit.tsx:43`.
-- [ ] `LoadingContext` single boolean toggled by concurrent handlers.
+- [x] Calendar and Share bucket by machine-local day instead of activity timezone. _Fixed: both bucket with `formatDate(timestamp, { timezone })` like the analytics overviews; Calendar's month filter too. Queries fetch one extra day on each side (the server filters by its own calendar days) and Share keeps only activities whose local day is inside the period._
+- [x] Compare "Max activity distance" includes all sport types while other metrics are run-only. _Fixed: activity lists are fetched with `type: RUN`._
+- [x] Loaders without cancellation → stale responses win (Calendar, Compare, DataList, Inbody, InbodyHistory, Analytics, DailyActivitySummary). _Fixed: each loader tags requests with an incrementing ref and ignores responses that are no longer the latest; loading flags are released in `finally` by the request that set them, stale or not._
+- [x] ActivityDetails retry loop not tied to the current route; not-found delayed 3 s. _Fixed: the loop bails when the route changes, and a definitive not-found surfaces immediately without retries._
+- [x] Subtype cannot be cleared to None. _Fixed: "None" sends `subtype: null`; the `editActivity` contract accepts `null` in every client and the IPC handler._
+- [x] `StoreContext.getValue` recreated every render → effects re-run and revert unsaved credential input. _Fixed: `getValue` reads the store through a ref and keeps a stable identity; the context value is memoised._
+- [x] Obsidian export path uses machine timezone while content uses activity timezone. _Fixed: folder and file name use the activity timezone._
+- [x] Activity filter leaks the "NONE" placeholder into the subtype filter. _Fixed: `SelectFilter` takes an `emptyLabel`; the option value stays empty._
+- [x] Credential validation error state has no retry handler. _Fixed: the error button retries validation._
+- [x] DailyActivitySummary refetches per keystroke with no ordering guard. _Fixed: 300 ms debounce plus a latest-request guard._
+- [x] `formatPace` one second low for exact paces (5:00 → 4:59). _Fixed: `Math.floor`._
+- [x] ProviderRow file-exists cache never invalidated on folder change. _Fixed: the downloads folder is part of the cache key; invalidation clears every folder's entry for the activity._
+- [x] Gears refresh re-fetches from the stored cursor and replaces the list; no pagination beyond 50. _Fixed: refreshes start from the beginning with a 200-gear page; a load-more control remains a nice-to-have._
+- [x] Share: year select rendered twice. _Fixed: the duplicate input is removed; URL `value` validation was fixed alongside item 11._
+- [x] InbodyEdit depends entirely on router state. _Fixed: without router state the record is looked up by id across Inbody types before falling back to the list._
+- [x] `LoadingContext` single boolean toggled by concurrent handlers. _Fixed: the local flag is a counter, so one handler finishing cannot hide another's spinner._

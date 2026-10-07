@@ -40,12 +40,15 @@ const SelectFilter = ({
 	value,
 	onChange,
 	options,
+	emptyLabel = "ALL",
 }: {
 	id: string;
 	label: string;
 	value: string;
 	onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 	options: string[];
+	/** Label shown for the empty-string option; its value stays "". */
+	emptyLabel?: string;
 }) => {
 	const { colors } = useTheme();
 
@@ -67,7 +70,7 @@ const SelectFilter = ({
 			>
 				{options.map((opt) => (
 					<option key={opt} value={opt}>
-						{opt || "ALL"}
+						{opt || emptyLabel}
 					</option>
 				))}
 			</select>
@@ -152,7 +155,8 @@ export const ActivityFilters: React.FC<ActivityFiltersProps> = ({
 							onChange={(e) =>
 								setSubtype(e.target.value as ActivitySubType | "")
 							}
-							options={subtypeOptions.map((value) => value || "NONE")}
+							options={subtypeOptions}
+							emptyLabel="NONE"
 						/>
 					</div>
 					<div className="flex flex-col gap-2 md:flex-row md:gap-4">

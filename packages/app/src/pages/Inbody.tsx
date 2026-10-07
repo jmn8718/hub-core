@@ -1,6 +1,6 @@
 import { type IInbodyData, InbodyType } from "@repo/types";
 import { cn } from "@repo/ui";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -139,6 +139,7 @@ export function Inbody() {
 	const inputClass = cn(inputBaseClass, colors.input);
 	const labelClass = cn(formLabelClass, colors.text, "flex flex-col gap-1");
 
+	const latestRequestRef = useRef(0);
 	const fetchInbodyData = async ({
 		isMainLoading,
 		showLoading = true,
@@ -156,10 +157,13 @@ export function Inbody() {
 		} else if (showLoading) {
 			setLocalLoading(true);
 		}
+		const requestId = ++latestRequestRef.current;
 		try {
 			const result = await client.getInbodyData({
 				type: selectedType,
 			});
+			// The type changed while loading: ignore this response.
+			if (requestId !== latestRequestRef.current) return;
 			if (result.success) {
 				setData(result.data);
 			} else if (showErrors) {

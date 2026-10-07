@@ -17,11 +17,18 @@ import IconButton from "../IconButton.js";
 
 const fileExistsCache = new Map<string, boolean | Promise<boolean>>();
 
-const getFileCacheKey = (provider: Providers, activityId: string) =>
-	`${provider}:${activityId}`;
+// The downloads folder is part of the identity: changing it in Settings
+// must not keep answering from files that live in the previous folder.
+const getFileCacheKey = (
+	provider: Providers,
+	activityId: string,
+	downloadsFolder: string,
+) => `${downloadsFolder}:${provider}:${activityId}`;
 
 const invalidateFileExists = (provider: Providers, activityId: string) => {
-	fileExistsCache.delete(getFileCacheKey(provider, activityId));
+	for (const key of [...fileExistsCache.keys()]) {
+		if (key.endsWith(`:${provider}:${activityId}`)) fileExistsCache.delete(key);
+	}
 };
 
 interface ProviderRowProps {
@@ -72,8 +79,13 @@ const ProviderRow: FC<ProviderRowProps> = ({
 	const readFileExists = async (
 		targetProvider: Providers,
 		targetActivityId: string,
+		downloadsFolder: string,
 	) => {
-		const cacheKey = getFileCacheKey(targetProvider, targetActivityId);
+		const cacheKey = getFileCacheKey(
+			targetProvider,
+			targetActivityId,
+			downloadsFolder,
+		);
 		const cachedResult = fileExistsCache.get(cacheKey);
 		if (typeof cachedResult === "boolean") {
 			return cachedResult;
@@ -127,7 +139,9 @@ const ProviderRow: FC<ProviderRowProps> = ({
 			setHasDownloadFile(false);
 			return;
 		}
-		setHasDownloadFile(await readFileExists(provider, connectionId));
+		setHasDownloadFile(
+			await readFileExists(provider, connectionId, downloadsFolder),
+		);
 	};
 
 	const checkAvailableUploadSource = async () => {
@@ -148,7 +162,11 @@ const ProviderRow: FC<ProviderRowProps> = ({
 		const candidateResults = await Promise.all(
 			uploadCandidates.map(async (candidate) => ({
 				candidate,
-				exists: await readFileExists(candidate.provider, candidate.activityId),
+				exists: await readFileExists(
+					candidate.provider,
+					candidate.activityId,
+					downloadsFolder,
+				),
 			})),
 		);
 		const availableCandidate = candidateResults.find(

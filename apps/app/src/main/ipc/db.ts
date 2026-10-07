@@ -134,7 +134,7 @@ ipcMain.handle(
 				insight?: string;
 				description?: string;
 				type?: ActivityType;
-				subtype?: ActivitySubType;
+				subtype?: ActivitySubType | null;
 				isEvent?: 0 | 1;
 			};
 		},

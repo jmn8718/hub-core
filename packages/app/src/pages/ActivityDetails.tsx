@@ -14,7 +14,7 @@ import {
 	lapIdentifierValues,
 } from "@repo/types";
 import { cn } from "@repo/ui";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Bounce, toast } from "react-toastify";
 import { Box } from "../components/Box.js";
@@ -34,6 +34,8 @@ import {
 	pillButtonBaseClass,
 } from "../utils/style.js";
 
+class NotFoundError extends Error {}
+
 export function ActivityDetails() {
 	const { client } = useDataClient();
 	const { setGlobalLoading, setLocalLoading } = useLoading();
@@ -48,6 +50,7 @@ export function ActivityDetails() {
 
 	const MAX_RETRIES = 3;
 	const RETRY_DELAY_MS = 1000;
+	const loadRequestRef = useRef(0);
 
 	const loadActivity = useCallback(
 		async ({
@@ -70,6 +73,10 @@ export function ActivityDetails() {
 				setIsLoading(true);
 			}
 			setLoadError(null);
+			const requestId = ++loadRequestRef.current;
+			// Stop when the route moved on: a late response for the previous
+			// activity must not replace the one now being shown.
+			const isStale = () => requestId !== loadRequestRef.current;
 
 			for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
 				try {
@@ -77,6 +84,12 @@ export function ActivityDetails() {
 						client.getActivity(activityId),
 						client.getGears({ limit: 100 }),
 					]);
+					if (isStale()) return;
+
+					if (activityResult.success && !activityResult.data) {
+						// Definitive answer: no point retrying.
+						throw new NotFoundError("Activity not found");
+					}
 
 					if (activityResult.success && activityResult.data) {
 						setActivity(activityResult.data);
@@ -90,13 +103,20 @@ export function ActivityDetails() {
 
 					if (attempt < MAX_RETRIES) {
 						await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+						if (isStale()) return;
 						continue;
 					}
 
-					throw new Error("Activity not found");
+					throw new Error(
+						activityResult.success
+							? "Activity not found"
+							: activityResult.error,
+					);
 				} catch (err) {
-					if (attempt < MAX_RETRIES) {
+					if (isStale()) return;
+					if (!(err instanceof NotFoundError) && attempt < MAX_RETRIES) {
 						await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+						if (isStale()) return;
 						continue;
 					}
 					const message = (err as Error).message;
@@ -955,9 +975,10 @@ function ActivitySubtypePanel({
 		setIsSaving(true);
 		setLocalLoading(true);
 		try {
-			const payload: { subtype?: ActivitySubType } = {};
-			if (subtype) payload.subtype = subtype;
-			const result = await client.editActivity(activity.id, payload);
+			// "None" clears the subtype; null is the explicit clear value.
+			const result = await client.editActivity(activity.id, {
+				subtype: subtype || null,
+			});
 			if (!result.success) {
 				throw new Error(result.error);
 			}

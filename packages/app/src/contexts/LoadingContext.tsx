@@ -20,7 +20,15 @@ export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({
 	children,
 }) => {
 	const [isGlobalLoading, setGlobalLoading] = useState(false);
-	const [isLocalLoading, setLocalLoading] = useState(false);
+	// Several handlers toggle the local flag concurrently; count the active
+	// ones so an early "false" from one cannot hide another's spinner.
+	const [localLoadingCount, setLocalLoadingCount] = useState(0);
+	const isLocalLoading = localLoadingCount > 0;
+	const setLocalLoading = useCallback((loading: boolean) => {
+		setLocalLoadingCount((count) =>
+			loading ? count + 1 : Math.max(0, count - 1),
+		);
+	}, []);
 	const [globalLoadingMessage, setGlobalLoadingMessage] = useState("Loading");
 
 	const updateGlobalLoading = useCallback(
@@ -40,7 +48,7 @@ export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({
 			isLocalLoading,
 			setLocalLoading,
 		}),
-		[isGlobalLoading, isLocalLoading, updateGlobalLoading],
+		[isGlobalLoading, isLocalLoading, setLocalLoading, updateGlobalLoading],
 	);
 
 	return (

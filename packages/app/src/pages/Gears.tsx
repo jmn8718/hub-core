@@ -12,6 +12,9 @@ import { Routes } from "../constants.js";
 import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
 import { useWebCachedReadRefresh } from "../hooks/useWebCachedReadRefresh.js";
 
+// No load-more on this page yet; fetch enough for a personal gear closet.
+const GEARS_PAGE_LIMIT = 200;
+
 export function Gears() {
 	const { client } = useDataClient();
 	const { setGlobalLoading, isGlobalLoading } = useLoading();
@@ -61,16 +64,14 @@ export function Gears() {
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
-		void fetchData({
-			limit: 50,
-			cursor: gears.cursor,
-		});
+		void fetchData({ limit: GEARS_PAGE_LIMIT });
 	}, []);
 
+	// A refresh replaces the list, so it must start from the beginning rather
+	// than from the cursor of the page already shown.
 	useWebCachedReadRefresh(["getGears"], () =>
 		fetchData({
-			limit: 50,
-			cursor: gears.cursor,
+			limit: GEARS_PAGE_LIMIT,
 			showLoading: false,
 			showErrors: false,
 		}),

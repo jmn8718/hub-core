@@ -130,7 +130,7 @@ export class WebClient implements Client {
 		limit?: number;
 		offset?: number;
 		type?: ActivityType;
-		subtype?: ActivitySubType;
+		subtype?: ActivitySubType | null;
 		startDate?: string;
 		endDate?: string;
 		search?: string;
@@ -174,7 +174,7 @@ export class WebClient implements Client {
 			locationCountry?: string;
 			name?: string;
 			type?: ActivityType;
-			subtype?: ActivitySubType;
+			subtype?: ActivitySubType | null;
 			isEvent?: 0 | 1;
 		},
 	): Promise<ProviderSuccessResponse> {

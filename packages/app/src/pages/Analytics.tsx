@@ -76,6 +76,7 @@ export const Home = () => {
 		[handleLoadingChange],
 	);
 
+	const weeklyRequestRef = useRef(0);
 	const fetchWeeklyInsight = useCallback(
 		async ({
 			showLoading = true,
@@ -89,11 +90,13 @@ export const Home = () => {
 				handleLoadingChange("weekly-insight", true);
 			}
 
+			const requestId = ++weeklyRequestRef.current;
 			try {
 				const result = await client.getWeeklyOverview({
 					limit: weekRange,
 					targetWeekStart,
 				});
+				if (requestId !== weeklyRequestRef.current) return;
 				if (result.success) {
 					setWeeklyInsightData(result.data);
 				} else if (showErrors) {

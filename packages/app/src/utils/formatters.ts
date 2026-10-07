@@ -25,7 +25,7 @@ export const formatPace = (
 	secondsPerKilometer: number,
 	addUnits = false,
 ): string => {
-	const totalSeconds = Math.max(0, Math.ceil(secondsPerKilometer) - 1);
+	const totalSeconds = Math.max(0, Math.floor(secondsPerKilometer));
 	const minutes = Math.floor(totalSeconds / 60);
 	const seconds = totalSeconds % 60;
 	return `${minutes}:${`${seconds}`.padStart(2, "0")}${addUnits ? " /km" : ""}`;

@@ -239,7 +239,7 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 	const getValidationButton = () => {
 		const canValidate =
 			!hasChanges &&
-			validationStatus === "pending" &&
+			(validationStatus === "pending" || validationStatus === "error") &&
 			isCredentialComplete(credentials);
 		switch (validationStatus) {
 			case "validating":
@@ -261,6 +261,7 @@ export function ProviderCredentialsCard<T extends CredentialRecord>({
 				return (
 					<ActionButton
 						icon={<XCircle size={20} className="text-red-500" />}
+						onClick={validateCredentials}
 						tooltip={VALIDATION_ERROR_TOOLTIP}
 						disabled={!canValidate}
 					/>

@@ -2,7 +2,7 @@ import { dayjs } from "@repo/dates";
 import type { IDailyOverviewData } from "@repo/types";
 import { cn } from "@repo/ui";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { useDataClient } from "../contexts/DataClientContext.js";
 import { useTheme } from "../contexts/ThemeContext.js";
@@ -87,6 +87,7 @@ export const DailyActivitySummary: React.FC<DailyActivitySummaryProps> = ({
 	const [data, setData] = useState<IDailyOverviewData[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
+	const latestRequestRef = useRef(0);
 	const fetchData = useCallback(
 		async ({
 			showLoading = true,
@@ -126,7 +127,9 @@ export const DailyActivitySummary: React.FC<DailyActivitySummaryProps> = ({
 								periodCount,
 							};
 
+				const requestId = ++latestRequestRef.current;
 				const result = await client.getDailyOverview(params);
+				if (requestId !== latestRequestRef.current) return;
 				if (result.success) {
 					setData(result.data);
 				} else if (showErrors) {
@@ -163,8 +166,12 @@ export const DailyActivitySummary: React.FC<DailyActivitySummaryProps> = ({
 		],
 	);
 
+	// Inputs fire on every keystroke; wait for them to settle before fetching.
 	useEffect(() => {
-		fetchData();
+		const handle = setTimeout(() => {
+			void fetchData();
+		}, 300);
+		return () => clearTimeout(handle);
 	}, [fetchData]);
 
 	useWebCachedReadRefresh(["getDailyOverview"], () =>

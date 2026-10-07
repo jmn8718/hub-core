@@ -7,7 +7,7 @@ import {
 } from "@repo/types";
 import { cn } from "@repo/ui";
 import { RefreshCcw } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import { ActivityCard, ActivityFilters } from "../components/index.js";
 import { useDataClient, useLoading, useTheme } from "../contexts/index.js";
@@ -78,6 +78,7 @@ export function DataList() {
 		[client],
 	);
 
+	const latestRequestRef = useRef(0);
 	const fetchData = useCallback(
 		async ({
 			cursor,
@@ -92,42 +93,49 @@ export function DataList() {
 			showLoading?: boolean;
 			showErrors?: boolean;
 		}) => {
-			const result = await client.getActivities({
-				limit,
-				cursor,
-				type: appliedFilters.type === "ALL" ? undefined : appliedFilters.type,
-				subtype: appliedFilters.subtype || undefined,
-				startDate: appliedFilters.startDate || undefined,
-				endDate: appliedFilters.endDate || undefined,
-				search: appliedFilters.search || undefined,
-				isEvent:
-					appliedFilters.isEvent === "ALL"
-						? undefined
-						: appliedFilters.isEvent
-							? 1
-							: 0,
-				withoutGear: appliedFilters.withoutGear ? 1 : undefined,
-			});
-			if (result.success) {
-				setData((current) => ({
-					count: result.data.count,
-					data: reset
-						? result.data.data
-						: current.data.concat(result.data.data),
-					cursor: result.data.cursor,
-				}));
-			} else if (showErrors) {
-				toast.error(result.error, {
-					hideProgressBar: false,
-					closeOnClick: false,
-					transition: Bounce,
+			const requestId = ++latestRequestRef.current;
+			try {
+				const result = await client.getActivities({
+					limit,
+					cursor,
+					type: appliedFilters.type === "ALL" ? undefined : appliedFilters.type,
+					subtype: appliedFilters.subtype || undefined,
+					startDate: appliedFilters.startDate || undefined,
+					endDate: appliedFilters.endDate || undefined,
+					search: appliedFilters.search || undefined,
+					isEvent:
+						appliedFilters.isEvent === "ALL"
+							? undefined
+							: appliedFilters.isEvent
+								? 1
+								: 0,
+					withoutGear: appliedFilters.withoutGear ? 1 : undefined,
 				});
-			}
-			if (showLoading) {
-				setTimeout(() => {
-					if (!cursor || reset) setGlobalLoading(false);
-					else setLocalLoading(false);
-				}, 250);
+				// Filters changed (or a reset started) while this page was loading.
+				if (requestId !== latestRequestRef.current) return;
+				if (result.success) {
+					setData((current) => ({
+						count: result.data.count,
+						data: reset
+							? result.data.data
+							: current.data.concat(result.data.data),
+						cursor: result.data.cursor,
+					}));
+				} else if (showErrors) {
+					toast.error(result.error, {
+						hideProgressBar: false,
+						closeOnClick: false,
+						transition: Bounce,
+					});
+				}
+			} finally {
+				// Release the loading this request owns even when it went stale.
+				if (showLoading) {
+					setTimeout(() => {
+						if (!cursor || reset) setGlobalLoading(false);
+						else setLocalLoading(false);
+					}, 250);
+				}
 			}
 		},
 		[appliedFilters, client, setGlobalLoading, setLocalLoading],

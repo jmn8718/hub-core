@@ -1,8 +1,12 @@
 import { dayjs } from "@repo/dates";
-import type { DbActivityPopulated, IDailyOverviewData } from "@repo/types";
+import {
+	ActivityType,
+	type DbActivityPopulated,
+	type IDailyOverviewData,
+} from "@repo/types";
 import { cn } from "@repo/ui";
 import { BarChart3, CalendarDays, Clock3, Gauge, Route } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bounce, toast } from "react-toastify";
 import {
 	Bar,
@@ -264,6 +268,7 @@ export function Compare() {
 		[rightStartDate, intervalCount, intervalUnit],
 	);
 
+	const latestRequestRef = useRef(0);
 	const loadCompareData = async ({
 		showLoading = true,
 		showErrors = true,
@@ -278,6 +283,7 @@ export function Compare() {
 		if (showLoading) {
 			setIsLoading(true);
 		}
+		const requestId = ++latestRequestRef.current;
 
 		try {
 			const [
@@ -288,17 +294,23 @@ export function Compare() {
 			] = await Promise.all([
 				client.getDailyOverview(leftBounds),
 				client.getDailyOverview(rightBounds),
+				// The daily overview is run-only; keep the activity list consistent so
+				// "max activity distance" does not mix in rides.
 				client.getActivities({
 					startDate: leftBounds.startDate,
 					endDate: leftBounds.endDate,
 					limit: 2000,
+					type: ActivityType.RUN,
 				}),
 				client.getActivities({
 					startDate: rightBounds.startDate,
 					endDate: rightBounds.endDate,
 					limit: 2000,
+					type: ActivityType.RUN,
 				}),
 			]);
+			// Ranges changed while loading: the newer request owns the state.
+			if (requestId !== latestRequestRef.current) return;
 
 			if (!leftResult.success) {
 				throw new Error(leftResult.error);
@@ -333,6 +345,8 @@ export function Compare() {
 				transition: Bounce,
 			});
 		} finally {
+			// Freshness only gates state updates; the spinner this request turned
+			// on is always turned off by it, even when a newer request took over.
 			if (showLoading) {
 				setIsLoading(false);
 			}

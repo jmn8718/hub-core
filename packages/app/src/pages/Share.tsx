@@ -1,4 +1,4 @@
-import { dayjs } from "@repo/dates";
+import { dayjs, formatDate } from "@repo/dates";
 import { ActivityType, type DbActivityPopulated } from "@repo/types";
 import { cn } from "@repo/ui";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -333,9 +333,11 @@ const buildChartData = (
 ): ChartPoint[] => {
 	const totals = new Map<string, number>();
 	for (const activity of activities) {
-		const date = dayjs(activity.timestamp);
-		const key =
-			period === "year" ? date.format("YYYY-MM") : date.format("YYYY-MM-DD");
+		// Bucket on the day/month where the activity happened, in its timezone.
+		const key = formatDate(activity.timestamp, {
+			format: period === "year" ? "YYYY-MM" : "YYYY-MM-DD",
+			timezone: activity.timezone || undefined,
+		});
 		totals.set(key, (totals.get(key) ?? 0) + activity.distance);
 	}
 
@@ -474,10 +476,14 @@ export function Share() {
 			setIsLoading(true);
 			setGlobalLoading(true);
 			try {
+				// The query filters by the server's calendar days; an activity near
+				// midnight can sit on a different day in its own timezone. Ask for
+				// one extra day on each side and keep what falls inside the period
+				// by activity-local date.
 				const result = await client.getActivities({
 					type: ActivityType.RUN,
-					startDate: bounds.start.format("YYYY-MM-DD"),
-					endDate: bounds.end.format("YYYY-MM-DD"),
+					startDate: bounds.start.subtract(1, "day").format("YYYY-MM-DD"),
+					endDate: bounds.end.add(1, "day").format("YYYY-MM-DD"),
 					limit: 2000,
 				});
 
@@ -495,10 +501,20 @@ export function Share() {
 					return;
 				}
 
-				const sorted = [...result.data.data].sort(
-					(a, b) =>
-						new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-				);
+				const firstDay = bounds.start.format("YYYY-MM-DD");
+				const lastDay = bounds.end.format("YYYY-MM-DD");
+				const sorted = result.data.data
+					.filter((activity) => {
+						const localDay = formatDate(activity.timestamp, {
+							format: "YYYY-MM-DD",
+							timezone: activity.timezone || undefined,
+						});
+						return localDay >= firstDay && localDay <= lastDay;
+					})
+					.sort(
+						(a, b) =>
+							new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+					);
 				setActivities(sorted);
 			} catch (error) {
 				if (cancelled) {
@@ -753,15 +769,6 @@ export function Share() {
 												: "sr-only"
 										}
 									/>
-									{selectedPeriod === "year" ? (
-										<PeriodValueInput
-											period={selectedPeriod}
-											value={selectedValue}
-											onChange={setValueSelection}
-											inputRef={periodInputRef}
-											className="absolute inset-0 cursor-pointer opacity-0"
-										/>
-									) : null}
 								</div>
 								<button
 									type="button"
