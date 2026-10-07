@@ -39,25 +39,53 @@ function mapActivityType(type: ActivityType) {
 	throw new Error(`Activity type: ${type} not supported for manual upload`);
 }
 
+// Garmin activity type keys are more specific than our types; group them.
 function mapProviderActivityType(type: string): ActivityType {
 	switch (type) {
 		case GarminActivityType.Running:
 		case "indoor_running":
+		case "treadmill_running":
+		case "trail_running":
+		case "track_running":
+		case "street_running":
+		case "virtual_run":
 			return ActivityType.RUN;
 		case GarminActivityType.Cycling:
 		case "indoor_cycling":
+		case "road_biking":
+		case "mountain_biking":
+		case "gravel_cycling":
+		case "cyclocross":
+		case "virtual_ride":
+		case "e_bike_fitness":
+		case "e_bike_mountain":
 			return ActivityType.BIKE;
 		case "lap_swimming":
+		case "open_water_swimming":
 			return ActivityType.SWIM;
 		case "workout":
+		case "strength_training":
 			return ActivityType.GYM;
+		case GarminActivityType.Hiking:
+			return ActivityType.HIKE;
 		default:
 			return ActivityType.OTHER;
 	}
 }
 
-function mapProviderActivitySubType(type: string): ActivitySubType | undefined {
-	switch (type) {
+function mapProviderActivitySubType(params: {
+	activityTypeKey: string;
+	eventTypeKey: string;
+}): ActivitySubType | undefined {
+	switch (params.activityTypeKey) {
+		case "indoor_running":
+		case "treadmill_running":
+		case "virtual_run":
+			return ActivitySubType.INDOOR;
+		case "trail_running":
+			return ActivitySubType.TRAIL;
+	}
+	switch (params.eventTypeKey) {
 		case "race":
 			return ActivitySubType.ROAD;
 		default:
@@ -175,7 +203,10 @@ function mapActivity({
 	});
 	const subtype =
 		type === ActivityType.RUN
-			? mapProviderActivitySubType(activity.eventTypeDTO.typeKey)
+			? mapProviderActivitySubType({
+					activityTypeKey: activity.activityTypeDTO.typeKey,
+					eventTypeKey: activity.eventTypeDTO.typeKey,
+				})
 			: undefined;
 	return {
 		id: activity.activityId.toString(),
@@ -363,13 +394,15 @@ export class GarminClient extends Base implements Client {
 		});
 	}
 
-	private fetchRunningActivities(activitiesToFetch = 2, start = 0) {
+	// No activity type filter: list every Garmin activity and let
+	// mapProviderActivityType decide the local type (run, bike, swim, ...).
+	private fetchActivities(activitiesToFetch = 2, start = 0) {
 		console.debug(
 			`${GarminClient.PROVIDER}: fetching activities ${activitiesToFetch} ${start}`,
 		);
 
 		return this._client
-			.getActivities(start, activitiesToFetch, GarminActivityType.Running)
+			.getActivities(start, activitiesToFetch)
 			.then((activities) =>
 				activities.map((activity) => sanitizeGarminActivity(activity)),
 			);
@@ -390,7 +423,7 @@ export class GarminClient extends Base implements Client {
 		let keepFetching = true;
 		const data: IActivity[] = [];
 		do {
-			const activities = await this.fetchRunningActivities(size, page * size);
+			const activities = await this.fetchActivities(size, page * size);
 			const lastIdIndex = lastId
 				? activities.findIndex(
 						(activity) => activity.activityId.toString() === lastId,

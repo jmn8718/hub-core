@@ -1,5 +1,5 @@
 import { createTestCacheDb, createTestDb } from "@repo/db/utils";
-import { ActivityType } from "@repo/types";
+import { ActivitySubType, ActivityType } from "@repo/types";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { activities, activitiesData, gears } from "../mocks/garmin.js";
 import { GarminClient } from "./garmin.js";
@@ -84,6 +84,88 @@ describe.sequential("garmin client", () => {
 		const data = await client.sync({});
 		expect(data).toHaveLength(2);
 		expect(data[0]?.gears).toBeDefined();
+	});
+
+	test("lists every activity type and maps cycling to bike", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+		const cyclingId = activities[1].activityId;
+		getActivityMock.mockImplementation(
+			({ activityId }: { activityId: string }) => {
+				// @ts-expect-error - typing mismatch in mock data
+				const details = activitiesData[activityId];
+				return Promise.resolve(
+					activityId.toString() === cyclingId.toString()
+						? {
+								...details,
+								activityTypeDTO: {
+									...details.activityTypeDTO,
+									typeKey: "cycling",
+								},
+							}
+						: details,
+				);
+			},
+		);
+
+		const data = await client.sync({});
+		expect(getActivitiesMock).toHaveBeenCalledWith(0, 100);
+		expect(data.map((item) => item.activity.data.type)).toEqual([
+			ActivityType.RUN,
+			ActivityType.BIKE,
+		]);
+	});
+
+	test("maps specific garmin activity types to local types", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+		const base = activitiesData["17936939301"];
+		const cases: Array<{
+			typeKey: string;
+			type: ActivityType;
+			subtype?: ActivitySubType;
+		}> = [
+			{ typeKey: "mountain_biking", type: ActivityType.BIKE },
+			{ typeKey: "road_biking", type: ActivityType.BIKE },
+			{ typeKey: "hiking", type: ActivityType.HIKE },
+			{
+				typeKey: "trail_running",
+				type: ActivityType.RUN,
+				subtype: ActivitySubType.TRAIL,
+			},
+			{
+				typeKey: "treadmill_running",
+				type: ActivityType.RUN,
+				subtype: ActivitySubType.INDOOR,
+			},
+			{ typeKey: "strength_training", type: ActivityType.GYM },
+			{ typeKey: "casual_walking", type: ActivityType.OTHER },
+		];
+
+		for (const [index, expected] of cases.entries()) {
+			const activityId = 800000 + index;
+			getActivityMock.mockResolvedValueOnce({
+				...base,
+				activityId,
+				activityTypeDTO: {
+					...base.activityTypeDTO,
+					typeKey: expected.typeKey,
+				},
+			});
+			const result = await client.syncActivity(activityId.toString());
+			expect(result.activity.data.type, expected.typeKey).toBe(expected.type);
+			if (expected.subtype) {
+				expect(result.activity.data.subtype, expected.typeKey).toBe(
+					expected.subtype,
+				);
+			}
+		}
 	});
 
 	test("returns empty list when last id already synced", async () => {
