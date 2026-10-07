@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireAllowedUser } from "@/lib/auth";
 import { getEnvProviderConfig, getProviderManager } from "@/lib/providers";
 import { Providers } from "@repo/types";
 import type { NextRequest } from "next/server";
@@ -8,12 +8,9 @@ const isProvider = (value: string): value is Providers =>
 	Object.values(Providers).includes(value as Providers);
 
 export async function GET(req: NextRequest) {
-	const authContext = await requireUser(req);
-	if (!authContext) {
-		return NextResponse.json(
-			{ success: false, error: "Unauthorized" },
-			{ status: 401 },
-		);
+	const authContext = await requireAllowedUser(req);
+	if (authContext instanceof NextResponse) {
+		return authContext;
 	}
 
 	const providerValue = req.nextUrl.searchParams.get("provider");

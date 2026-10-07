@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireAllowedUser } from "@/lib/auth";
 import { handleClientAction } from "@/lib/client-actions";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -7,12 +7,9 @@ export async function POST(
 	req: NextRequest,
 	{ params }: { params: Promise<{ action: string }> },
 ) {
-	const authContext = await requireUser(req);
-	if (!authContext) {
-		return NextResponse.json(
-			{ success: false, error: "Unauthorized" },
-			{ status: 401 },
-		);
+	const authContext = await requireAllowedUser(req);
+	if (authContext instanceof NextResponse) {
+		return authContext;
 	}
 	const { action } = await params;
 	if (!action) {

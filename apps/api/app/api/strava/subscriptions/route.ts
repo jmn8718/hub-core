@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireAllowedUser } from "@/lib/auth";
 import type { StravaPushSubscription } from "@repo/types";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -45,12 +45,9 @@ function normalizeSubscription(
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
-	const authContext = await requireUser(req);
-	if (!authContext) {
-		return NextResponse.json(
-			{ success: false, error: "Unauthorized" },
-			{ status: 401 },
-		);
+	const authContext = await requireAllowedUser(req);
+	if (authContext instanceof NextResponse) {
+		return authContext;
 	}
 
 	try {
@@ -76,12 +73,9 @@ export async function GET(req: NextRequest): Promise<Response> {
 }
 
 export async function POST(req: NextRequest): Promise<Response> {
-	const authContext = await requireUser(req);
-	if (!authContext) {
-		return NextResponse.json(
-			{ success: false, error: "Unauthorized" },
-			{ status: 401 },
-		);
+	const authContext = await requireAllowedUser(req);
+	if (authContext instanceof NextResponse) {
+		return authContext;
 	}
 
 	let callbackUrl = "";
@@ -128,12 +122,9 @@ export async function POST(req: NextRequest): Promise<Response> {
 }
 
 export async function DELETE(req: NextRequest): Promise<Response> {
-	const authContext = await requireUser(req);
-	if (!authContext) {
-		return NextResponse.json(
-			{ success: false, error: "Unauthorized" },
-			{ status: 401 },
-		);
+	const authContext = await requireAllowedUser(req);
+	if (authContext instanceof NextResponse) {
+		return authContext;
 	}
 
 	let subscriptionId: number | null = null;

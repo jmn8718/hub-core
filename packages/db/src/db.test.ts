@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
 	ActivitySubType,
 	ActivityType,
+	GearType,
 	LapIdentifier,
 	Providers,
 } from "@repo/types";
@@ -931,6 +932,189 @@ describe("db", () => {
 		});
 		expect(completed.status).eq("completed");
 		expect(completed.totalRows).eq(1);
+	});
+
+	test("should reject sync pushes that target rows owned by another user", async () => {
+		const owner = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "sync-owner",
+			email: "sync-owner@example.com",
+		});
+		const intruder = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "sync-intruder",
+			email: "sync-intruder@example.com",
+		});
+		const activityIdToSteal = uuidv7();
+		const baseRow = {
+			id: activityIdToSteal,
+			name: "Owner activity",
+			timestamp: 1_700_000_000_000,
+			timezone: "Asia/Seoul",
+			distance: 1000,
+			duration: 300,
+			manufacturer: "sync",
+			device: "sync",
+			locationName: "",
+			locationCountry: "",
+			type: ActivityType.OTHER,
+			subtype: null,
+			notes: "",
+			insight: "",
+			description: "",
+			metadata: "{}",
+			isEvent: 0,
+			startLatitude: 0,
+			startLongitude: 0,
+		};
+
+		const ownerSession = await db.createSyncSession({ userId: owner.userId });
+		await db.pushSyncRows({
+			userId: owner.userId,
+			syncSessionId: ownerSession.syncSessionId,
+			table: "activities",
+			batchIndex: 0,
+			rows: [baseRow],
+		});
+
+		const intruderSession = await db.createSyncSession({
+			userId: intruder.userId,
+		});
+		await expect(
+			db.pushSyncRows({
+				userId: intruder.userId,
+				syncSessionId: intruderSession.syncSessionId,
+				table: "activities",
+				batchIndex: 0,
+				rows: [
+					{
+						...baseRow,
+						name: "Hijacked",
+						deletedAt: "2026-01-01T00:00:00.000Z",
+					},
+				],
+			}),
+		).rejects.toThrow(/another user/);
+
+		const activity = await db.getActivity(activityIdToSteal);
+		expect(activity?.name).eq("Owner activity");
+
+		// A composite-key table is checked the same way.
+		const providerActivityId = uuidv7();
+		await db.pushSyncRows({
+			userId: owner.userId,
+			syncSessionId: ownerSession.syncSessionId,
+			table: "provider_activities",
+			batchIndex: 1,
+			rows: [
+				{
+					id: providerActivityId,
+					provider: "COROS",
+					timestamp: 1_700_000_000_000,
+					original: 1,
+					data: "{}",
+				},
+			],
+		});
+		await db.pushSyncRows({
+			userId: owner.userId,
+			syncSessionId: ownerSession.syncSessionId,
+			table: "activities_connection",
+			batchIndex: 2,
+			rows: [{ activityId: activityIdToSteal, providerActivityId }],
+		});
+		await expect(
+			db.pushSyncRows({
+				userId: intruder.userId,
+				syncSessionId: intruderSession.syncSessionId,
+				table: "activities_connection",
+				batchIndex: 1,
+				rows: [{ activityId: activityIdToSteal, providerActivityId }],
+			}),
+		).rejects.toThrow(/another user/);
+
+		// New child rows that point at someone else's parent are rejected too.
+		await expect(
+			db.pushSyncRows({
+				userId: intruder.userId,
+				syncSessionId: intruderSession.syncSessionId,
+				table: "activity_laps",
+				batchIndex: 2,
+				rows: [
+					{
+						id: uuidv7(),
+						activityId: activityIdToSteal,
+						lapNumber: 1,
+						identifier: LapIdentifier.RUN,
+						distance: 1000,
+						elapsedTime: 300,
+						movingTime: 300,
+					},
+				],
+			}),
+		).rejects.toThrow(/reference rows owned by another user/);
+		await expect(
+			db.pushSyncRows({
+				userId: intruder.userId,
+				syncSessionId: intruderSession.syncSessionId,
+				table: "activity_gears",
+				batchIndex: 3,
+				rows: [{ gearId: uuidv7(), activityId: activityIdToSteal }],
+			}),
+		).rejects.toThrow(/reference rows owned by another user/);
+		expect((await db.getActivity(activityIdToSteal))?.laps ?? []).toHaveLength(
+			0,
+		);
+	});
+
+	test("should let applySyncRows adopt unowned rows but never reassign owned ones", async () => {
+		const userA = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "apply-user-a",
+			email: "apply-user-a@example.com",
+		});
+		const userB = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "apply-user-b",
+			email: "apply-user-b@example.com",
+		});
+		const gearIdToTest = uuidv7();
+		const gearRow = {
+			id: gearIdToTest,
+			name: "Unowned shoes",
+			code: "unowned",
+			brand: "",
+			type: GearType.SHOES,
+			dateBegin: "2026-01-01",
+			dateEnd: "",
+			maximumDistance: 800,
+		};
+
+		// No userId: the row is written without an owner.
+		await db.applySyncRows({ table: "gears", rows: [gearRow] });
+		// User A adopts it.
+		await db.applySyncRows({
+			table: "gears",
+			rows: [{ ...gearRow, name: "Adopted by A" }],
+			userId: userA.userId,
+		});
+		expect((await db.getGear(gearIdToTest))?.name).eq("Adopted by A");
+
+		// User B cannot take it over or change it.
+		await db.applySyncRows({
+			table: "gears",
+			rows: [{ ...gearRow, name: "Taken by B" }],
+			userId: userB.userId,
+		});
+		expect((await db.getGear(gearIdToTest))?.name).eq("Adopted by A");
+
+		// User A can still update their own row.
+		await db.applySyncRows({
+			table: "gears",
+			rows: [{ ...gearRow, name: "Updated by A" }],
+			userId: userA.userId,
+		});
+		expect((await db.getGear(gearIdToTest))?.name).eq("Updated by A");
 	});
 
 	test("should pull and apply sync rows and persist sync state", async () => {

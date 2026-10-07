@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { requireUser } from "@/lib/auth";
+import { requireAllowedUser } from "@/lib/auth";
 import { getEnvProviderConfig, getProviderManager } from "@/lib/providers";
 import { Providers } from "@repo/types";
 import type { NextRequest } from "next/server";
@@ -14,12 +14,9 @@ const sanitizeFileName = (value: string) =>
 	value.replace(/[^a-zA-Z0-9._-]/g, "_");
 
 export async function POST(req: NextRequest) {
-	const authContext = await requireUser(req);
-	if (!authContext) {
-		return NextResponse.json(
-			{ success: false, error: "Unauthorized" },
-			{ status: 401 },
-		);
+	const authContext = await requireAllowedUser(req);
+	if (authContext instanceof NextResponse) {
+		return authContext;
 	}
 
 	try {

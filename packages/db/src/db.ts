@@ -34,13 +34,19 @@ import {
 	getTableColumns,
 	gt,
 	gte,
+	inArray,
+	isNotNull,
 	isNull,
 	lt,
 	lte,
 	min,
+	ne,
+	or,
 	sql,
 	sum,
 } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import type { SQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
 import pMap from "p-map";
 import { uuidv7 } from "uuidv7";
 import { type DbClient, type DbDialect, getDbClientDialect } from "./client";
@@ -2740,6 +2746,12 @@ export class Db {
 					throw new Error("Sync session is already completed");
 				}
 
+				await this._assertSyncRowsOwnedByUser(
+					tx,
+					params.table,
+					normalizedRows,
+					params.userId,
+				);
 				await this._applySyncRows(tx, params.table, normalizedRows);
 
 				const totalRows = session.totalRows + normalizedRows.length;
@@ -2803,6 +2815,154 @@ export class Db {
 		return this.getSyncSessionStatus(params);
 	}
 
+	// A sync upsert may create rows, update rows nobody owns yet, or update the
+	// caller's own rows. It must never move a row from one user to another.
+	private _syncOwnershipGuard(table: { userId: SQLiteColumn }) {
+		return sql`${table.userId} IS NULL OR ${table.userId} = excluded.user_id`;
+	}
+
+	// Primary key columns of each sync table, plus the parent rows (by `id`)
+	// that its foreign keys point at. Both are used for ownership checks.
+	private _syncRowKeyColumns(table: SyncTableName): {
+		table: SQLiteTable;
+		keys: string[];
+		parents: Array<{ key: string; table: SQLiteTable }>;
+	} {
+		switch (table) {
+			case "activities":
+				return { table: activities, keys: ["id"], parents: [] };
+			case "provider_activities":
+				return { table: providerActivities, keys: ["id"], parents: [] };
+			case "activities_connection":
+				return {
+					table: activitiesConnection,
+					keys: ["activityId", "providerActivityId"],
+					parents: [
+						{ key: "activityId", table: activities },
+						{ key: "providerActivityId", table: providerActivities },
+					],
+				};
+			case "activity_laps":
+				return {
+					table: activityLaps,
+					keys: ["id"],
+					parents: [{ key: "activityId", table: activities }],
+				};
+			case "gears":
+				return { table: gears, keys: ["id"], parents: [] };
+			case "provider_gears":
+				return { table: providerGears, keys: ["id"], parents: [] };
+			case "gears_connection":
+				return {
+					table: gearsConnection,
+					keys: ["gearId", "providerGearId"],
+					parents: [
+						{ key: "gearId", table: gears },
+						{ key: "providerGearId", table: providerGears },
+					],
+				};
+			case "activity_gears":
+				return {
+					table: activityGears,
+					keys: ["gearId", "activityId"],
+					parents: [
+						{ key: "gearId", table: gears },
+						{ key: "activityId", table: activities },
+					],
+				};
+			case "inbody":
+				return { table: inbody, keys: ["id"], parents: [] };
+		}
+	}
+
+	private async _countRowsOwnedByOthers(
+		tx: Pick<DbClient, "select">,
+		table: SQLiteTable,
+		condition: SQL | undefined,
+		userId: string,
+	) {
+		const userColumn = (table as unknown as Record<string, SQLiteColumn>)
+			.userId as SQLiteColumn;
+		const rows = await tx
+			.select({ count: count() })
+			.from(table)
+			.where(and(condition, isNotNull(userColumn), ne(userColumn, userId)));
+		return Number(rows[0]?.count ?? 0);
+	}
+
+	// Rejects a sync batch that targets rows already owned by a different user,
+	// or that references parent rows (activities, gears, provider rows) owned
+	// by a different user.
+	private async _assertSyncRowsOwnedByUser(
+		tx: Pick<DbClient, "select">,
+		table: SyncTableName,
+		rows: Record<string, unknown>[],
+		userId: string,
+	) {
+		const { table: schema, keys, parents } = this._syncRowKeyColumns(table);
+		const columns = schema as unknown as Record<string, SQLiteColumn>;
+		const keyed = rows.filter((row) =>
+			keys.every((key) => row[key] !== undefined && row[key] !== null),
+		);
+		if (keyed.length > 0) {
+			const keyCondition =
+				keys.length === 1
+					? inArray(
+							columns[keys[0] as string] as SQLiteColumn,
+							keyed.map((row) => row[keys[0] as string]),
+						)
+					: or(
+							...keyed.map((row) =>
+								and(
+									...keys.map((key) =>
+										eq(columns[key] as SQLiteColumn, row[key]),
+									),
+								),
+							),
+						);
+			const total = await this._countRowsOwnedByOthers(
+				tx,
+				schema,
+				keyCondition,
+				userId,
+			);
+			if (total > 0) {
+				throw new Error(
+					`Sync rows belong to another user: ${total} row(s) in ${table}`,
+				);
+			}
+		}
+
+		for (const parent of parents) {
+			const parentIds = [
+				...new Set(
+					rows
+						.map((row) => row[parent.key])
+						.filter(
+							(value): value is string =>
+								typeof value === "string" && value.length > 0,
+						),
+				),
+			];
+			if (parentIds.length === 0) continue;
+			const parentColumns = parent.table as unknown as Record<
+				string,
+				SQLiteColumn
+			>;
+			const total = await this._countRowsOwnedByOthers(
+				tx,
+				parent.table,
+				inArray(parentColumns.id as SQLiteColumn, parentIds),
+				userId,
+			);
+			if (total > 0) {
+				throw new Error(
+					`Sync rows reference rows owned by another user: ${total} row(s) via ${table}.${parent.key}`,
+				);
+			}
+		}
+	}
+
 	private async _applySyncRows(
 		tx: {
 			insert: DbClient["insert"];
@@ -2818,6 +2978,7 @@ export class Db {
 					.insert(activities)
 					.values(values)
 					.onConflictDoUpdate({
+						setWhere: this._syncOwnershipGuard(activities),
 						target: activities.id,
 						set: {
 							name: sql`excluded.name`,
@@ -2852,6 +3013,7 @@ export class Db {
 					.insert(providerActivities)
 					.values(values)
 					.onConflictDoUpdate({
+						setWhere: this._syncOwnershipGuard(providerActivities),
 						target: providerActivities.id,
 						set: {
 							provider: sql`excluded.provider`,
@@ -2872,6 +3034,7 @@ export class Db {
 					.insert(activitiesConnection)
 					.values(values)
 					.onConflictDoUpdate({
+						setWhere: this._syncOwnershipGuard(activitiesConnection),
 						target: [
 							activitiesConnection.activityId,
 							activitiesConnection.providerActivityId,
@@ -2891,6 +3054,7 @@ export class Db {
 					.insert(activityLaps)
 					.values(values)
 					.onConflictDoUpdate({
+						setWhere: this._syncOwnershipGuard(activityLaps),
 						target: activityLaps.id,
 						set: {
 							activityId: sql`excluded.activity_id`,
@@ -2915,6 +3079,7 @@ export class Db {
 					.insert(gears)
 					.values(values)
 					.onConflictDoUpdate({
+						setWhere: this._syncOwnershipGuard(gears),
 						target: gears.id,
 						set: {
 							name: sql`excluded.name`,
@@ -2938,6 +3103,7 @@ export class Db {
 					.insert(providerGears)
 					.values(values)
 					.onConflictDoUpdate({
+						setWhere: this._syncOwnershipGuard(providerGears),
 						target: providerGears.id,
 						set: {
 							provider: sql`excluded.provider`,
@@ -2957,6 +3123,7 @@ export class Db {
 					.insert(gearsConnection)
 					.values(values)
 					.onConflictDoUpdate({
+						setWhere: this._syncOwnershipGuard(gearsConnection),
 						target: [gearsConnection.gearId, gearsConnection.providerGearId],
 						set: {
 							userId: sql`excluded.user_id`,
@@ -2973,6 +3140,7 @@ export class Db {
 					.insert(activityGears)
 					.values(values)
 					.onConflictDoUpdate({
+						setWhere: this._syncOwnershipGuard(activityGears),
 						target: [activityGears.gearId, activityGears.activityId],
 						set: {
 							userId: sql`excluded.user_id`,
@@ -2989,6 +3157,7 @@ export class Db {
 					.insert(inbody)
 					.values(values)
 					.onConflictDoUpdate({
+						setWhere: this._syncOwnershipGuard(inbody),
 						target: inbody.id,
 						set: {
 							weight: sql`excluded.weight`,

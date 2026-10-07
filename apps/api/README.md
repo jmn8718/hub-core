@@ -17,6 +17,7 @@ interface (activities, gears, providers, Inbody, etc).
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `API_ALLOWED_EMAILS` and/or `API_ALLOWED_USER_IDS` (comma-separated Supabase emails / user ids allowed to use `/api/client/*`, `/api/provider-files/*` and `/api/strava/subscriptions`; when neither is set those routes reject every user, sync routes are per-user and unaffected)
 - `TURSO_DATABASE_URL`
 - `TURSO_AUTH_TOKEN`
 - `NEXT_PUBLIC_DOMAIN` (optional, used for CORS and Strava fallback redirect)
