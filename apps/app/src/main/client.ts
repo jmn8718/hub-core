@@ -118,7 +118,11 @@ export const initializeStravaClient = async () => {
 		Providers.STRAVA,
 		credentialsKey,
 		async () => {
-			console.log("Strava credentials loaded:", stravaCredentials);
+			console.log("Strava credentials loaded", {
+				clientId: stravaCredentials.clientId,
+				hasClientSecret: true,
+				hasRefreshToken: true,
+			});
 			manager.initializeClient({
 				provider: Providers.STRAVA,
 				options: {

@@ -489,7 +489,28 @@ export class WebClient implements Client {
 		if (userId) {
 			await this._offlineCache.deleteUserData(userId).catch(() => undefined);
 		}
+		this._clearStoredProviderCredentials();
 		await this._clearPwaCaches();
+	}
+
+	// Provider credentials live in localStorage on the web; never leave them
+	// behind for the next person who signs in on the same browser.
+	private _clearStoredProviderCredentials() {
+		const keys = [
+			StorageKeys.COROS_CREDENTIALS,
+			StorageKeys.COROS_VALIDATED,
+			StorageKeys.GARMIN_CREDENTIALS,
+			StorageKeys.GARMIN_VALIDATED,
+			StorageKeys.STRAVA_CREDENTIALS,
+			StorageKeys.STRAVA_VALIDATED,
+		];
+		for (const key of keys) {
+			try {
+				localStorage.removeItem(key);
+			} catch {
+				// storage unavailable; nothing to clear
+			}
+		}
 	}
 
 	getDebugInfo(): ProviderSuccessResponse<{ data: string[] }> {

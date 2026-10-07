@@ -15,16 +15,10 @@ import { initializeClients } from "./client.js";
 import { initializeDbConnection } from "./db.js";
 import { storage } from "./storage.js";
 
-type PackageMetadata = {
-	productName?: string;
-	name?: string;
-};
-
-const packageMetadata = JSON.parse(
-	readFileSync(join(process.cwd(), "package.json"), "utf8"),
-) as PackageMetadata;
+// Injected by electron.vite.config.ts from package.json at build time, so it
+// works in packaged builds where package.json lives inside app.asar.
 const appDisplayName =
-	packageMetadata.productName || packageMetadata.name || "hub-core/app";
+	import.meta.env.MAIN_VITE_APP_DISPLAY_NAME || app.getName() || "hub-core";
 
 app.setName(appDisplayName);
 

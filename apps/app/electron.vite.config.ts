@@ -26,6 +26,22 @@ const resolveCommit = (repoRoot: string) => {
 
 const appRoot = process.cwd();
 const repoRoot = resolve(appRoot, "../..");
+const readAppDisplayName = (packageJsonPath: string) => {
+	try {
+		const parsed = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as {
+			productName?: string;
+			name?: string;
+		};
+		return parsed.productName || parsed.name || "hub-core";
+	} catch {
+		return "hub-core";
+	}
+};
+const mainDefines = {
+	"import.meta.env.MAIN_VITE_APP_DISPLAY_NAME": JSON.stringify(
+		readAppDisplayName(resolve(appRoot, "package.json")),
+	),
+};
 const buildInfoDefines = {
 	"import.meta.env.VITE_HUB_APP_VERSION": JSON.stringify(
 		readVersion(resolve(appRoot, "package.json")),
@@ -38,6 +54,7 @@ const buildInfoDefines = {
 
 export default defineConfig({
 	main: {
+		define: mainDefines,
 		plugins: [externalizeDepsPlugin()],
 	},
 	preload: {

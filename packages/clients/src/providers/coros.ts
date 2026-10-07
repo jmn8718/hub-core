@@ -1,4 +1,5 @@
-import { type ActivityData, CorosApi, downloadFile } from "@nyt87/crs-connect";
+import { writeFile } from "node:fs/promises";
+import { type ActivityData, CorosApi } from "@nyt87/crs-connect";
 import { dayjs } from "@repo/dates";
 import type {
 	CacheDb,
@@ -161,6 +162,23 @@ function mapCorosTimezone(timezone?: number | null): string {
 	const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, "0");
 	const minutes = String(absoluteMinutes % 60).padStart(2, "0");
 	return `UTC${sign}${hours}:${minutes}`;
+}
+
+// The crs-connect downloadFile helper resolves before the stream has been
+// written to disk; callers here read or move the file right away, so the
+// whole body is fetched and written before resolving.
+async function downloadFileToPath(fileUrl: string, filePath: string) {
+	const response = await fetch(fileUrl);
+	if (!response.ok) {
+		throw new Error(
+			`Error downloading activity file (${response.status} ${response.statusText})`,
+		);
+	}
+	const bytes = Buffer.from(await response.arrayBuffer());
+	if (bytes.byteLength === 0) {
+		throw new Error("Error downloading activity file (empty response)");
+	}
+	await writeFile(filePath, bytes);
 }
 
 function mapActivity(activity: CorosActivityDetails, id: string): IDbActivity {
@@ -515,10 +533,7 @@ export class CorosClient extends Base implements Client {
 			}),
 		).then((fileUrl) => {
 			const filePath = this.generateActivityFilePath(downloadPath, activityId);
-			return downloadFile({
-				filePath,
-				fileUrl,
-			});
+			return downloadFileToPath(fileUrl, filePath);
 		});
 	}
 

@@ -27,7 +27,7 @@ import {
 	type ProviderActivityLapBackfillSummary,
 	type ProviderSuccessResponse,
 	type Providers,
-	type StorageKeys,
+	StorageKeys,
 	type StravaClientOptions,
 	type StravaPushSubscription,
 	type Value,
@@ -50,9 +50,26 @@ function maskEmail(email: string) {
 	return `${localPart.slice(0, 2)}***@${domain}`;
 }
 
+// Earlier versions mirrored every store value, provider passwords included,
+// into renderer localStorage. Nothing ever read those entries, so remove any
+// that are still around from before the mirror was dropped.
+function removeLegacyStoreMirror() {
+	for (const key of Object.values(StorageKeys)) {
+		try {
+			localStorage.removeItem(key);
+		} catch {
+			// storage unavailable; nothing to clean
+		}
+	}
+}
+
 export class AppClient implements Client {
 	readonly isBrowserClient = false;
 	private readonly _cloudConfig = getCloudConfig();
+
+	constructor() {
+		removeLegacyStoreMirror();
+	}
 
 	async getDataOverview({ limit }: { limit?: number }): Promise<
 		ProviderSuccessResponse<{
@@ -461,7 +478,6 @@ export class AppClient implements Client {
 			key,
 			value,
 		});
-		localStorage.setItem(key, JSON.stringify({ value }));
 	}
 
 	async providerSyncGear(

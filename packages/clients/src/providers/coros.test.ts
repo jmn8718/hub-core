@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dayjs } from "@repo/dates";
@@ -31,12 +31,9 @@ const corosMock = vi.hoisted(() => ({
 		.mockResolvedValue("https://example.com/test.fit"),
 }));
 
-const downloadFileMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
-
 vi.mock(import("@nyt87/crs-connect"), () => {
 	return {
 		CorosApi: vi.fn().mockReturnValue(corosMock),
-		downloadFile: downloadFileMock,
 	};
 });
 
@@ -108,6 +105,9 @@ describe.sequential("coros client", () => {
 				},
 			},
 		});
+		const fetchMock = vi
+			.spyOn(globalThis, "fetch")
+			.mockResolvedValue(new Response(Buffer.from("fit-file-bytes")));
 		try {
 			await client.downloadActivity(swimActivityId, downloadRoot);
 			expect(corosMock.getActivityDownloadFile).toHaveBeenCalledWith({
@@ -115,8 +115,15 @@ describe.sequential("coros client", () => {
 				fileType: "fit",
 				sportType: "300",
 			});
-			expect(downloadFileMock).toHaveBeenCalled();
+			expect(fetchMock).toHaveBeenCalledWith("https://example.com/test.fit");
+			// The file is fully written before downloadActivity resolves.
+			const written = await readFile(
+				join(downloadRoot, "COROS", `${swimActivityId}.fit`),
+				"utf-8",
+			);
+			expect(written).toBe("fit-file-bytes");
 		} finally {
+			fetchMock.mockRestore();
 			await rm(downloadRoot, { recursive: true, force: true });
 		}
 	});

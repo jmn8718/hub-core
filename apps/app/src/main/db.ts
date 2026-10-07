@@ -3,12 +3,12 @@ import { join } from "node:path";
 import { CacheDb, Db, createDbClient } from "@repo/db";
 import { migrateDb } from "@repo/db/migrations";
 import { StorageKeys } from "@repo/types";
-import { LOCAL_DB_FILE } from "./config.js";
+import { getLocalDbFile } from "./config.js";
 import { storage } from "./storage.js";
 
 function createLocalClient() {
 	return createDbClient({
-		url: LOCAL_DB_FILE,
+		url: getLocalDbFile(),
 		logger: false,
 	});
 }

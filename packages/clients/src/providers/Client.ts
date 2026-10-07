@@ -16,7 +16,7 @@ export function generateActivityFilePath(
 ) {
 	const downloadFolderPath = join(downloadPath, folder);
 	if (!existsSync(downloadFolderPath)) {
-		mkdirSync(downloadFolderPath);
+		mkdirSync(downloadFolderPath, { recursive: true });
 	}
 	return join(downloadFolderPath, `${activityId}.${extension}`);
 }
