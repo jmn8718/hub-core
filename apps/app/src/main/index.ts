@@ -13,6 +13,7 @@ import macDockIcon from "../../resources/icon-mac-dock.png?asset";
 import icon from "../../resources/icon.png?asset";
 import { initializeClients } from "./client.js";
 import { initializeDbConnection } from "./db.js";
+import { isExternalHttpUrl } from "./ipc/guards.js";
 import { storage } from "./storage.js";
 
 // Injected by electron.vite.config.ts from package.json at build time, so it
@@ -162,12 +163,19 @@ function createMainWindow(): BrowserWindow {
 		...(process.platform === "linux" ? { icon } : {}),
 		webPreferences: {
 			preload: join(__dirname, "../preload/index.mjs"),
+			// The preload is an ES module, which Electron only loads without the
+			// sandbox. The bridge it exposes is deliberately minimal (see
+			// src/preload/index.ts); moving to a CJS preload would allow sandbox: true.
 			sandbox: false,
 		},
 	});
 
 	mainWindow.webContents.setWindowOpenHandler((details) => {
-		shell.openExternal(details.url);
+		if (isExternalHttpUrl(details.url)) {
+			void shell.openExternal(details.url).catch((error) => {
+				console.error("Failed to open external link", error);
+			});
+		}
 		return { action: "deny" };
 	});
 

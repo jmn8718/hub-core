@@ -6,11 +6,19 @@ import { StorageKeys } from "@repo/types";
 import { getLocalDbFile } from "./config.js";
 import { storage } from "./storage.js";
 
-function createLocalClient() {
-	return createDbClient({
-		url: getLocalDbFile(),
-		logger: false,
-	});
+// One connection for the main store, the cache and migrations. Separate
+// connections to the same SQLite file contended for the write lock
+// (SQLITE_BUSY during provider syncs) and were never closed.
+let clientSingleton: ReturnType<typeof createDbClient> | undefined;
+
+function getLocalClient() {
+	if (!clientSingleton) {
+		clientSingleton = createDbClient({
+			url: getLocalDbFile(),
+			logger: false,
+		});
+	}
+	return clientSingleton;
 }
 
 let dbSingleton: Db | undefined;
@@ -18,7 +26,7 @@ let cacheDbSingleton: CacheDb | undefined;
 
 export function getDb() {
 	if (!dbSingleton) {
-		dbSingleton = new Db(createLocalClient());
+		dbSingleton = new Db(getLocalClient());
 	}
 	return dbSingleton;
 }
@@ -48,7 +56,7 @@ export async function persistActivityCacheToDisk(params: {
 
 export function getCacheDb() {
 	if (!cacheDbSingleton) {
-		cacheDbSingleton = new CacheDb(createLocalClient(), {
+		cacheDbSingleton = new CacheDb(getLocalClient(), {
 			onSet: async ({ provider, resource, resourceId, value }) => {
 				if (resource !== "activity") return;
 				await persistActivityCacheToDisk({
@@ -65,9 +73,7 @@ export function getCacheDb() {
 let startupDbPromise: Promise<void> | undefined;
 
 export async function applyConfiguredDbClient() {
-	const client = createLocalClient();
-	await migrateDb(client);
-	getDb().setClient(client);
+	await migrateDb(getLocalClient());
 }
 
 export function initializeDbConnection() {

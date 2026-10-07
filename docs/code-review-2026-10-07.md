@@ -70,12 +70,12 @@ Status legend: `[ ]` open · `[x]` fixed · `[-]` won't fix / accepted.
 
 ## Electron app (apps/app)
 
-- [ ] Any safeStorage decrypt failure permanently deletes credentials. `src/main/storage.ts:14-23`.
-- [ ] Preload exposes `process.env`; window runs with `sandbox: false`. `src/preload/index.ts:12`, `src/main/index.ts:171`.
-- [ ] IPC handlers accept arbitrary paths/URLs (`OPEN_LINK`, window-open, Obsidian export, download path). `src/main/ipc/index.ts:64`, `src/main/ipc/activity.ts:18-79`.
-- [ ] Three DB handles opened at startup and leaked. `src/main/db.ts:19-71`, `src/main/client.ts:11`.
-- [ ] Debug "Export storage" dumps provider passwords in plaintext. `packages/app/src/pages/Debug.tsx`.
-- [ ] `electron-builder.yml` placeholder values.
+- [x] Any safeStorage decrypt failure permanently deletes credentials. _Fixed: a failed decrypt returns `undefined` and logs once per key; values are never deleted automatically; writes fail clearly when encryption is unavailable._
+- [x] Preload exposes `process.env`; window runs with `sandbox: false`. _Fixed: the bridge exposes only `ipcRenderer.invoke` for allow-listed channels plus platform/versions. `sandbox: false` stays because the preload is an ES module, which Electron only loads unsandboxed; switching the preload to CJS would allow enabling it (follow-up)._
+- [x] IPC handlers accept arbitrary paths/URLs (`OPEN_LINK`, window-open, Obsidian export, download path). _Fixed: `src/main/ipc/guards.ts`; only http(s) links open externally (awaited), download/upload use the configured downloads folder, Obsidian exports must resolve inside the configured vault (real paths, so symbolic links cannot redirect the write) with a validated file name and extension and are created exclusively (`wx`), and file-exists checks validate the activity id._
+- [x] Three DB handles opened at startup and leaked. _Fixed: one shared libsql connection serves Db, CacheDb and migrations._
+- [x] Debug "Export storage" dumps provider passwords in plaintext. _Fixed: the export skips every `*_CREDENTIALS` key and is labelled accordingly._
+- [x] `electron-builder.yml` placeholder values. _Fixed: executable name set, placeholder auto-update URL removed, Linux maintainer set to the repository's commit identity (the .deb target requires one)._
 
 ## Web client & dates
 

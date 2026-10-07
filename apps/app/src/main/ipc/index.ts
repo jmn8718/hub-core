@@ -9,6 +9,8 @@ import {
 	initializeStravaClient,
 } from "../client.js";
 import { storage } from "../storage.js";
+import { requireConfiguredFolder } from "./folders.js";
+import { assertSafeSegment, isExternalHttpUrl } from "./guards.js";
 
 // import other scoped ipc files
 import "./activity.js";
@@ -62,7 +64,11 @@ ipcMain.handle(Channels.STORE_GET, async (_event, { key }: { key: string }) => {
 });
 
 ipcMain.handle(Channels.OPEN_LINK, async (_event, { url }: { url: string }) => {
-	shell.openExternal(url);
+	// Only web links leave the app; file:, smb: or custom schemes are refused.
+	if (typeof url !== "string" || !isExternalHttpUrl(url)) {
+		throw new Error("Only http(s) links can be opened");
+	}
+	await shell.openExternal(url);
 });
 
 ipcMain.handle(
@@ -71,16 +77,14 @@ ipcMain.handle(
 		_event,
 		{ provider, activityId }: { provider: Providers; activityId: string },
 	) => {
-		const downloadsFolder = storage.getValue(
+		const downloadsFolder = requireConfiguredFolder(
 			StorageKeys.DOWNLOAD_FOLDER,
-		) as string;
-		if (!downloadsFolder) {
-			throw new Error("Missing downloads folder");
-		}
+			"downloads",
+		);
 		const filePath = join(
 			downloadsFolder,
 			provider.toUpperCase(),
-			`${activityId}.${getFileExtension(provider)}`,
+			`${assertSafeSegment(activityId, "activity id")}.${getFileExtension(provider)}`,
 		);
 		return existsSync(filePath);
 	},

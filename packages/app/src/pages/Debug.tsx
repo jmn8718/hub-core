@@ -44,6 +44,10 @@ export function Debug() {
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const buildInfo = getBuildInfo();
 	const storeKeys = Object.values(StorageKeys);
+	// Credentials never leave the encrypted store through this page.
+	const exportableKeys = storeKeys.filter(
+		(key) => !key.endsWith("_CREDENTIALS"),
+	);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
@@ -60,7 +64,7 @@ export function Debug() {
 		setIsExporting(true);
 		try {
 			const entries = await Promise.all(
-				storeKeys.map(
+				exportableKeys.map(
 					async (key) => [key, await client.getStoreValue(key)] as const,
 				),
 			);
@@ -81,7 +85,7 @@ export function Debug() {
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement("a");
 			link.href = url;
-			link.download = "hub-core-storage.json";
+			link.download = "hub-core-settings.json";
 			link.click();
 			URL.revokeObjectURL(url);
 		} catch (error) {
@@ -173,7 +177,9 @@ export function Debug() {
 				<Box>
 					<div className="flex flex-wrap gap-3">
 						<Button onClick={handleExportStorage} disabled={isExporting}>
-							{isExporting ? "Exporting..." : "Export storage"}
+							{isExporting
+								? "Exporting..."
+								: "Export settings (no credentials)"}
 						</Button>
 						<Button
 							onClick={() => fileInputRef.current?.click()}

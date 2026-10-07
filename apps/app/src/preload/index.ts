@@ -1,22 +1,35 @@
-import { electronAPI } from "@electron-toolkit/preload";
-import { contextBridge } from "electron";
+import { Channels } from "@repo/types";
+import { contextBridge, ipcRenderer } from "electron";
 
-// Custom APIs for renderer
-const api = {};
+// The renderer only ever needs to invoke known IPC channels and read the
+// runtime versions. Nothing else from the preload environment (process.env,
+// raw ipcRenderer, webFrame) is exposed.
+const allowedChannels = new Set<string>(Object.values(Channels));
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
+const electronBridge = {
+	ipcRenderer: {
+		invoke: (channel: string, ...args: unknown[]) => {
+			if (!allowedChannels.has(channel)) {
+				return Promise.reject(new Error(`Unknown IPC channel: ${channel}`));
+			}
+			return ipcRenderer.invoke(channel, ...args);
+		},
+	},
+	process: {
+		platform: process.platform,
+		versions: { ...process.versions },
+	},
+};
+
+export type ElectronBridge = typeof electronBridge;
+
 if (process.contextIsolated) {
 	try {
-		contextBridge.exposeInMainWorld("electron", electronAPI);
-		contextBridge.exposeInMainWorld("api", api);
+		contextBridge.exposeInMainWorld("electron", electronBridge);
 	} catch (error) {
 		console.error(error);
 	}
 } else {
 	// @ts-ignore (define in dts)
-	window.electron = electronAPI;
-	// @ts-ignore (define in dts)
-	window.api = api;
+	window.electron = electronBridge;
 }
