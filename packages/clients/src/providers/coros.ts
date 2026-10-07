@@ -142,6 +142,27 @@ function buildMetadataForActivity(params: {
 		: undefined;
 }
 
+// COROS reports the activity timezone as a signed offset in quarter-hour
+// units (for example 36 => UTC+09:00). Fall back to UTC when it is missing.
+function mapCorosTimezone(timezone?: number | null): string {
+	if (
+		typeof timezone !== "number" ||
+		!Number.isFinite(timezone) ||
+		!Number.isInteger(timezone)
+	) {
+		return "Etc/UTC";
+	}
+	const offsetMinutes = timezone * 15;
+	if (Math.abs(offsetMinutes) > 14 * 60) {
+		return "Etc/UTC";
+	}
+	const sign = offsetMinutes >= 0 ? "+" : "-";
+	const absoluteMinutes = Math.abs(offsetMinutes);
+	const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, "0");
+	const minutes = String(absoluteMinutes % 60).padStart(2, "0");
+	return `UTC${sign}${hours}:${minutes}`;
+}
+
 function mapActivity(activity: CorosActivityDetails, id: string): IDbActivity {
 	const type = mapActivityType(activity.summary.sportType);
 	const subtype = mapActivitySubtype(type, activity.summary.sportType);
@@ -152,7 +173,7 @@ function mapActivity(activity: CorosActivityDetails, id: string): IDbActivity {
 		timestamp: new Date(
 			Math.floor(activity.summary.startTimestamp / 100) * 1000,
 		).getTime(),
-		timezone: "Etc/UTC",
+		timezone: mapCorosTimezone(activity.summary.timezone),
 		name: activity.summary.name || "",
 		distance,
 		duration,

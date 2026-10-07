@@ -293,6 +293,18 @@ describe.sequential("coros client", () => {
 		);
 	});
 
+	test("maps coros quarter-hour timezone offset to a utc offset timezone", async () => {
+		const { client } = await createContext();
+		await client.connect({
+			username: "user1",
+			password: "password2",
+		});
+
+		const result = await client.syncActivity("464238568991129601");
+		expect(activitiesData["464238568991129601"].summary.timezone).toBe(36);
+		expect(result.activity.data.timezone).toBe("UTC+09:00");
+	});
+
 	test("maps cycling metadata from coros activity details", async () => {
 		const { client } = await createContext();
 		await client.connect({
