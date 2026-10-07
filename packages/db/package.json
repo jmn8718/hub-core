@@ -21,6 +21,8 @@
     "db:migrate:postgres": "tsx src/migrate-postgres.ts",
     "db:dump:local-to-turso": "tsx src/scripts/dump-local-to-turso.ts",
     "db:dump:local-to-postgres": "tsx src/scripts/dump-local-to-postgres.ts",
+    "db:dump:postgres-to-local": "tsx src/scripts/dump-postgres-to-local.ts",
+    "db:pull:remote-to-local": "tsx src/scripts/pull-remote-to-local.ts",
     "test": "vitest run"
   },
   "dependencies": {
