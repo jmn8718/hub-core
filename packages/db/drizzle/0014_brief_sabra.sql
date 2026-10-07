@@ -1,0 +1,1 @@
+CREATE INDEX `cache_records_lookup_idx` ON `cache_records` (`provider`,`resource`,`resource_id`);

@@ -9,6 +9,7 @@ import {
 import { ipcMain } from "electron";
 import { manager } from "../client.js";
 import { persistActivityCacheToDisk } from "../db.js";
+import { runExclusiveSync } from "../syncLock.js";
 
 function isLoginCredentials(
 	credentials: ConnectCredentials,
@@ -63,7 +64,9 @@ ipcMain.handle(
 			force?: boolean;
 		},
 	) => {
-		await manager.sync(provider, force);
+		await runExclusiveSync(`${provider} sync`, () =>
+			manager.sync(provider, force),
+		);
 	},
 );
 

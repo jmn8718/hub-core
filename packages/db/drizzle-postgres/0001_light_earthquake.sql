@@ -41,31 +41,31 @@ CREATE TABLE "sync_state" (
 	"updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "activities" ADD COLUMN "user_id" text;--> statement-breakpoint
-ALTER TABLE "activities" ADD COLUMN "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
-ALTER TABLE "activities" ADD COLUMN "deleted_at" text;--> statement-breakpoint
-ALTER TABLE "activities_connection" ADD COLUMN "user_id" text;--> statement-breakpoint
-ALTER TABLE "activities_connection" ADD COLUMN "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
-ALTER TABLE "activities_connection" ADD COLUMN "deleted_at" text;--> statement-breakpoint
-ALTER TABLE "activity_gears" ADD COLUMN "user_id" text;--> statement-breakpoint
-ALTER TABLE "activity_gears" ADD COLUMN "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
-ALTER TABLE "activity_gears" ADD COLUMN "deleted_at" text;--> statement-breakpoint
-ALTER TABLE "gears" ADD COLUMN "user_id" text;--> statement-breakpoint
-ALTER TABLE "gears" ADD COLUMN "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
-ALTER TABLE "gears" ADD COLUMN "deleted_at" text;--> statement-breakpoint
-ALTER TABLE "gears_connection" ADD COLUMN "user_id" text;--> statement-breakpoint
-ALTER TABLE "gears_connection" ADD COLUMN "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
-ALTER TABLE "gears_connection" ADD COLUMN "deleted_at" text;--> statement-breakpoint
-ALTER TABLE "provider_activities" ADD COLUMN "user_id" text;--> statement-breakpoint
-ALTER TABLE "provider_activities" ADD COLUMN "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
-ALTER TABLE "provider_activities" ADD COLUMN "deleted_at" text;--> statement-breakpoint
-ALTER TABLE "provider_gears" ADD COLUMN "user_id" text;--> statement-breakpoint
-ALTER TABLE "provider_gears" ADD COLUMN "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
-ALTER TABLE "provider_gears" ADD COLUMN "deleted_at" text;--> statement-breakpoint
-ALTER TABLE "inbody" ADD COLUMN "user_id" text;--> statement-breakpoint
-ALTER TABLE "inbody" ADD COLUMN "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
-ALTER TABLE "inbody" ADD COLUMN "deleted_at" text;--> statement-breakpoint
-ALTER TABLE "weight" ADD COLUMN "user_id" text;--> statement-breakpoint
-ALTER TABLE "weight" ADD COLUMN "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
-ALTER TABLE "weight" ADD COLUMN "deleted_at" text;--> statement-breakpoint
+ALTER TABLE "activities" ADD COLUMN IF NOT EXISTS "user_id" text;--> statement-breakpoint
+ALTER TABLE "activities" ADD COLUMN IF NOT EXISTS "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
+ALTER TABLE "activities" ADD COLUMN IF NOT EXISTS "deleted_at" text;--> statement-breakpoint
+ALTER TABLE "activities_connection" ADD COLUMN IF NOT EXISTS "user_id" text;--> statement-breakpoint
+ALTER TABLE "activities_connection" ADD COLUMN IF NOT EXISTS "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
+ALTER TABLE "activities_connection" ADD COLUMN IF NOT EXISTS "deleted_at" text;--> statement-breakpoint
+ALTER TABLE "activity_gears" ADD COLUMN IF NOT EXISTS "user_id" text;--> statement-breakpoint
+ALTER TABLE "activity_gears" ADD COLUMN IF NOT EXISTS "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
+ALTER TABLE "activity_gears" ADD COLUMN IF NOT EXISTS "deleted_at" text;--> statement-breakpoint
+ALTER TABLE "gears" ADD COLUMN IF NOT EXISTS "user_id" text;--> statement-breakpoint
+ALTER TABLE "gears" ADD COLUMN IF NOT EXISTS "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
+ALTER TABLE "gears" ADD COLUMN IF NOT EXISTS "deleted_at" text;--> statement-breakpoint
+ALTER TABLE "gears_connection" ADD COLUMN IF NOT EXISTS "user_id" text;--> statement-breakpoint
+ALTER TABLE "gears_connection" ADD COLUMN IF NOT EXISTS "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
+ALTER TABLE "gears_connection" ADD COLUMN IF NOT EXISTS "deleted_at" text;--> statement-breakpoint
+ALTER TABLE "provider_activities" ADD COLUMN IF NOT EXISTS "user_id" text;--> statement-breakpoint
+ALTER TABLE "provider_activities" ADD COLUMN IF NOT EXISTS "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
+ALTER TABLE "provider_activities" ADD COLUMN IF NOT EXISTS "deleted_at" text;--> statement-breakpoint
+ALTER TABLE "provider_gears" ADD COLUMN IF NOT EXISTS "user_id" text;--> statement-breakpoint
+ALTER TABLE "provider_gears" ADD COLUMN IF NOT EXISTS "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
+ALTER TABLE "provider_gears" ADD COLUMN IF NOT EXISTS "deleted_at" text;--> statement-breakpoint
+ALTER TABLE "inbody" ADD COLUMN IF NOT EXISTS "user_id" text;--> statement-breakpoint
+ALTER TABLE "inbody" ADD COLUMN IF NOT EXISTS "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
+ALTER TABLE "inbody" ADD COLUMN IF NOT EXISTS "deleted_at" text;--> statement-breakpoint
+ALTER TABLE "weight" ADD COLUMN IF NOT EXISTS "user_id" text;--> statement-breakpoint
+ALTER TABLE "weight" ADD COLUMN IF NOT EXISTS "updated_at" text DEFAULT CURRENT_TIMESTAMP::text NOT NULL;--> statement-breakpoint
+ALTER TABLE "weight" ADD COLUMN IF NOT EXISTS "deleted_at" text;--> statement-breakpoint
 ALTER TABLE "auth_identities" ADD CONSTRAINT "auth_identities_user_id_app_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."app_users"("id") ON DELETE no action ON UPDATE no action;

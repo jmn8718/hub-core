@@ -13,45 +13,46 @@ Status legend: `[ ]` open · `[x]` fixed · `[-]` won't fix / accepted.
 - [x] 5. **Provider credentials copied to plaintext renderer localStorage.** `apps/app/src/renderer/src/libs/client.ts:464` (also web client `packages/clients/src/dataClient/web.ts:266`, not cleared on sign-out, not user-scoped). _Fixed: the Electron renderer no longer mirrors store values into localStorage and removes entries left by earlier versions at startup; the web client now removes provider credentials and validation flags on sign-out. Follow-up: namespace web store keys per Supabase user._
 - [x] 6. **Packaged desktop build crashes at startup.** package.json read via `process.cwd()` (`apps/app/src/main/index.ts:23`); DB path baked at build time from `.env` (`apps/app/src/main/config.ts:2`). _Fixed: display name injected at build time via `MAIN_VITE_APP_DISPLAY_NAME` with `app.getName()` fallback; DB path resolved at runtime under `app.getPath("userData")`, with `MAIN_VITE_LOCAL_DB_FILE` honoured only in unpackaged (dev) runs._
 - [x] 7. **COROS download resolves before the file is written.** Library `downloadFile` pipes without awaiting (`packages/clients/src/providers/coros.ts:516`); `downloadActivityFileAsBuffer` reads/deletes a file still streaming. _Fixed: COROS now fetches the body and writes it fully before resolving, rejecting non-OK or empty responses; test asserts the file content is on disk when the call returns. `generateActivityFilePath` also creates folders recursively._
-- [ ] 8. **Strava `original` flag inverted in `syncActivity`.** `packages/clients/src/providers/strava.ts:708` vs `:681`; lap backfill / regenerate flips Strava copy to original and overwrites manufacturer.
-- [ ] 9. **Hook after early return crashes the Sync page.** `packages/app/src/components/settings/CloudSyncSection.tsx:171` returns before a `useEffect`.
-- [ ] 10. **Home sync card never clears the local loading flag.** `packages/app/src/components/providers/CardSync.tsx:92`.
-- [ ] 11. **Share week view off by a day west of UTC; prev/next go backwards.** `packages/app/src/pages/Share.tsx:144` mixes `Date.UTC` with local dayjs.
+- [x] 8. **Strava `original` flag inverted in `syncActivity`.** `packages/clients/src/providers/strava.ts:708` vs `:681`; lap backfill / regenerate flips Strava copy to original and overwrites manufacturer. _Fixed: one `isStravaOriginal` helper used by both paths; test covers a COROS-recorded and a Strava-app activity through both._
+- [x] 9. **Hook after early return crashes the Sync page.** `packages/app/src/components/settings/CloudSyncSection.tsx:171` returns before a `useEffect`. _Fixed: early return moved below the auto-pull effect._
+- [x] 10. **Home sync card never clears the local loading flag.** `packages/app/src/components/providers/CardSync.tsx:92`. _Fixed: try/catch/finally with `setLocalLoading(false)`; thrown errors are surfaced as toasts too._
+- [x] 11. **Share week view off by a day west of UTC; prev/next go backwards.** `packages/app/src/pages/Share.tsx:144` mixes `Date.UTC` with local dayjs. _Fixed: ISO week helpers computed in local time; verified Mon–Sun bounds and prev/next in New York, Seoul, Madrid and Auckland._
 
 ## Sync protocol
 
-- [ ] Upserts have no last-writer-wins guard (`setWhere` on `updated_at`); older rows overwrite newer ones; desktop "pull" overwrites unpushed local edits. `packages/db/src/db.ts:2820` and siblings.
-- [ ] Delta watermark taken after the sync ends → rows written during a sync are never synced. `apps/app/src/main/ipc/sync.ts:497`.
-- [ ] Session state machine: completed → failed on retried push; failed → completed on finish; `pullSyncRows` ignores status. `packages/db/src/db.ts:2735-2803`.
-- [ ] Mid-sync failure leaves the server session `started` forever; `requestJson` drops HTTP status. `apps/app/src/main/ipc/sync.ts:363-495`.
-- [ ] Pull-only users always do a full pull (`lastPushCompletedAt` never set). `apps/app/src/main/ipc/sync.ts:503`.
-- [ ] `limit`/`offset`/`tables` not type-validated (NaN reaches SQL; validate route can throw unhandled). `packages/db/src/db.ts:2514`, `apps/api/app/api/sync/validate/route.ts:51`.
-- [ ] No mutual exclusion between provider sync and cloud sync.
+- [x] Upserts have no last-writer-wins guard (`setWhere` on `updated_at`); older rows overwrite newer ones; desktop "pull" overwrites unpushed local edits. _Fixed: every sync upsert now applies only when `excluded.updated_at >= updated_at` (plus the ownership rule); tested._
+- [x] Delta watermark taken after the sync ends → rows written during a sync are never synced. _Fixed: push watermark is the local time before the first export; pull watermark is the server session `startedAt` returned by `/api/sync/start`._
+- [x] Session state machine: completed → failed on retried push; failed → completed on finish. _Fixed: push failures and client-reported aborts only affect `started` sessions; `finishSyncSession` refuses to complete a failed session and accepts an `error` to mark an abort; tested, including a late abort on a completed session._
+- [x] Mid-sync failure leaves the server session `started` forever; `requestJson` drops HTTP status. _Fixed: the desktop reports the error via `/api/sync/finish { error }` and rethrows; errors now carry the HTTP status._
+- [x] Pull-only users always do a full pull (`lastPushCompletedAt` never set). _Fixed: pull mode only requires a pull watermark for delta._
+- [x] `limit`/`offset`/`tables` not type-validated. _Fixed: `pullSyncRows` validates ints/strings (400 from the route); validate route checks the payload shape._
+- [x] No mutual exclusion between provider sync and cloud sync. _Fixed: `apps/app/src/main/syncLock.ts` serialises provider syncs and cloud sync/pull; a second request fails fast with a clear message._
 
 ## API & admin security
 
-- [ ] Admin auth trusts unverified cookie session (`getSession`), keyed on `session.user.id`. `apps/admin/middleware.ts:10`, `apps/admin/lib/strava.ts:47`.
-- [ ] Queue callback route reachable unauthenticated; runs full Strava + COROS sync on any POST. `apps/api/app/api/queue/strava-activity-sync/route.ts`.
-- [ ] Strava webhook accepts any payload; no `subscription_id` check; each unique object_id triggers a full sync. `apps/api/app/api/webhook/strava/route.ts:30-78`.
-- [ ] Webhook de-dup drops every update/delete after the first create. `apps/api/app/api/webhook/strava/route.ts:38-55`.
-- [ ] 500 responses echo raw DB/provider error messages. `apps/api/app/api/client/[action]/route.ts:36`, sync routes, `strava/subscriptions`.
-- [ ] Admin OAuth binds tokens to whichever profile has the athlete id; returns refresh token to the browser. `apps/admin/app/api/strava/oauth/route.ts:21-48`.
-- [ ] Admin provider module fires unawaited `connect()` at import time. `apps/admin/lib/provider.ts:12-25`.
-- [ ] No rate limiting; `requireUser` performs two writes per request. `apps/api/lib/auth.ts:41`, `packages/db/src/db.ts:497`.
-- [ ] CORS `*` with credentials; `ignoreBuildErrors`; dead `apps/api/middleware.ts`.
+- [x] Admin auth trusts unverified cookie session (`getSession`), keyed on `session.user.id`. _Fixed: middleware, route handlers, layouts and pages use the server-verified `getUser()`._
+- [x] Queue callback route reachable unauthenticated; runs full Strava + COROS sync on any POST. _Fixed: the handler only acts on events the webhook route recorded (owner, object, aspect, event time), syncs just that activity, ignores deletes, and runs the COROS follow-up only for creates._
+- [x] Strava webhook accepts any payload; no `subscription_id` check; each unique object_id triggers a full sync. _Fixed: payload shape validated, `STRAVA_SUBSCRIPTION_ID` enforced when set, per-activity sync via the queue._
+- [x] Webhook de-dup drops every update/delete after the first create. _Fixed: de-dup key is (object type, object id, aspect, event time)._
+- [x] 500 responses echo raw DB/provider error messages. _Fixed: `apps/api/lib/http.ts` `publicErrorMessage` masks driver/infra errors in every route, walking the `cause` chain so Drizzle query errors (which embed SQL and parameters) and wrappers around Node network errors (`ECONNREFUSED`, `ENOTFOUND`, `EAI_AGAIN`, undici codes, SQLSTATEs, `SQLITE_*`) are masked too; application messages still pass through. Regression suite in `apps/api/lib/http.test.ts` (vitest added to the API package)._
+- [x] Admin OAuth binds tokens to whichever profile has the athlete id; returns refresh token to the browser. _Fixed: `apps/admin/lib/strava-link.ts` links an athlete only to the signed-in user (409 if held by another account); responses carry athlete id and expiry only._
+- [x] Admin provider module fires unawaited `connect()` at import time. _Fixed: lazy, memoised, awaited `getProvider()`._
+- [x] No rate limiting; `requireUser` performs two writes per request. _Mitigated: `getOrCreateAppUser` writes only when email/display name changed; heavy provider-backed client actions are serialised per instance (`apps/api/lib/locks.ts`). A real per-user rate limit remains a follow-up._
+- [x] CORS `*` with credentials; `ignoreBuildErrors`; dead `apps/api/middleware.ts`. _Fixed: origin from `NEXT_PUBLIC_DOMAIN` with credentials only for a concrete origin; build-time type/lint checks re-enabled; dead middleware removed._
 - [ ] Follow-up to item 2: thread `authContext.internalUserId` into the Db methods used by client actions (filter reads by `user_id`, set `user_id` on writes) so the API becomes genuinely multi-tenant and the allow-list can be relaxed.
 
 ## Data integrity (packages/db)
 
-- [ ] `insertGear` resurrects soft-deleted provider gears and relinks through deleted connections. `packages/db/src/db.ts:1807-1846`.
-- [ ] `insertActivity` resolves provider activities through soft-deleted connections; returns provider id where an activity id is expected. `packages/db/src/db.ts:1579-1601`.
-- [ ] `getGears` paginates with cursor + offset and no ORDER BY. `packages/db/src/db.ts:1225-1267`.
-- [ ] Monthly overview buckets in UTC (SQLite) / server TZ (Postgres) unlike weekly/daily. `packages/db/src/db.ts:451`.
-- [ ] `getActivities` cursor ignores `sort`, is emitted on the last page, no id tiebreaker. `packages/db/src/db.ts:1129-1164`.
-- [ ] `deleteActivity` leaves laps active; `getProviderActivitiesWithoutLaps` / `getActivityByProviderActivityId` ignore deleted activities. `packages/db/src/db.ts:1473, 2049-2100`.
-- [ ] SQLite JSON aggregations lack the null filter of the Postgres variants. `packages/db/src/db.ts:627-645`.
-- [ ] `cache_records` has no `(provider, resource, resource_id)` index; `set` is a non-transactional delete+insert. `packages/db/src/cache.ts:52`.
-- [ ] Tests cover only fresh DBs (no upgrade, no Postgres run, no multi-device sync); `_weekIdentifier` dead and dialect-inconsistent; `ensureActivityLapsTable` in test utils diverges from 0013.
+- [x] `insertGear` resurrects soft-deleted provider gears and relinks through deleted connections. _Fixed: a soft-deleted provider gear is a tombstone: `insertGear` skips it (no revival, no replacement row, no re-link) and activity imports do not link through it; tested._
+- [x] `insertActivity` resolves provider activities through soft-deleted connections; returns provider id where an activity id is expected. _Fixed: active-connection lookups; returns `undefined` when no activity is linked (`createActivity` throws in that case)._
+- [x] `getGears` paginates with cursor + offset and no ORDER BY. _Fixed: ordered by id; offset ignored when a cursor is given._
+- [x] Monthly overview buckets in UTC (SQLite) / server TZ (Postgres) unlike weekly/daily. _Fixed: bucketed in JS by the activity's timezone like the other overviews; dialect-specific SQL identifiers removed; tested._
+- [x] `getActivities` cursor ignores `sort`, is emitted on the last page, no id tiebreaker. _Fixed: `<timestamp>:<id>` cursor honouring sort direction, emitted only on full pages; tested with shared timestamps._
+- [x] `deleteActivity` leaves laps active; lap lookups ignore deleted activities. _Fixed: laps are soft-deleted with the activity; both lookups inner-join active activities; tested._
+- [x] SQLite JSON aggregations lack the null filter of the Postgres variants. _Fixed: `FILTER (WHERE id IS NOT NULL)` on all four SQLite aggregations._
+- [x] `cache_records` has no `(provider, resource, resource_id)` index; `set` is a non-transactional delete+insert. _Fixed: index added to both schema trees (migrations 0014 sqlite / 0006 postgres). `set` stays as two autocommit statements on purpose: the cache and main store use separate SQLite connections and a transaction here produced SQLITE_BUSY during provider syncs._
+- [x] Tests cover only fresh DBs on SQLite (no Postgres run, no multi-device sync). _Fixed: `db.postgres.test.ts` runs the core scenarios against a real Postgres (`docker compose up -d db`, create `hub_test`, `pnpm --filter @repo/db test:postgres`; skipped when `POSTGRES_TEST_URL` is unset); `sync-multi-device.test.ts` simulates two devices syncing through a server (propagation, later edits, stale-copy rejection, rows written mid-sync, foreign-user push). Upgrade tests exist; dead SQL identifiers and the stale lap-table shim removed._
+- [x] **Found by the Postgres run:** the Postgres migration chain could not be applied to a fresh database. 0000 already creates `user_id`/`updated_at`/`deleted_at` and 0001 added them again (`column "user_id" of relation "activities" already exists`). _Fixed by making the 27 `ADD COLUMN` statements in `drizzle-postgres/0001_light_earthquake.sql` `IF NOT EXISTS`. This is a deliberate hand edit of a generated migration, contrary to the AGENTS.md rule: regenerating would not repair history, and Drizzle applies migrations by timestamp, not hash, so already-migrated databases are unaffected._
 
 ## Providers (packages/clients)
 
@@ -102,6 +103,6 @@ Status legend: `[ ]` open · `[x]` fixed · `[-]` won't fix / accepted.
 - [ ] `formatPace` one second low for exact paces (5:00 → 4:59). `utils/formatters.ts:28`.
 - [ ] ProviderRow file-exists cache never invalidated on folder change. `components/cards/ProviderRow.tsx:18`.
 - [ ] Gears refresh re-fetches from the stored cursor and replaces the list; no pagination beyond 50. `pages/Gears.tsx:63-77`.
-- [ ] Share: year select rendered twice; URL `value` validation accepts impossible months. `pages/Share.tsx:165, 749`.
+- [ ] Share: year select rendered twice. `pages/Share.tsx:749`. _URL `value` validation fixed alongside item 11: months limited to 01–12, week values round-trip checked (rejects W53 in 52-week years)._
 - [ ] InbodyEdit depends entirely on router state. `pages/InbodyEdit.tsx:43`.
 - [ ] `LoadingContext` single boolean toggled by concurrent handlers.

@@ -26,6 +26,7 @@ interface (activities, gears, providers, Inbody, etc).
 - `STRAVA_REFRESH_TOKEN`
 - `STRAVA_REDIRECT_URI` (optional, falls back to `NEXT_PUBLIC_DOMAIN`)
 - `STRAVA_VERIFY_TOKEN`
+- `STRAVA_SUBSCRIPTION_ID` (recommended; webhook events from any other subscription are rejected)
 - `COROS_USERNAME` / `COROS_PASSWORD` (optional, used to auto-initialize the COROS client)
 - `GARMIN_USERNAME` / `GARMIN_PASSWORD` (optional, used to auto-initialize the Garmin client)
 

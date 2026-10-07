@@ -314,6 +314,8 @@ export interface ISyncStartData {
 	allowedTables: SyncTableName[];
 	batchLimit: number;
 	status: "started";
+	/** Server time at which the session started; next delta-pull watermark. */
+	startedAt: string;
 }
 
 export interface ISyncPushPayload {
@@ -349,6 +351,8 @@ export interface ISyncPullData {
 
 export interface ISyncFinishPayload {
 	syncSessionId: string;
+	/** Set when the client aborts the session; marks it failed with this reason. */
+	error?: string;
 }
 
 export interface ISyncStatusData {

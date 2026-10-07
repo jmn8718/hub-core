@@ -1,4 +1,5 @@
 import { requireAllowedUser } from "@/lib/auth";
+import { publicErrorMessage } from "@/lib/http";
 import type { StravaPushSubscription } from "@repo/types";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 		});
 	} catch (error) {
 		return NextResponse.json(
-			{ success: false, error: (error as Error).message },
+			{ success: false, error: publicErrorMessage(error) },
 			{ status: 500 },
 		);
 	}
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 		});
 	} catch (error) {
 		return NextResponse.json(
-			{ success: false, error: (error as Error).message },
+			{ success: false, error: publicErrorMessage(error) },
 			{ status: 500 },
 		);
 	}
@@ -156,7 +157,7 @@ export async function DELETE(req: NextRequest): Promise<Response> {
 		return NextResponse.json({ success: true });
 	} catch (error) {
 		return NextResponse.json(
-			{ success: false, error: (error as Error).message },
+			{ success: false, error: publicErrorMessage(error) },
 			{ status: 500 },
 		);
 	}

@@ -31,9 +31,15 @@ export async function POST(req: NextRequest): Promise<Response> {
 		payload = null;
 	}
 
-	if (!payload) {
+	if (
+		!payload ||
+		typeof payload.schemaVersion !== "string" ||
+		!Array.isArray(payload.tables) ||
+		!payload.tables.every((table) => typeof table === "string") ||
+		!Number.isInteger(payload.batchLimit)
+	) {
 		return NextResponse.json(
-			{ success: false, error: "Missing validation payload" },
+			{ success: false, error: "Invalid validation payload" },
 			{ status: 400 },
 		);
 	}

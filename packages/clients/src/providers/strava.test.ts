@@ -546,6 +546,28 @@ describe.sequential("strava client connect()", () => {
 		expect(result.activity.providerActivity?.id).toEqual(testActivityId);
 	});
 
+	test("marks the original flag consistently in sync and syncActivity", async () => {
+		await client.connect({ refreshToken: "token" });
+		// COROS-recorded activity mirrored to Strava: Strava is not the original.
+		const corosId = "16198895522";
+		const corosResult = await client.syncActivity(corosId);
+		expect(corosResult.activity.providerActivity?.original).toBe(false);
+		// Recorded with the Strava app: Strava is the original.
+		const stravaAppId = "14917221023";
+		const stravaResult = await client.syncActivity(stravaAppId);
+		expect(stravaResult.activity.providerActivity?.original).toBe(true);
+
+		const synced = await client.sync({});
+		const byId = new Map(
+			synced.map((payload) => [
+				payload.activity.providerActivity?.id,
+				payload.activity.providerActivity?.original,
+			]),
+		);
+		expect(byId.get(corosId)).toBe(false);
+		expect(byId.get(stravaAppId)).toBe(true);
+	});
+
 	test("maps Strava laps into the activity payload", async () => {
 		await client.connect({ refreshToken: "token" });
 		const result = await client.syncActivity("16198895522");

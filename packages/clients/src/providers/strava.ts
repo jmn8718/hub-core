@@ -69,6 +69,13 @@ type StravaWebCreateGearResponse = {
 
 const STRAVA_BIKE_FRAME_TYPE_ROAD = "3";
 
+// Strava holds the original record only when the activity was not recorded
+// by a device whose own provider (Garmin, COROS) is synced separately.
+function isStravaOriginal(manufacturer: string) {
+	const value = manufacturer.toLowerCase();
+	return !(value.includes("garmin") || value.includes("coros"));
+}
+
 function normalizeTimezone(timezone?: string | null): string {
 	if (!timezone) return "Etc/UTC";
 	const cleaned = timezone.replace(/\([^)]*\)\s*/g, "").trim();
@@ -678,10 +685,7 @@ export class StravaClient extends Base implements Client {
 						providerActivity: {
 							id: dbActivity.id,
 							provider: StravaClient.PROVIDER,
-							original: !(
-								dbActivity.manufacturer.toLowerCase().includes("garmin") ||
-								dbActivity.manufacturer.toLowerCase().includes("coros")
-							),
+							original: isStravaOriginal(dbActivity.manufacturer),
 							timestamp: dbActivity.timestamp,
 							data: "{}",
 						},
@@ -705,7 +709,7 @@ export class StravaClient extends Base implements Client {
 					providerActivity: {
 						id: dbActivity.id,
 						provider: StravaClient.PROVIDER,
-						original: dbActivity.manufacturer.toLowerCase().includes("garmin"),
+						original: isStravaOriginal(dbActivity.manufacturer),
 						timestamp: dbActivity.timestamp,
 						// at the moment it does not store all the raw data as it includes a lot of data
 						data: "{}", // JSON.stringify(activity),

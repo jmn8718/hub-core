@@ -23,7 +23,8 @@
     "db:dump:local-to-postgres": "tsx src/scripts/dump-local-to-postgres.ts",
     "db:dump:postgres-to-local": "tsx src/scripts/dump-postgres-to-local.ts",
     "db:pull:remote-to-local": "tsx src/scripts/pull-remote-to-local.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:postgres": "POSTGRES_TEST_URL=${POSTGRES_TEST_URL:-postgresql://hub:hub@localhost:5432/hub_test} vitest run src/db.postgres.test.ts"
   },
   "dependencies": {
     "@libsql/client": "0.15.15",

@@ -9,6 +9,7 @@ import {
 } from "@repo/types";
 import { ipcMain } from "electron";
 import { getDb } from "../db.js";
+import { runExclusiveSync } from "../syncLock.js";
 
 interface JsonResponse<T> {
 	success: boolean;
@@ -17,6 +18,7 @@ interface JsonResponse<T> {
 	allowedTables?: SyncTableName[];
 	batchLimit?: number;
 	syncSessionId?: string;
+	startedAt?: string;
 }
 
 interface SupabaseAuthSessionResponse {
@@ -86,10 +88,14 @@ async function requestJson<T>(
 		.json()
 		.catch(() => null)) as JsonResponse<T> | null;
 	if (!json) {
-		throw new Error(`Empty response from ${url}`);
+		throw new Error(
+			`Empty response from ${url} (HTTP ${response.status} ${response.statusText})`,
+		);
 	}
 	if (!json.success) {
-		throw new Error(json.error || `Request to ${url} failed`);
+		throw new Error(
+			`${json.error || `Request to ${url} failed`} (HTTP ${response.status})`,
+		);
 	}
 	return json;
 }
@@ -360,6 +366,9 @@ async function runCloudSync(params: {
 		);
 	}
 
+	// Watermarks are taken before anything is exported or pulled, so rows
+	// written while this sync runs are picked up by the next delta sync.
+	const localStartedAt = new Date().toISOString();
 	const start = await requestJson<never>(`${baseUrl}/api/sync/start`, {
 		accessToken: params.accessToken,
 		body: {
@@ -367,16 +376,19 @@ async function runCloudSync(params: {
 			schemaVersion: localContract.schemaVersion,
 		},
 	});
+	const serverStartedAt = start.startedAt ?? localStartedAt;
 
 	const syncSessionId = start.syncSessionId;
 	const allowedTables = start.allowedTables ?? [];
 	const batchLimit = start.batchLimit ?? db.getSyncBatchLimit();
 	const userId = validationData.userId;
 	const existingSyncState = await db.getSyncState({ userId });
+	const hasPushWatermark =
+		params.mode === "pull" || !!existingSyncState?.lastPushCompletedAt;
 	const syncMode: ICloudSyncResult["syncMode"] =
 		existingSyncState &&
 		existingSyncState.lastSchemaVersion === localContract.schemaVersion &&
-		existingSyncState.lastPushCompletedAt &&
+		hasPushWatermark &&
 		existingSyncState.lastPullCompletedAt
 			? "delta"
 			: "full";
@@ -400,91 +412,108 @@ async function runCloudSync(params: {
 	let pulledRows = 0;
 	let pulledTables = 0;
 
-	if (params.mode === "sync") {
+	try {
+		if (params.mode === "sync") {
+			for (const table of allowedTables) {
+				let offset = 0;
+				let batchIndex = 0;
+				let pushedAnyRow = false;
+
+				while (true) {
+					const rows = await db.exportSyncRows({
+						table,
+						limit: batchLimit,
+						offset,
+						updatedAfter: pushUpdatedAfter,
+					});
+					if (rows.length === 0) {
+						break;
+					}
+
+					await requestJson<never>(`${baseUrl}/api/sync/push`, {
+						accessToken: params.accessToken,
+						body: {
+							syncSessionId,
+							table,
+							batchIndex,
+							rows,
+						},
+					});
+
+					pushedAnyRow = true;
+					syncedRows += rows.length;
+					pushedRows += rows.length;
+					offset += rows.length;
+					batchIndex += 1;
+				}
+
+				if (pushedAnyRow) {
+					syncedTables += 1;
+					pushedTables += 1;
+				}
+			}
+		}
+
 		for (const table of allowedTables) {
 			let offset = 0;
-			let batchIndex = 0;
-			let pushedAnyRow = false;
+			let pulledAnyRow = false;
 
 			while (true) {
-				const rows = await db.exportSyncRows({
-					table,
-					limit: batchLimit,
-					offset,
-					updatedAfter: pushUpdatedAfter,
-				});
+				const pull = await requestJson<ISyncPullData>(
+					`${baseUrl}/api/sync/pull`,
+					{
+						accessToken: params.accessToken,
+						body: {
+							syncSessionId,
+							table,
+							limit: batchLimit,
+							offset,
+							updatedAfter: pullUpdatedAfter,
+						},
+					},
+				);
+
+				const rows = pull.data?.rows ?? [];
 				if (rows.length === 0) {
 					break;
 				}
 
-				await requestJson<never>(`${baseUrl}/api/sync/push`, {
-					accessToken: params.accessToken,
-					body: {
-						syncSessionId,
-						table,
-						batchIndex,
-						rows,
-					},
+				await db.applySyncRows({
+					table,
+					rows,
+					userId,
 				});
 
-				pushedAnyRow = true;
+				pulledAnyRow = true;
 				syncedRows += rows.length;
-				pushedRows += rows.length;
-				offset += rows.length;
-				batchIndex += 1;
+				pulledRows += rows.length;
+				offset = pull.data?.nextOffset ?? offset + rows.length;
+
+				if (!pull.data?.hasMore) {
+					break;
+				}
 			}
 
-			if (pushedAnyRow) {
+			if (pulledAnyRow) {
 				syncedTables += 1;
-				pushedTables += 1;
+				pulledTables += 1;
 			}
 		}
-	}
-
-	for (const table of allowedTables) {
-		let offset = 0;
-		let pulledAnyRow = false;
-
-		while (true) {
-			const pull = await requestJson<ISyncPullData>(
-				`${baseUrl}/api/sync/pull`,
-				{
-					accessToken: params.accessToken,
-					body: {
-						syncSessionId,
-						table,
-						limit: batchLimit,
-						offset,
-						updatedAfter: pullUpdatedAfter,
-					},
-				},
+	} catch (error) {
+		// Tell the server why the session ended so it is not left open forever.
+		await requestJson<never>(`${baseUrl}/api/sync/finish`, {
+			accessToken: params.accessToken,
+			body: {
+				syncSessionId,
+				error: (error as Error).message,
+			},
+		}).catch((finishError) => {
+			console.error(
+				"[cloud-sync] failed to report aborted session",
+				finishError,
 			);
-
-			const rows = pull.data?.rows ?? [];
-			if (rows.length === 0) {
-				break;
-			}
-
-			await db.applySyncRows({
-				table,
-				rows,
-				userId,
-			});
-
-			pulledAnyRow = true;
-			syncedRows += rows.length;
-			pulledRows += rows.length;
-			offset = pull.data?.nextOffset ?? offset + rows.length;
-
-			if (!pull.data?.hasMore) {
-				break;
-			}
-		}
-
-		if (pulledAnyRow) {
-			syncedTables += 1;
-			pulledTables += 1;
-		}
+		});
+		throw error;
 	}
 
 	await requestJson<never>(`${baseUrl}/api/sync/finish`, {
@@ -502,9 +531,9 @@ async function runCloudSync(params: {
 		lastSyncedAt: completedAt,
 		lastPushCompletedAt:
 			params.mode === "sync"
-				? completedAt
+				? localStartedAt
 				: (existingSyncState?.lastPushCompletedAt ?? null),
-		lastPullCompletedAt: completedAt,
+		lastPullCompletedAt: serverStartedAt,
 	});
 
 	return {
@@ -532,11 +561,13 @@ ipcMain.handle(
 			apiBaseUrl: string;
 		},
 	): Promise<ICloudSyncResult> =>
-		runCloudSync({
-			accessToken,
-			apiBaseUrl,
-			mode: "sync",
-		}),
+		runExclusiveSync("Cloud sync", () =>
+			runCloudSync({
+				accessToken,
+				apiBaseUrl,
+				mode: "sync",
+			}),
+		),
 );
 
 ipcMain.handle(
@@ -551,9 +582,11 @@ ipcMain.handle(
 			apiBaseUrl: string;
 		},
 	): Promise<ICloudSyncResult> =>
-		runCloudSync({
-			accessToken,
-			apiBaseUrl,
-			mode: "pull",
-		}),
+		runExclusiveSync("Cloud pull", () =>
+			runCloudSync({
+				accessToken,
+				apiBaseUrl,
+				mode: "pull",
+			}),
+		),
 );

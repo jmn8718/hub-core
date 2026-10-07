@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { requireAllowedUser } from "@/lib/auth";
+import { publicErrorMessage } from "@/lib/http";
 import { getEnvProviderConfig, getProviderManager } from "@/lib/providers";
 import { Providers } from "@repo/types";
 import type { NextRequest } from "next/server";
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json(
 			{
 				success: false,
-				error: (error as Error).message,
+				error: publicErrorMessage(error),
 			},
 			{ status: 500 },
 		);

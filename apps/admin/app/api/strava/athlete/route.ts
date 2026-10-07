@@ -8,14 +8,14 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function GET(_req: NextRequest) {
 	const supabase = createRouteHandlerClient({ cookies });
 	const {
-		data: { session },
-	} = await supabase.auth.getSession();
+		data: { user },
+	} = await supabase.auth.getUser();
 
-	if (!session) {
+	if (!user) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const userId = session.user.id;
+	const userId = user.id;
 	const stravaClient = new StravaClient(db);
 
 	const athlete = await stravaClient.getAthlete(userId);
@@ -26,14 +26,14 @@ export async function GET(_req: NextRequest) {
 export async function DELETE(_req: NextRequest) {
 	const supabase = createRouteHandlerClient({ cookies });
 	const {
-		data: { session },
-	} = await supabase.auth.getSession();
+		data: { user },
+	} = await supabase.auth.getUser();
 
-	if (!session) {
+	if (!user) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	await db.delete(profiles).where(eq(profiles.id, session.user.id));
+	await db.delete(profiles).where(eq(profiles.id, user.id));
 
 	return NextResponse.json({ success: true });
 }

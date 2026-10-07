@@ -11,9 +11,9 @@ export default async function StravaLayout({
 }>) {
 	const supabase = createServerComponentClient({ cookies });
 	const {
-		data: { session },
-	} = await supabase.auth.getSession();
-	const userId = session?.user.id || "x";
+		data: { user },
+	} = await supabase.auth.getUser();
+	const userId = user?.id || "x";
 	const count = await db.$count(profiles, eq(profiles.id, userId));
 
 	if (count === 0) {

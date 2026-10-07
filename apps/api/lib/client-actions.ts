@@ -1,3 +1,4 @@
+import { runExclusiveAction } from "@/lib/locks";
 import type { ProviderManager } from "@repo/clients";
 import {
 	type ActivitySubType,
@@ -136,7 +137,26 @@ const connectProvider = async ({
 	await manager.connect(provider, safeCredentials);
 };
 
+const EXCLUSIVE_ACTIONS = new Set([
+	"regenerateActivitiesData",
+	"providerSync",
+	"providerSyncGear",
+	"providerBackfillActivityLaps",
+]);
+
 export async function handleClientAction(
+	action: string,
+	payload: Payload = {},
+): Promise<ProviderSuccessResponse> {
+	if (EXCLUSIVE_ACTIONS.has(action)) {
+		const provider = (payload as { provider?: string }).provider;
+		const key = provider ? `${action}:${provider}` : action;
+		return runExclusiveAction(key, () => dispatchClientAction(action, payload));
+	}
+	return dispatchClientAction(action, payload);
+}
+
+async function dispatchClientAction(
 	action: string,
 	payload: Payload = {},
 ): Promise<ProviderSuccessResponse> {

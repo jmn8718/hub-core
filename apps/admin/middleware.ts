@@ -9,9 +9,9 @@ export async function middleware(req: NextRequest) {
 	if (!req.nextUrl.pathname.startsWith("/login")) {
 		const supabase = createMiddlewareClient({ req, res });
 		const {
-			data: { session },
-		} = await supabase.auth.getSession();
-		if (!session) {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (!user) {
 			return NextResponse.redirect(new URL("/login", req.url));
 		}
 	}

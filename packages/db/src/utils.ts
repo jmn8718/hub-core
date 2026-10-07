@@ -36,26 +36,6 @@ async function clearTestDb(client: DbClient): Promise<void> {
 	}
 }
 
-async function ensureActivityLapsTable(client: DbClient): Promise<void> {
-	await client.run(
-		sql.raw(`CREATE TABLE IF NOT EXISTS "activity_laps" (
-			"id" text PRIMARY KEY NOT NULL,
-			"activity_id" text NOT NULL,
-			"lap_number" integer NOT NULL,
-			"identifier" text DEFAULT '' NOT NULL,
-			"distance" real DEFAULT 0 NOT NULL,
-			"elapsed_time" integer DEFAULT 0 NOT NULL,
-			"moving_time" integer DEFAULT 0 NOT NULL,
-			"average_heart_rate" real,
-			"maximum_heart_rate" real,
-			"user_id" text,
-			"updated_at" text NOT NULL,
-			"deleted_at" text,
-			FOREIGN KEY ("activity_id") REFERENCES "activities"("id")
-		)`),
-	);
-}
-
 async function createPreparedTestDbClient({
 	testDbUrl,
 	clearDb = true,
@@ -72,7 +52,6 @@ async function createPreparedTestDbClient({
 	});
 
 	await migrateDb(client);
-	await ensureActivityLapsTable(client);
 
 	if (clearDb) {
 		await clearTestDb(client);

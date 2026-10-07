@@ -100,27 +100,19 @@ const withAlpha = (value: string, alpha: number) => {
 	return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
 };
 
+// ISO weeks run Monday to Sunday. Everything is computed in the viewer's
+// local calendar; mixing Date.UTC with local-mode dayjs shifted the week by a
+// day for anyone west of UTC.
 const startOfIsoWeek = (value: string | Date) => {
-	const date = new Date(value);
-	const utcDate = new Date(
-		Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-	);
-	const day = utcDate.getUTCDay() || 7;
-	utcDate.setUTCDate(utcDate.getUTCDate() - day + 1);
-	return dayjs(utcDate);
+	const date = dayjs(value).startOf("day");
+	const weekday = date.day() || 7;
+	return date.subtract(weekday - 1, "day");
 };
 
 const getIsoWeekNumber = (value: string | Date) => {
-	const date = new Date(value);
-	const utcDate = new Date(
-		Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-	);
-	const day = utcDate.getUTCDay() || 7;
-	utcDate.setUTCDate(utcDate.getUTCDate() + 4 - day);
-	const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
-	return Math.ceil(
-		((utcDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
-	);
+	const thursday = startOfIsoWeek(value).add(3, "day");
+	const yearStart = thursday.startOf("year");
+	return Math.floor(thursday.diff(yearStart, "day") / 7) + 1;
 };
 
 const formatWeekValue = (value: string | Date) => {
@@ -137,16 +129,20 @@ const parseWeekValue = (value: string) => {
 	const [yearText, weekText] = value.split("-W");
 	const year = Number(yearText);
 	const week = Number(weekText);
-	if (Number.isNaN(year) || Number.isNaN(week)) {
+	if (Number.isNaN(year) || Number.isNaN(week) || week < 1 || week > 53) {
 		return null;
 	}
 
-	const jan4 = new Date(Date.UTC(year, 0, 4));
-	const jan4Day = jan4.getUTCDay() || 7;
-	const weekOneMonday = new Date(jan4);
-	weekOneMonday.setUTCDate(jan4.getUTCDate() - jan4Day + 1);
-	weekOneMonday.setUTCDate(weekOneMonday.getUTCDate() + (week - 1) * 7);
-	return dayjs(weekOneMonday);
+	// ISO week 1 is the week containing January 4th.
+	const weekOneMonday = startOfIsoWeek(
+		dayjs(`${yearText}-01-04`).startOf("day").toDate(),
+	);
+	const start = weekOneMonday.add(week - 1, "week");
+	// Rejects week 53 in years that only have 52 weeks.
+	if (formatWeekValue(start.toDate()) !== value) {
+		return null;
+	}
+	return start;
 };
 
 const isValidPeriodType = (value: string | null): value is PeriodType =>
@@ -172,7 +168,7 @@ const isValidValue = (period: PeriodType, value: string | null) => {
 	if (period === "year") {
 		return /^\d{4}$/.test(value);
 	}
-	return /^\d{4}-\d{2}$/.test(value);
+	return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 };
 
 const getPeriodBounds = (period: PeriodType, value: string) => {

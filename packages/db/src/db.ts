@@ -130,6 +130,7 @@ interface ISyncStartData {
 	allowedTables: SyncTableName[];
 	batchLimit: number;
 	status: "started";
+	startedAt: string;
 }
 
 interface ISyncPushData {
@@ -454,18 +455,6 @@ export class Db {
 		};
 	}
 
-	private _monthIdentifier() {
-		return this._dialect === "postgres"
-			? sql<string>`to_char(to_timestamp(${activities.timestamp} / 1000.0), 'YYYY MM')`
-			: sql<string>`strftime('%Y %m', ${activities.timestamp} / 1000, 'unixepoch')`;
-	}
-
-	private _weekIdentifier() {
-		return this._dialect === "postgres"
-			? sql<string>`to_char(date_trunc('week', to_timestamp(${activities.timestamp} / 1000.0)), 'IYYY-IW')`
-			: sql<string>`strftime('%Y-%W', ${activities.timestamp} / 1000, 'unixepoch')`;
-	}
-
 	async getOrCreateAppUser(params: {
 		provider: string;
 		providerUserId: string;
@@ -501,28 +490,35 @@ export class Db {
 			.then((rows) => rows[0]);
 
 		if (existing) {
-			const updatedAt = this._nowIso();
-			await this._client
-				.update(authIdentities)
-				.set({
-					email,
-					displayName,
-					updatedAt,
-				})
-				.where(
-					and(
-						eq(authIdentities.provider, provider),
-						eq(authIdentities.providerUserId, providerUserId),
-					),
-				);
-			await this._client
-				.update(appUsers)
-				.set({
-					email,
-					displayName,
-					updatedAt,
-				})
-				.where(eq(appUsers.id, existing.userId));
+			// Called on every authenticated request: only write when the
+			// identity details actually changed.
+			const changed =
+				(existing.email ?? null) !== email ||
+				(existing.displayName ?? null) !== displayName;
+			if (changed) {
+				const updatedAt = this._nowIso();
+				await this._client
+					.update(authIdentities)
+					.set({
+						email,
+						displayName,
+						updatedAt,
+					})
+					.where(
+						and(
+							eq(authIdentities.provider, provider),
+							eq(authIdentities.providerUserId, providerUserId),
+						),
+					);
+				await this._client
+					.update(appUsers)
+					.set({
+						email,
+						displayName,
+						updatedAt,
+					})
+					.where(eq(appUsers.id, existing.userId));
+			}
 
 			return {
 				userId: existing.userId,
@@ -630,25 +626,25 @@ export class Db {
 	private _activityConnectionsJson() {
 		return this._dialect === "postgres"
 			? sql<string>`coalesce(json_agg(json_build_object('id', ${providerActivities.id}, 'provider', ${providerActivities.provider}, 'original', ${providerActivities.original})) filter (where ${providerActivities.id} is not null), '[]'::json)::text`
-			: sql<string>`json_group_array(json_object('id', ${providerActivities.id}, 'provider', ${providerActivities.provider}, 'original', ${providerActivities.original}))`;
+			: sql<string>`json_group_array(json_object('id', ${providerActivities.id}, 'provider', ${providerActivities.provider}, 'original', ${providerActivities.original})) FILTER (WHERE ${providerActivities.id} IS NOT NULL)`;
 	}
 
 	private _activityGearsJson() {
 		return this._dialect === "postgres"
 			? sql<string>`coalesce(json_agg(json_build_object('id', ${gears.id}, 'type', ${gears.type})) filter (where ${gears.id} is not null), '[]'::json)::text`
-			: sql<string>`json_group_array(json_object('id', ${gears.id}, 'type', ${gears.type}))`;
+			: sql<string>`json_group_array(json_object('id', ${gears.id}, 'type', ${gears.type})) FILTER (WHERE ${gears.id} IS NOT NULL)`;
 	}
 
 	private _activityLapsJson() {
 		return this._dialect === "postgres"
 			? sql<string>`coalesce(json_agg(json_build_object('id', ${activityLaps.id}, 'lapNumber', ${activityLaps.lapNumber}, 'identifier', ${activityLaps.identifier}, 'distance', ${activityLaps.distance}, 'elapsedTime', ${activityLaps.elapsedTime}, 'movingTime', ${activityLaps.movingTime}, 'averageHeartRate', ${activityLaps.averageHeartRate}, 'maximumHeartRate', ${activityLaps.maximumHeartRate}) order by ${activityLaps.lapNumber}, ${activityLaps.id}) filter (where ${activityLaps.id} is not null), '[]'::json)::text`
-			: sql<string>`json_group_array(json_object('id', ${activityLaps.id}, 'lapNumber', ${activityLaps.lapNumber}, 'identifier', ${activityLaps.identifier}, 'distance', ${activityLaps.distance}, 'elapsedTime', ${activityLaps.elapsedTime}, 'movingTime', ${activityLaps.movingTime}, 'averageHeartRate', ${activityLaps.averageHeartRate}, 'maximumHeartRate', ${activityLaps.maximumHeartRate}))`;
+			: sql<string>`json_group_array(json_object('id', ${activityLaps.id}, 'lapNumber', ${activityLaps.lapNumber}, 'identifier', ${activityLaps.identifier}, 'distance', ${activityLaps.distance}, 'elapsedTime', ${activityLaps.elapsedTime}, 'movingTime', ${activityLaps.movingTime}, 'averageHeartRate', ${activityLaps.averageHeartRate}, 'maximumHeartRate', ${activityLaps.maximumHeartRate})) FILTER (WHERE ${activityLaps.id} IS NOT NULL)`;
 	}
 
 	private _gearConnectionsJson() {
 		return this._dialect === "postgres"
 			? sql<string>`coalesce(json_agg(json_build_object('provider', ${providerGears.provider}, 'providerId', ${providerGears.providerId})) filter (where ${providerGears.id} is not null), '[]'::json)::text`
-			: sql<string>`json_group_array(json_object('provider', ${providerGears.provider}, 'providerId', ${providerGears.providerId}))`;
+			: sql<string>`json_group_array(json_object('provider', ${providerGears.provider}, 'providerId', ${providerGears.providerId})) FILTER (WHERE ${providerGears.id} IS NOT NULL)`;
 	}
 
 	private _activeActivityCondition() {
@@ -749,12 +745,11 @@ export class Db {
 	}
 
 	async getActivitiesOverview(limit = 12): Promise<IOverviewData[]> {
-		const monthIdentifier = this._monthIdentifier();
-		const subquery = this._client
+		const rows = await this._client
 			.select({
-				distance: min(activities.distance).as("distance"),
 				timestamp: activities.timestamp,
-				month: monthIdentifier.as("month"),
+				timezone: activities.timezone,
+				distance: activities.distance,
 			})
 			.from(activities)
 			.where(
@@ -762,22 +757,41 @@ export class Db {
 					gte(activities.timestamp, monthsBefore(limit).getTime()),
 					this._activeActivityCondition(),
 				),
-			)
-			.groupBy(activities.timestamp)
-			.orderBy(desc(activities.timestamp))
-			.as("subquery");
+			);
 
-		const result = await this._client
-			.select({
-				distance: sum(subquery.distance),
-				count: count(),
-				month: subquery.month,
-				minTimestamp: min(subquery.timestamp),
-			})
-			.from(subquery)
-			.groupBy(({ month }) => month)
-			.orderBy(desc(min(subquery.timestamp)));
-		return fillEmptyMonths(result, limit);
+		// One entry per start timestamp (duplicate imports of the same workout
+		// collapse to the smallest distance), bucketed by the month in the
+		// activity's own timezone, like the weekly and daily overviews.
+		const byTimestamp = new Map<
+			number,
+			{ distance: number; timezone: string | null }
+		>();
+		for (const row of rows) {
+			const distance = row.distance ?? 0;
+			const current = byTimestamp.get(row.timestamp);
+			if (!current || distance < current.distance) {
+				byTimestamp.set(row.timestamp, { distance, timezone: row.timezone });
+			}
+		}
+		const months = new Map<string, { distance: number; count: number }>();
+		for (const [timestamp, entry] of byTimestamp) {
+			const month = getLocalDateKey(timestamp, entry.timezone)
+				.slice(0, 7)
+				.replace("-", " ");
+			const bucket = months.get(month) ?? { distance: 0, count: 0 };
+			bucket.distance += entry.distance;
+			bucket.count += 1;
+			months.set(month, bucket);
+		}
+
+		return fillEmptyMonths(
+			Array.from(months.entries()).map(([month, bucket]) => ({
+				month,
+				distance: Math.round(bucket.distance).toString(),
+				count: bucket.count,
+			})),
+			limit,
+		);
 	}
 
 	async getWeeklyActivitiesOverview({
@@ -1084,7 +1098,7 @@ export class Db {
 			.from(activities)
 			.leftJoin(connections, eq(activities.id, connections.activityId))
 			.leftJoin(groupedGears, eq(activities.id, groupedGears.activityId))
-			.orderBy(order(activities.timestamp));
+			.orderBy(order(activities.timestamp), order(activities.id));
 
 		const baseConditions = [this._activeActivityCondition()];
 		if (type) {
@@ -1132,9 +1146,25 @@ export class Db {
 		const baseWhere =
 			baseConditions.length > 0 ? and(...baseConditions) : undefined;
 
-		const cursorCondition = cursor
-			? lt(activities.timestamp, Number.parseInt(cursor, 10))
-			: undefined;
+		// Cursor is "<timestamp>:<id>" (legacy: "<timestamp>"). The id breaks
+		// ties between activities sharing a start time, and the comparison
+		// follows the sort direction.
+		const cursorCondition = (() => {
+			if (!cursor) return undefined;
+			const [timestampText, cursorId] = cursor.split(":");
+			const cursorTimestamp = Number.parseInt(timestampText ?? "", 10);
+			if (Number.isNaN(cursorTimestamp)) return undefined;
+			const before = sort === "DESC";
+			const compare = before ? lt : gt;
+			if (!cursorId) return compare(activities.timestamp, cursorTimestamp);
+			return or(
+				compare(activities.timestamp, cursorTimestamp),
+				and(
+					eq(activities.timestamp, cursorTimestamp),
+					compare(activities.id, cursorId),
+				),
+			);
+		})();
 
 		const combinedCondition = (() => {
 			if (baseWhere && cursorCondition) return and(baseWhere, cursorCondition);
@@ -1161,12 +1191,13 @@ export class Db {
 
 		const dataCount = countRows[0]?.count || 0;
 		const data = dataRows.map(mapActivityRow);
+		const last = data[data.length - 1];
 		return {
 			count: dataCount,
 			data,
 			cursor:
-				dataCount !== data.length
-					? data[data.length - 1]?.timestamp.toString() || ""
+				last && data.length === limit && dataCount > data.length
+					? `${last.timestamp}:${last.id}`
 					: "",
 		};
 	}
@@ -1229,6 +1260,7 @@ export class Db {
 					.leftJoin(subquery, eq(gears.id, subquery.gearId))
 					.leftJoin(gearConnections, eq(gears.id, gearConnections.gearId))
 					.where(and(gt(gears.id, cursor), this._activeGearCondition()))
+					.orderBy(asc(gears.id))
 			: this._client
 					.select({
 						...getTableColumns(gears),
@@ -1240,14 +1272,18 @@ export class Db {
 					.from(gears)
 					.leftJoin(subquery, eq(gears.id, subquery.gearId))
 					.leftJoin(gearConnections, eq(gears.id, gearConnections.gearId))
-					.where(this._activeGearCondition());
+					.where(this._activeGearCondition())
+					.orderBy(asc(gears.id));
 
 		const [countRows, dataRows] = await Promise.all([
 			this._client
 				.select({ count: count() })
 				.from(gears)
 				.where(this._activeGearCondition()),
-			dataQuery.limit(limit).offset(offset),
+			// The cursor already positions the page; an offset on top would skip rows.
+			dataQuery
+				.limit(limit)
+				.offset(cursor ? 0 : offset),
 		]);
 		const dataCount = countRows[0]?.count || 0;
 		const parseConnections = (value?: unknown) =>
@@ -1473,6 +1509,9 @@ export class Db {
 				data: activityPayload,
 			},
 		});
+		if (!id) {
+			throw new Error("Failed to create activity");
+		}
 		return { id };
 	}
 
@@ -1488,6 +1527,19 @@ export class Db {
 					deletedAt,
 				})
 				.where(eq(activityGears.activityId, activityId));
+			await tx
+				.update(activityLaps)
+				.set({
+					userId,
+					updatedAt: deletedAt,
+					deletedAt,
+				})
+				.where(
+					and(
+						eq(activityLaps.activityId, activityId),
+						this._activeActivityLapCondition(),
+					),
+				);
 			await tx
 				.update(activitiesConnection)
 				.set({
@@ -1586,7 +1638,10 @@ export class Db {
 					.select({ activityId: activitiesConnection.activityId })
 					.from(activitiesConnection)
 					.where(
-						eq(activitiesConnection.providerActivityId, providerActivity.id),
+						and(
+							eq(activitiesConnection.providerActivityId, providerActivity.id),
+							this._activeActivitiesConnectionCondition(),
+						),
 					)
 					.limit(1);
 				if (existingConnection[0]?.activityId) {
@@ -1604,13 +1659,19 @@ export class Db {
 				console.log(
 					`${providerActivity.id} provider activity exists without connection, skipping insert`,
 				);
-				return providerActivity.id;
+				// Callers expect an activity id; there is none for this provider row.
+				return undefined;
 			}
 			// search first by activitiesConnection
 			const dbActivityConnection = await this._client
 				.select()
 				.from(activitiesConnection)
-				.where(eq(activitiesConnection.providerActivityId, providerActivity.id))
+				.where(
+					and(
+						eq(activitiesConnection.providerActivityId, providerActivity.id),
+						this._activeActivitiesConnectionCondition(),
+					),
+				)
 				.limit(1);
 			if (dbActivityConnection[0]?.activityId) {
 				activityId = dbActivityConnection[0].activityId;
@@ -1762,8 +1823,10 @@ export class Db {
 			await pMap(
 				gears,
 				(gear) =>
-					this.insertGear(gear).then((gearId) =>
-						this._client
+					this.insertGear(gear).then((gearId) => {
+						// A disconnected (tombstoned) provider gear is not re-linked.
+						if (!gearId) return undefined;
+						return this._client
 							.insert(activityGears)
 							.values({
 								activityId,
@@ -1779,8 +1842,8 @@ export class Db {
 									updatedAt: sql`excluded.updated_at`,
 									deletedAt: sql`excluded.deleted_at`,
 								},
-							}),
-					),
+							});
+					}),
 				{
 					concurrency: 1,
 				},
@@ -1810,8 +1873,11 @@ export class Db {
 
 	insertGear({ data, providerGear }: IInsertGearPayload) {
 		return this._client.transaction(async (tx) => {
+			// A provider gear the user disconnected stays soft-deleted: a later
+			// sync must neither revive it, link through its old connection, nor
+			// create a replacement row that reconnects it.
 			const dbProviderGear = await tx
-				.select({ id: providerGears.id })
+				.select({ id: providerGears.id, deletedAt: providerGears.deletedAt })
 				.from(providerGears)
 				.where(
 					and(
@@ -1819,7 +1885,14 @@ export class Db {
 						eq(providerGears.providerId, providerGear.id),
 					),
 				)
+				.orderBy(desc(providerGears.updatedAt))
 				.limit(1);
+			if (dbProviderGear[0]?.deletedAt) {
+				console.log(
+					`${providerGear.provider} gear ${providerGear.id} was disconnected, skipping`,
+				);
+				return undefined;
+			}
 			let providerGearId = dbProviderGear[0]?.id;
 			if (providerGearId) {
 				// update data
@@ -1828,7 +1901,8 @@ export class Db {
 					.update(providerGears)
 					.set({
 						data: JSON.stringify(data),
-						...metadata,
+						userId: metadata.userId,
+						updatedAt: metadata.updatedAt,
 					})
 					.where(eq(providerGears.id, providerGearId));
 			} else {
@@ -1846,7 +1920,12 @@ export class Db {
 			const linkedGear = await tx
 				.select({ gearId: gearsConnection.gearId })
 				.from(gearsConnection)
-				.where(eq(gearsConnection.providerGearId, providerGearId))
+				.where(
+					and(
+						eq(gearsConnection.providerGearId, providerGearId),
+						this._activeGearsConnectionCondition(),
+					),
+				)
 				.limit(1);
 
 			let gearId = linkedGear[0]?.gearId;
@@ -2059,6 +2138,13 @@ export class Db {
 				providerActivityId: activitiesConnection.providerActivityId,
 			})
 			.from(activitiesConnection)
+			.innerJoin(
+				activities,
+				and(
+					eq(activities.id, activitiesConnection.activityId),
+					this._activeActivityCondition(),
+				),
+			)
 			.leftJoin(
 				providerActivities,
 				and(
@@ -2089,7 +2175,7 @@ export class Db {
 				...getTableColumns(activities),
 			})
 			.from(activitiesConnection)
-			.leftJoin(
+			.innerJoin(
 				activities,
 				and(
 					eq(activities.id, activitiesConnection.activityId),
@@ -2517,16 +2603,34 @@ export class Db {
 			throw new Error("Sync session not found");
 		}
 
-		const normalizedLimit = Math.max(
-			1,
-			Math.min(params.limit ?? SYNC_BATCH_LIMIT, SYNC_BATCH_LIMIT),
+		if (
+			params.limit !== undefined &&
+			(!Number.isInteger(params.limit) || params.limit < 1)
+		) {
+			throw new Error("Invalid sync limit");
+		}
+		if (
+			params.offset !== undefined &&
+			(!Number.isInteger(params.offset) || params.offset < 0)
+		) {
+			throw new Error("Invalid sync offset");
+		}
+		if (
+			params.updatedAfter !== undefined &&
+			typeof params.updatedAfter !== "string"
+		) {
+			throw new Error("Invalid sync updatedAfter");
+		}
+		const normalizedLimit = Math.min(
+			params.limit ?? SYNC_BATCH_LIMIT,
+			SYNC_BATCH_LIMIT,
 		);
-		const normalizedOffset = Math.max(0, params.offset ?? 0);
+		const normalizedOffset = params.offset ?? 0;
 		const rows = await this.exportSyncRows({
 			table: params.table,
 			limit: normalizedLimit,
 			offset: normalizedOffset,
-			updatedAfter: params.updatedAfter,
+			updatedAfter: params.updatedAfter || undefined,
 			userId: params.userId,
 		});
 
@@ -2644,12 +2748,14 @@ export class Db {
 		schemaVersion?: string;
 	}): Promise<ISyncStartData> {
 		const syncSessionId = uuidv7();
+		const startedAt = this._nowIso();
 		await this._client.insert(syncSessions).values({
 			id: syncSessionId,
 			userId: params.userId,
 			clientId: params.clientId ?? "",
 			schemaVersion: params.schemaVersion ?? "",
 			status: "started",
+			startedAt,
 		});
 
 		return {
@@ -2657,6 +2763,9 @@ export class Db {
 			allowedTables: this.getSyncTables(),
 			batchLimit: this.getSyncBatchLimit(),
 			status: "started",
+			// Clients use this as the watermark for their next delta pull, so
+			// rows written on the server during this session are not skipped.
+			startedAt,
 		};
 	}
 
@@ -2775,6 +2884,7 @@ export class Db {
 				};
 			});
 		} catch (error) {
+			// Only an in-progress session can fail; a completed one keeps its state.
 			await this._client
 				.update(syncSessions)
 				.set({
@@ -2787,6 +2897,7 @@ export class Db {
 					and(
 						eq(syncSessions.id, params.syncSessionId),
 						eq(syncSessions.userId, params.userId),
+						eq(syncSessions.status, "started"),
 					),
 				);
 			throw error;
@@ -2796,29 +2907,50 @@ export class Db {
 	async finishSyncSession(params: {
 		userId: string;
 		syncSessionId: string;
+		error?: string | null;
 	}): Promise<ISyncStatusData> {
-		const completedAt = new Date().toISOString();
-		await this._client
-			.update(syncSessions)
-			.set({
-				status: "completed",
-				completedAt,
-				error: null,
-			})
-			.where(
-				and(
-					eq(syncSessions.id, params.syncSessionId),
-					eq(syncSessions.userId, params.userId),
-				),
+		const session = await this.getSyncSessionStatus(params);
+		const completedAt = this._nowIso();
+		const sessionCondition = and(
+			eq(syncSessions.id, params.syncSessionId),
+			eq(syncSessions.userId, params.userId),
+		);
+
+		if (params.error) {
+			// The client aborted: record why, keep lastTable/lastBatchIndex.
+			// Only an in-progress session can fail; a finished one keeps its state.
+			await this._client
+				.update(syncSessions)
+				.set({ status: "failed", completedAt, error: params.error })
+				.where(and(sessionCondition, eq(syncSessions.status, "started")));
+			return this.getSyncSessionStatus(params);
+		}
+
+		if (session.status === "failed") {
+			throw new Error(
+				`Sync session failed: ${session.error ?? "unknown error"}`,
 			);
+		}
+
+		if (session.status === "started") {
+			await this._client
+				.update(syncSessions)
+				.set({ status: "completed", completedAt, error: null })
+				.where(and(sessionCondition, eq(syncSessions.status, "started")));
+		}
 
 		return this.getSyncSessionStatus(params);
 	}
 
 	// A sync upsert may create rows, update rows nobody owns yet, or update the
-	// caller's own rows. It must never move a row from one user to another.
-	private _syncOwnershipGuard(table: { userId: SQLiteColumn }) {
-		return sql`${table.userId} IS NULL OR ${table.userId} = excluded.user_id`;
+	// caller's own rows; it must never move a row from one user to another.
+	// It also never replaces a row with an older version (last writer wins by
+	// updated_at), so a stale push or pull cannot undo a newer edit.
+	private _syncUpsertGuard(table: {
+		userId: SQLiteColumn;
+		updatedAt: SQLiteColumn;
+	}) {
+		return sql`(${table.userId} IS NULL OR ${table.userId} = excluded.user_id) AND (${table.updatedAt} IS NULL OR excluded.updated_at >= ${table.updatedAt})`;
 	}
 
 	// Primary key columns of each sync table, plus the parent rows (by `id`)
@@ -2978,7 +3110,7 @@ export class Db {
 					.insert(activities)
 					.values(values)
 					.onConflictDoUpdate({
-						setWhere: this._syncOwnershipGuard(activities),
+						setWhere: this._syncUpsertGuard(activities),
 						target: activities.id,
 						set: {
 							name: sql`excluded.name`,
@@ -3013,7 +3145,7 @@ export class Db {
 					.insert(providerActivities)
 					.values(values)
 					.onConflictDoUpdate({
-						setWhere: this._syncOwnershipGuard(providerActivities),
+						setWhere: this._syncUpsertGuard(providerActivities),
 						target: providerActivities.id,
 						set: {
 							provider: sql`excluded.provider`,
@@ -3034,7 +3166,7 @@ export class Db {
 					.insert(activitiesConnection)
 					.values(values)
 					.onConflictDoUpdate({
-						setWhere: this._syncOwnershipGuard(activitiesConnection),
+						setWhere: this._syncUpsertGuard(activitiesConnection),
 						target: [
 							activitiesConnection.activityId,
 							activitiesConnection.providerActivityId,
@@ -3054,7 +3186,7 @@ export class Db {
 					.insert(activityLaps)
 					.values(values)
 					.onConflictDoUpdate({
-						setWhere: this._syncOwnershipGuard(activityLaps),
+						setWhere: this._syncUpsertGuard(activityLaps),
 						target: activityLaps.id,
 						set: {
 							activityId: sql`excluded.activity_id`,
@@ -3079,7 +3211,7 @@ export class Db {
 					.insert(gears)
 					.values(values)
 					.onConflictDoUpdate({
-						setWhere: this._syncOwnershipGuard(gears),
+						setWhere: this._syncUpsertGuard(gears),
 						target: gears.id,
 						set: {
 							name: sql`excluded.name`,
@@ -3103,7 +3235,7 @@ export class Db {
 					.insert(providerGears)
 					.values(values)
 					.onConflictDoUpdate({
-						setWhere: this._syncOwnershipGuard(providerGears),
+						setWhere: this._syncUpsertGuard(providerGears),
 						target: providerGears.id,
 						set: {
 							provider: sql`excluded.provider`,
@@ -3123,7 +3255,7 @@ export class Db {
 					.insert(gearsConnection)
 					.values(values)
 					.onConflictDoUpdate({
-						setWhere: this._syncOwnershipGuard(gearsConnection),
+						setWhere: this._syncUpsertGuard(gearsConnection),
 						target: [gearsConnection.gearId, gearsConnection.providerGearId],
 						set: {
 							userId: sql`excluded.user_id`,
@@ -3140,7 +3272,7 @@ export class Db {
 					.insert(activityGears)
 					.values(values)
 					.onConflictDoUpdate({
-						setWhere: this._syncOwnershipGuard(activityGears),
+						setWhere: this._syncUpsertGuard(activityGears),
 						target: [activityGears.gearId, activityGears.activityId],
 						set: {
 							userId: sql`excluded.user_id`,
@@ -3157,7 +3289,7 @@ export class Db {
 					.insert(inbody)
 					.values(values)
 					.onConflictDoUpdate({
-						setWhere: this._syncOwnershipGuard(inbody),
+						setWhere: this._syncUpsertGuard(inbody),
 						target: inbody.id,
 						set: {
 							weight: sql`excluded.weight`,

@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { publicErrorMessage } from "@/lib/http";
 import type { ISyncStartPayload } from "@repo/types";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 		});
 	} catch (error) {
 		return NextResponse.json(
-			{ success: false, error: (error as Error).message },
+			{ success: false, error: publicErrorMessage(error) },
 			{ status: 500 },
 		);
 	}

@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { publicErrorMessage } from "@/lib/http";
 import type { ISyncPullPayload } from "@repo/types";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -41,9 +42,13 @@ export async function POST(req: NextRequest): Promise<Response> {
 			data,
 		});
 	} catch (error) {
+		const message = publicErrorMessage(error);
+		const isClientError =
+			message.startsWith("Invalid sync") ||
+			message === "Unsupported sync table";
 		return NextResponse.json(
-			{ success: false, error: (error as Error).message },
-			{ status: 500 },
+			{ success: false, error: message },
+			{ status: isClientError ? 400 : 500 },
 		);
 	}
 }

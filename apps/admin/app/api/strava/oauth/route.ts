@@ -1,7 +1,6 @@
 import db from "@/lib/db";
 import StravaClient from "@/lib/strava";
-import { eq, profiles } from "@repo/db";
-import { Providers } from "@repo/types";
+import { linkStravaAthlete } from "@/lib/strava-link";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
@@ -9,52 +8,40 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
 	const supabase = createRouteHandlerClient({ cookies });
 	const {
-		data: { session },
-	} = await supabase.auth.getSession();
-	if (!session) {
+		data: { user },
+	} = await supabase.auth.getUser();
+	if (!user) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 	const stravaClient = new StravaClient(db);
 
-	const { code } = await req.json();
-	const token = await stravaClient.client.oauth.getToken(code);
-	const users = await db
-		.select({ id: profiles.id })
-		.from(profiles)
-		.where(eq(profiles.externalId, token.athlete.id.toString()))
-		.limit(1);
-	if (users[0]?.id) {
-		await db
-			.update(profiles)
-			.set({
-				expiresAt: token.expires_at,
-				refreshToken: token.refresh_token,
-				accessToken: token.access_token,
-			})
-			.where(eq(profiles.id, users[0].id));
-	} else {
-		await db.insert(profiles).values({
-			id: session.user.id,
-			externalId: token.athlete.id.toString(),
-			tokenType: token.token_type,
-			expiresAt: token.expires_at,
-			refreshToken: token.refresh_token,
-			accessToken: token.access_token,
-			provider: Providers.STRAVA,
-		});
+	const { code } = (await req.json()) as { code?: string };
+	if (!code || typeof code !== "string") {
+		return NextResponse.json({ error: "Missing code" }, { status: 400 });
 	}
+	const token = await stravaClient.client.oauth.getToken(code);
+	const athleteId = token.athlete.id.toString();
+	const linked = await linkStravaAthlete(user.id, athleteId, token);
+	if (!linked) {
+		return NextResponse.json(
+			{ error: "This Strava athlete is already linked to another account" },
+			{ status: 409 },
+		);
+	}
+	// Tokens stay server-side; the browser only needs to know it worked.
 	return NextResponse.json({
-		token,
+		athleteId,
+		expiresAt: token.expires_at,
 	});
 }
 
 export async function GET(req: NextRequest) {
 	const supabase = createRouteHandlerClient({ cookies });
 	const {
-		data: { session },
-	} = await supabase.auth.getSession();
+		data: { user },
+	} = await supabase.auth.getUser();
 
-	if (!session) {
+	if (!user) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 	const stravaClient = new StravaClient(db);

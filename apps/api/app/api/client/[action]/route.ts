@@ -1,5 +1,6 @@
 import { requireAllowedUser } from "@/lib/auth";
 import { handleClientAction } from "@/lib/client-actions";
+import { publicErrorMessage } from "@/lib/http";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -33,7 +34,7 @@ export async function POST(
 		return NextResponse.json(
 			{
 				success: false,
-				error: (error as Error).message,
+				error: publicErrorMessage(error),
 			},
 			{ status: 500 },
 		);

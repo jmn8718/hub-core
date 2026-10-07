@@ -168,10 +168,6 @@ export function CloudSyncSection() {
 		}
 	};
 
-	if (!isLoading && !status.configured) {
-		return null;
-	}
-
 	const syncValidation = status.validation;
 	const hasSyncMismatch =
 		status.authenticated &&
@@ -190,6 +186,11 @@ export function CloudSyncSection() {
 		hasAttemptedAutoPullRef.current = true;
 		void handlePull({ automatic: true });
 	}, [canAutoPull, handlePull]);
+
+	// Hooks above must run on every render; bail out only after them.
+	if (!isLoading && !status.configured) {
+		return null;
+	}
 
 	const skeletonClassName = cn(
 		"animate-pulse rounded-lg",

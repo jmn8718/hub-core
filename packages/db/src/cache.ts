@@ -48,15 +48,18 @@ export class CacheDb {
 		resourceId: string,
 		value: T,
 	) {
+		const condition = and(
+			eq(cacheRecords.provider, provider),
+			eq(cacheRecords.resource, resource),
+			eq(cacheRecords.resourceId, resourceId),
+		);
+		// Deliberately two autocommit statements rather than one transaction:
+		// the cache and the main store open separate connections to the same
+		// SQLite file, and a write transaction here blocks the other side with
+		// SQLITE_BUSY. Losing one cache entry on a crash is harmless.
 		return this._client
 			.delete(cacheRecords)
-			.where(
-				and(
-					eq(cacheRecords.provider, provider),
-					eq(cacheRecords.resource, resource),
-					eq(cacheRecords.resourceId, resourceId),
-				),
-			)
+			.where(condition)
 			.execute()
 			.then(() =>
 				this._client

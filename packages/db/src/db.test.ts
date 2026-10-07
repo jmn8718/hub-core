@@ -26,28 +26,6 @@ import { Db } from "./db";
 import { migrateDb } from "./migrations";
 import { clearData, importData } from "./tests/utils";
 
-async function ensureActivityLapsTable(
-	client: ReturnType<typeof createDbClient>,
-) {
-	await client.run(
-		sql.raw(`CREATE TABLE IF NOT EXISTS "activity_laps" (
-			"id" text PRIMARY KEY NOT NULL,
-			"activity_id" text NOT NULL,
-			"lap_number" integer NOT NULL,
-			"identifier" text DEFAULT '' NOT NULL,
-			"distance" real DEFAULT 0 NOT NULL,
-			"elapsed_time" integer DEFAULT 0 NOT NULL,
-			"moving_time" integer DEFAULT 0 NOT NULL,
-			"average_heart_rate" real,
-			"maximum_heart_rate" real,
-			"user_id" text,
-			"updated_at" text NOT NULL,
-			"deleted_at" text,
-			FOREIGN KEY ("activity_id") REFERENCES "activities"("id")
-		)`),
-	);
-}
-
 describe("db", () => {
 	let testDbDir: string | null = null;
 	let client!: ReturnType<typeof createDbClient>;
@@ -69,7 +47,6 @@ describe("db", () => {
 		db = new Db(client);
 
 		await migrateDb(client).catch(console.error);
-		await ensureActivityLapsTable(client);
 		console.log("migrated db");
 		await clearData(client);
 		console.log("cleared db");
@@ -180,7 +157,6 @@ describe("db", () => {
 
 		try {
 			await migrateDb(isolatedClient);
-			await ensureActivityLapsTable(isolatedClient);
 
 			await isolatedDb.insertActivity({
 				activity: {
@@ -285,7 +261,6 @@ describe("db", () => {
 
 		try {
 			await migrateDb(isolatedClient);
-			await ensureActivityLapsTable(isolatedClient);
 
 			await isolatedDb.insertActivity({
 				activity: {
@@ -358,7 +333,6 @@ describe("db", () => {
 
 		try {
 			await migrateDb(isolatedClient);
-			await ensureActivityLapsTable(isolatedClient);
 
 			await isolatedDb.insertActivity({
 				activity: {
@@ -541,7 +515,7 @@ describe("db", () => {
 			],
 		});
 
-		const result = await db.getActivity(createdActivityId);
+		const result = await db.getActivity(createdActivityId as string);
 		expect(result?.laps).toHaveLength(2);
 		expect(result?.laps[0]).toMatchObject({
 			lapNumber: 1,
@@ -675,7 +649,7 @@ describe("db", () => {
 			],
 		});
 
-		const before = await db.getActivity(createdActivityId);
+		const before = await db.getActivity(createdActivityId as string);
 		const lapId = before?.laps[0]?.id;
 		expect(lapId).toBeTruthy();
 		if (!lapId) {
@@ -688,7 +662,7 @@ describe("db", () => {
 		expect(updatedLap.identifier).toBe(LapIdentifier.SPEED);
 		expect(updatedLap.id).toBe(lapId);
 
-		const after = await db.getActivity(createdActivityId);
+		const after = await db.getActivity(createdActivityId as string);
 		expect(after?.laps[0]?.identifier).toBe(LapIdentifier.SPEED);
 	});
 
@@ -786,7 +760,7 @@ describe("db", () => {
 
 		expect(secondActivityId).toBe(firstActivityId);
 
-		const result = await db.getActivity(firstActivityId);
+		const result = await db.getActivity(firstActivityId as string);
 		expect(result?.laps).toHaveLength(2);
 		expect(result?.laps.map((lap) => lap.identifier)).toEqual([
 			LapIdentifier.SPEED,
@@ -843,6 +817,161 @@ describe("db", () => {
 		const linkedActivity =
 			await db.getActivityByProviderActivityId(providerActivityId);
 		expect(linkedActivity?.id).toBe(created.id);
+	});
+
+	test("should page through activities that share a timestamp without skipping", async () => {
+		const timestamp = new Date("2026-03-03T03:00:00.000Z").getTime();
+		const created: string[] = [];
+		for (let index = 0; index < 5; index += 1) {
+			const id = uuidv7();
+			created.push(id);
+			await client.run(
+				sql`INSERT INTO activities (id, name, timestamp, timezone, type, updated_at) VALUES (${id}, ${`Cursor test ${index}`}, ${timestamp}, 'Asia/Seoul', 'other', ${new Date().toISOString()})`,
+			);
+		}
+
+		const seen = new Set<string>();
+		let cursor: string | undefined;
+		let pages = 0;
+		do {
+			const page = await db.getActivities({
+				limit: 2,
+				cursor,
+				search: "Cursor test",
+			});
+			for (const activity of page.data) seen.add(activity.id);
+			cursor = page.cursor || undefined;
+			pages += 1;
+		} while (cursor && pages < 10);
+
+		expect(seen.size).eq(5);
+		expect(created.every((id) => seen.has(id))).toBe(true);
+		expect(pages).eq(3);
+	});
+
+	test("should bucket the monthly overview by activity timezone", async () => {
+		const month = (rows: { month: string; count: number }[], key: string) =>
+			rows.find((row) => row.month === key)?.count ?? 0;
+		const before = await db.getActivitiesOverview(12);
+		// 22:00 UTC on April 30 is already May 1 in Seoul.
+		await db.createActivity({
+			name: "Month boundary run",
+			type: ActivityType.OTHER,
+			timestamp: "2026-04-30T22:00:00.000Z",
+			timezone: "Asia/Seoul",
+			durationSeconds: 1800,
+			distanceMeters: 5000,
+		});
+		const after = await db.getActivitiesOverview(12);
+		expect(month(after, "2026 05")).eq(month(before, "2026 05") + 1);
+		expect(month(after, "2026 04")).eq(month(before, "2026 04"));
+	});
+
+	test("should retire laps with the activity and hide it from provider lookups", async () => {
+		const providerActivityId = `laps-delete-${uuidv7()}`;
+		const insertedId = await db.insertActivity({
+			activity: {
+				data: {
+					name: "Lap delete",
+					timestamp: Date.now(),
+					timezone: "Asia/Seoul",
+					distance: 2000,
+					duration: 600,
+					manufacturer: "test",
+					locationName: "",
+					locationCountry: "",
+					startLatitude: 0,
+					startLongitude: 0,
+					type: ActivityType.RUN,
+					isEvent: 0,
+				},
+				providerActivity: {
+					id: providerActivityId,
+					provider: Providers.COROS,
+					original: true,
+					timestamp: Date.now(),
+					data: "{}",
+				},
+			},
+			laps: [
+				{
+					lapNumber: 1,
+					identifier: LapIdentifier.RUN,
+					distance: 1000,
+					elapsedTime: 300,
+					movingTime: 300,
+				},
+			],
+		});
+		expect(insertedId).toBeTruthy();
+		if (!insertedId) throw new Error("expected inserted activity id");
+
+		expect((await db.getActivity(insertedId))?.laps).toHaveLength(1);
+		await db.deleteActivity(insertedId);
+
+		const activeLaps = await client.all<{ count: number }>(
+			sql`SELECT COUNT(*) AS count FROM activity_laps WHERE activity_id = ${insertedId} AND deleted_at IS NULL`,
+		);
+		expect(Number(activeLaps[0]?.count ?? 0)).eq(0);
+		expect(
+			await db.getActivityByProviderActivityId(providerActivityId),
+		).toBeUndefined();
+	});
+
+	test("should not reconnect a provider gear the user disconnected", async () => {
+		const providerGearId = `tombstone-${uuidv7()}`;
+		const payload = {
+			data: {
+				name: "Disconnected shoes",
+				code: `disconnected-${providerGearId}`,
+				brand: "",
+				type: GearType.SHOES,
+				maximumDistance: 800,
+			},
+			providerGear: {
+				id: providerGearId,
+				provider: Providers.GARMIN,
+				data: "{}",
+			},
+		};
+		const gearIdLinked = await db.insertGear(payload);
+		expect(gearIdLinked).toBeTruthy();
+		if (!gearIdLinked) throw new Error("expected gear id");
+
+		await db.deleteGearConnection({
+			gearId: gearIdLinked,
+			provider: Providers.GARMIN,
+		});
+		// The next provider sync still lists the gear; it must stay disconnected.
+		expect(await db.insertGear(payload)).toBeUndefined();
+		const connections = await db.getGearConnections(gearIdLinked);
+		expect(
+			connections.filter((item) => item.provider === Providers.GARMIN),
+		).toHaveLength(0);
+		const providerRows = await client.all<{ count: number }>(
+			sql`SELECT COUNT(*) AS count FROM provider_gears WHERE provider_id = ${providerGearId} AND deleted_at IS NULL`,
+		);
+		expect(Number(providerRows[0]?.count ?? 0)).eq(0);
+	});
+
+	test("should ignore an abort reported for an already completed session", async () => {
+		const user = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "late-abort-user",
+			email: "late-abort@example.com",
+		});
+		const session = await db.createSyncSession({ userId: user.userId });
+		await db.finishSyncSession({
+			userId: user.userId,
+			syncSessionId: session.syncSessionId,
+		});
+		const afterLateAbort = await db.finishSyncSession({
+			userId: user.userId,
+			syncSessionId: session.syncSessionId,
+			error: "network dropped after completion",
+		});
+		expect(afterLateAbort.status).eq("completed");
+		expect(afterLateAbort.error).toBeNull();
 	});
 
 	test("should export sync rows deterministically", async () => {
@@ -1115,6 +1244,107 @@ describe("db", () => {
 			userId: userA.userId,
 		});
 		expect((await db.getGear(gearIdToTest))?.name).eq("Updated by A");
+	});
+
+	test("should keep the newer row when an older sync row arrives", async () => {
+		const user = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "lww-user",
+			email: "lww-user@example.com",
+		});
+		const gearIdToTest = uuidv7();
+		const baseRow = {
+			id: gearIdToTest,
+			name: "v1",
+			code: "lww",
+			brand: "",
+			type: GearType.SHOES,
+			dateBegin: "2026-01-01",
+			dateEnd: "",
+			maximumDistance: 800,
+		};
+		await db.applySyncRows({
+			table: "gears",
+			rows: [
+				{ ...baseRow, name: "newer", updatedAt: "2026-02-01T00:00:00.000Z" },
+			],
+			userId: user.userId,
+		});
+		await db.applySyncRows({
+			table: "gears",
+			rows: [
+				{ ...baseRow, name: "stale", updatedAt: "2026-01-15T00:00:00.000Z" },
+			],
+			userId: user.userId,
+		});
+		expect((await db.getGear(gearIdToTest))?.name).eq("newer");
+		await db.applySyncRows({
+			table: "gears",
+			rows: [
+				{ ...baseRow, name: "newest", updatedAt: "2026-03-01T00:00:00.000Z" },
+			],
+			userId: user.userId,
+		});
+		expect((await db.getGear(gearIdToTest))?.name).eq("newest");
+	});
+
+	test("should keep sync session status transitions one-way", async () => {
+		const user = await db.getOrCreateAppUser({
+			provider: "supabase",
+			providerUserId: "state-user",
+			email: "state-user@example.com",
+		});
+		const session = await db.createSyncSession({ userId: user.userId });
+		expect(session.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
+		// A client-reported error marks the session failed and keeps the reason.
+		const failed = await db.finishSyncSession({
+			userId: user.userId,
+			syncSessionId: session.syncSessionId,
+			error: "network dropped",
+		});
+		expect(failed.status).eq("failed");
+		expect(failed.error).eq("network dropped");
+		// Finishing a failed session does not turn it into a completed one.
+		await expect(
+			db.finishSyncSession({
+				userId: user.userId,
+				syncSessionId: session.syncSessionId,
+			}),
+		).rejects.toThrow(/network dropped/);
+
+		// A completed session is not flipped to failed by a late push.
+		const second = await db.createSyncSession({ userId: user.userId });
+		const completed = await db.finishSyncSession({
+			userId: user.userId,
+			syncSessionId: second.syncSessionId,
+		});
+		expect(completed.status).eq("completed");
+		await expect(
+			db.pushSyncRows({
+				userId: user.userId,
+				syncSessionId: second.syncSessionId,
+				table: "gears",
+				batchIndex: 0,
+				rows: [],
+			}),
+		).rejects.toThrow(/already completed/);
+		const status = await db.getSyncSessionStatus({
+			userId: user.userId,
+			syncSessionId: second.syncSessionId,
+		});
+		expect(status.status).eq("completed");
+		expect(status.error).toBeNull();
+
+		// Pull input is validated before it reaches SQL.
+		await expect(
+			db.pullSyncRows({
+				userId: user.userId,
+				syncSessionId: second.syncSessionId,
+				table: "gears",
+				limit: Number.NaN,
+			}),
+		).rejects.toThrow(/Invalid sync limit/);
 	});
 
 	test("should pull and apply sync rows and persist sync state", async () => {

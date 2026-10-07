@@ -1,7 +1,6 @@
 import db from "@/lib/db";
 import StravaClient from "@/lib/strava";
-import { eq, profiles } from "@repo/db";
-import { Providers } from "@repo/types";
+import { linkStravaAthlete } from "@/lib/strava-link";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -9,43 +8,29 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
 	const supabase = createServerComponentClient({ cookies });
 	const {
-		data: { session },
-	} = await supabase.auth.getSession();
+		data: { user },
+	} = await supabase.auth.getUser();
 	const requestUrl = new URL(request.url);
 	const code = requestUrl.searchParams.get("code");
 	let status = "error";
 	let message = "";
 	try {
+		if (!user) {
+			return NextResponse.redirect(new URL("/login", request.url));
+		}
 		if (code) {
 			const stravaClient = new StravaClient(db);
 			const token = await stravaClient.client.oauth.getToken(code);
-			const users = await db
-				.select({ id: profiles.id })
-				.from(profiles)
-				.where(eq(profiles.externalId, token.athlete.id.toString()))
-				.limit(1);
-			if (users[0]?.id) {
-				await db
-					.update(profiles)
-					.set({
-						expiresAt: token.expires_at,
-						refreshToken: token.refresh_token,
-						accessToken: token.access_token,
-					})
-					.where(eq(profiles.id, users[0].id));
+			const linked = await linkStravaAthlete(
+				user.id,
+				token.athlete.id.toString(),
+				token,
+			);
+			if (linked) {
+				status = "success";
 			} else {
-				await db.insert(profiles).values({
-					// biome-ignore lint/style/noNonNullAssertion: <explanation>
-					id: session!.user.id,
-					externalId: token.athlete.id.toString(),
-					expiresAt: token.expires_at,
-					refreshToken: token.refresh_token,
-					accessToken: token.access_token,
-					tokenType: token.token_type,
-					provider: Providers.STRAVA,
-				});
+				message = "athlete_linked_to_another_account";
 			}
-			status = "success";
 		} else {
 			message = "missing_code";
 		}

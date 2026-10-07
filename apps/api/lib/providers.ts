@@ -143,6 +143,31 @@ export async function syncStravaActivitiesForExternalId(
 	return true;
 }
 
+export async function syncStravaActivityForExternalId(
+	externalId: string,
+	activityId: string,
+): Promise<boolean> {
+	const profile = await db.getProfileToken(Providers.STRAVA, externalId);
+	const config = envProviderConfigs[Providers.STRAVA];
+
+	if (!profile?.refreshToken || !config?.options) {
+		return false;
+	}
+
+	const scopedManager = createProviderManager();
+	scopedManager.initializeClient({
+		provider: Providers.STRAVA,
+		options: config.options,
+	});
+	await scopedManager.connect(Providers.STRAVA, {
+		refreshToken: profile.refreshToken,
+		accessToken: profile.accessToken,
+		externalId,
+	});
+	await scopedManager.syncActivity(Providers.STRAVA, activityId);
+	return true;
+}
+
 export async function syncCorosActivitiesIfConfigured(): Promise<boolean> {
 	const config = envProviderConfigs[Providers.COROS];
 	if (!config) {

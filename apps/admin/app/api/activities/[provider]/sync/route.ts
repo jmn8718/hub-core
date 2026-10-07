@@ -1,4 +1,4 @@
-import { provider } from "@/lib/provider";
+import { getProvider } from "@/lib/provider";
 import type { Providers } from "@repo/types";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
@@ -10,15 +10,16 @@ export async function GET(
 ) {
 	const supabase = createRouteHandlerClient({ cookies });
 	const {
-		data: { session },
-	} = await supabase.auth.getSession();
+		data: { user },
+	} = await supabase.auth.getUser();
 
-	if (!session) {
+	if (!user) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
 	try {
 		const { provider: providerId } = await params;
+		const provider = await getProvider();
 		await provider.sync(providerId);
 		return NextResponse.json({ success: true });
 	} catch (error) {

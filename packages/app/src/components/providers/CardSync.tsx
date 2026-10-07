@@ -95,9 +95,11 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 			isSyncing: true,
 		}));
 
-		const result = await client.providerSync(provider);
-
-		if (result.success) {
+		try {
+			const result = await client.providerSync(provider);
+			if (!result.success) {
+				throw new Error(result.error);
+			}
 			const syncDate = new Date().toISOString();
 			setValue(StorageKeys[`${provider}_LAST_SYNC`], syncDate);
 			setData((current) => ({
@@ -107,17 +109,20 @@ export const ProviderCardSync: React.FC<ProviderCardSync> = ({
 				isSyncing: false,
 			}));
 			toast.success(`${provider} sync complete.`, { transition: Bounce });
-		} else {
-			toast.error(result.error, {
+		} catch (error) {
+			const message = (error as Error).message;
+			toast.error(message, {
 				hideProgressBar: false,
 				closeOnClick: false,
 				transition: Bounce,
 			});
 			setData((current) => ({
 				...current,
-				error: result.error,
+				error: message,
 				isSyncing: false,
 			}));
+		} finally {
+			setLocalLoading(false);
 		}
 		setTimeout(() => {
 			if (onSyncDone) {
