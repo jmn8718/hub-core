@@ -138,5 +138,15 @@ export async function resolveSupabaseSession(params: {
 		return result;
 	}
 
+	// getSession() is slow exactly when it is refreshing an expired token. The
+	// persisted copy still identifies the user (needed for offline cache
+	// reads); callers that send the token check isSessionExpired first.
 	return readPersistedSupabaseSession(supabaseUrl);
+}
+
+export function isSessionExpired(session: Pick<Session, "expires_at">) {
+	return (
+		typeof session.expires_at === "number" &&
+		session.expires_at * 1000 <= Date.now() + 30_000
+	);
 }

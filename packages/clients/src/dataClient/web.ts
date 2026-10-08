@@ -30,9 +30,25 @@ import type {
 	Value,
 } from "@repo/types";
 import type { SupabaseClient } from "../supabase.js";
-import { resolveSupabaseSession } from "../supabase.js";
+import { isSessionExpired, resolveSupabaseSession } from "../supabase.js";
 import type { Client } from "./Client.js";
 import { WebOfflineCache, stableStringify } from "./webOfflineCache.js";
+
+// Reads served from the offline cache (see _executeCached). Every other
+// action is treated as a write that invalidates them.
+const CACHED_READ_ACTIONS = new Set([
+	"getDataOverview",
+	"getDailyOverview",
+	"getWeeklyOverview",
+	"getActivities",
+	"getActivity",
+	"getGears",
+	"getGear",
+	"getInbodyData",
+]);
+const NON_MUTATING_ACTIONS = new Set(["getConfiguredProviders"]);
+// Online, cached reads older than this are refetched before being shown.
+const CACHED_READ_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
 const OFFLINE_READ_ERROR =
 	"You are offline and no saved data is available for this view.";
@@ -366,12 +382,11 @@ export class WebClient implements Client {
 		credentials: ConnectCredentials,
 		options?: StravaClientOptions,
 	): Promise<ProviderSuccessResponse> {
-		throw new Error("Not supported in the web client");
-		// return this._execute("providerConnect", {
-		// 	provider,
-		// 	credentials,
-		// 	options,
-		// });
+		return this._execute("providerConnect", {
+			provider,
+			credentials,
+			options,
+		});
 	}
 
 	async getStravaSubscriptions(): Promise<
@@ -693,15 +708,15 @@ export class WebClient implements Client {
 				};
 			}
 
-			const accessToken = await this._getAccessToken();
-			const response = await fetch(`${this._apiBaseUrl}/${action}`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${accessToken}`,
+			const response = await this._fetchAuthorized(
+				`${this._apiBaseUrl}/${action}`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(payload),
 				},
-				body: JSON.stringify(payload),
-			});
+				{ absolute: true },
+			);
 			const json = (await response
 				.json()
 				.catch(() => null)) as ProviderSuccessResponse<TResponse> | null;
@@ -725,26 +740,19 @@ export class WebClient implements Client {
 
 	private async _invalidateCachedReads(
 		action: string,
-		payload: Record<string, unknown>,
+		_payload: Record<string, unknown>,
 	): Promise<void> {
+		if (CACHED_READ_ACTIONS.has(action) || NON_MUTATING_ACTIONS.has(action)) {
+			return;
+		}
 		const userId = await this._getOfflineUserId();
 		if (!userId) {
 			return;
 		}
-
-		if (action === "editActivityLap") {
-			const data =
-				payload.data && typeof payload.data === "object"
-					? (payload.data as { activityId?: string })
-					: undefined;
-			if (!data?.activityId) {
-				return;
-			}
-
-			await this._offlineCache
-				.delete(userId, "getActivity", { activityId: data.activityId })
-				.catch(() => undefined);
-		}
+		// Any write can change what a list, an overview or a detail returns;
+		// drop every cached read for this user so the next read is fresh and
+		// the cache is repopulated with current data.
+		await this._offlineCache.deleteUserData(userId).catch(() => undefined);
 	}
 
 	private async _executeApiRoute<TResponse>(
@@ -759,12 +767,10 @@ export class WebClient implements Client {
 				};
 			}
 
-			const accessToken = await this._getAccessToken();
-			const response = await fetch(`${this._apiRootUrl}${path}`, {
+			const response = await this._fetchAuthorized(path, {
 				...init,
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${accessToken}`,
 					...(init.headers ?? {}),
 				},
 			});
@@ -786,17 +792,35 @@ export class WebClient implements Client {
 		}
 	}
 
+	/**
+	 * Sends the request with the current access token. A 401 means the token
+	 * was stale (typically the persisted copy after an expiry); the session is
+	 * refreshed once and the request retried with the new token.
+	 */
 	private async _fetchAuthorized(
 		path: string,
 		init: RequestInit,
+		options: { absolute?: boolean } = {},
 	): Promise<Response> {
-		const accessToken = await this._getAccessToken();
-		const headers = new Headers(init.headers ?? {});
-		headers.set("Authorization", `Bearer ${accessToken}`);
-		return fetch(`${this._apiRootUrl}${path}`, {
-			...init,
-			headers,
-		});
+		const url = options.absolute ? path : `${this._apiRootUrl}${path}`;
+		const send = async (accessToken: string) => {
+			const headers = new Headers(init.headers ?? {});
+			headers.set("Authorization", `Bearer ${accessToken}`);
+			return fetch(url, { ...init, headers });
+		};
+
+		const response = await send(await this._getAccessToken());
+		if (response.status !== 401) {
+			return response;
+		}
+		const refreshed = await this._supabase.auth
+			.refreshSession()
+			.then(({ data }) => data.session?.access_token ?? null)
+			.catch(() => null);
+		if (!refreshed) {
+			return response;
+		}
+		return send(refreshed);
 	}
 
 	private async _readResponseError(
@@ -847,14 +871,22 @@ export class WebClient implements Client {
 			return this._execute<TResponse>(action, payload);
 		}
 
-		const cachedResponse = await this._readCachedResponse<TResponse>(
-			userId,
-			action,
-			payload,
-		);
-		if (cachedResponse) {
-			void this._refreshCachedResponse(userId, action, payload, cachedResponse);
-			return cachedResponse;
+		const cachedEntry = await this._offlineCache
+			.readEntry<TResponse>(userId, action, payload)
+			.catch(() => null);
+		// Online, a stale entry is not worth showing first: fetch fresh instead.
+		// Offline (above), any entry is better than nothing.
+		const isFresh =
+			cachedEntry !== null &&
+			Date.now() - Date.parse(cachedEntry.updatedAt) < CACHED_READ_MAX_AGE_MS;
+		if (cachedEntry && isFresh) {
+			void this._refreshCachedResponse(
+				userId,
+				action,
+				payload,
+				cachedEntry.response,
+			);
+			return cachedEntry.response;
 		}
 
 		const response = await this._execute<TResponse>(action, payload);
@@ -866,6 +898,12 @@ export class WebClient implements Client {
 		}
 
 		if (this._isOfflineError(response.error)) {
+			// navigator.onLine can be true while the network is unusable: a
+			// stale entry beats "no saved data" in that case.
+			if (cachedEntry) {
+				this._dispatchOfflineCacheHit();
+				return cachedEntry.response;
+			}
 			this._dispatchOfflineCacheMiss();
 			return {
 				success: false,
@@ -899,12 +937,31 @@ export class WebClient implements Client {
 	}
 
 	private async _getAccessToken(): Promise<string> {
-		const session = await resolveSupabaseSession({
+		let session = await resolveSupabaseSession({
 			supabase: this._supabase,
 			supabaseUrl: this._supabaseUrl,
 		});
+		let refreshError: string | null = null;
+		if (!session || isSessionExpired(session)) {
+			// The quick path gave up or returned an expired token: wait for the
+			// real refresh instead of sending a token the server will reject.
+			const { data, error } = await this._supabase.auth
+				.getSession()
+				.catch((caught: unknown) => ({
+					data: { session: null },
+					error: caught as { message?: string } | null,
+				}));
+			session = data.session ?? null;
+			refreshError = error?.message ?? null;
+		}
 		if (!session?.access_token) {
-			throw new Error("Missing Supabase session");
+			// Keep the refresh failure in the message: a network error here must
+			// still reach the offline cache fallback in _executeCached.
+			throw new Error(
+				refreshError
+					? `Missing Supabase session: ${refreshError}`
+					: "Missing Supabase session",
+			);
 		}
 		return session.access_token;
 	}
@@ -922,7 +979,7 @@ export class WebClient implements Client {
 	}
 
 	private _isOfflineError(error: string): boolean {
-		return /failed to fetch|networkerror|load failed|network request failed/i.test(
+		return /failed to fetch|fetch failed|networkerror|load failed|network request failed|AuthRetryableFetchError|ECONNREFUSED|ENOTFOUND/i.test(
 			error,
 		);
 	}

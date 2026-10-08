@@ -73,6 +73,19 @@ export class WebOfflineCache {
 		action: string,
 		payload: Record<string, unknown>,
 	): Promise<ProviderSuccessResponse<TResponse> | null> {
+		const entry = await this.readEntry<TResponse>(userId, action, payload);
+		return entry?.response ?? null;
+	}
+
+	/** The cached response together with when it was written. */
+	async readEntry<TResponse>(
+		userId: string,
+		action: string,
+		payload: Record<string, unknown>,
+	): Promise<{
+		response: ProviderSuccessResponse<TResponse>;
+		updatedAt: string;
+	} | null> {
 		const db = await this._open();
 		if (!db) {
 			return null;
@@ -86,7 +99,9 @@ export class WebOfflineCache {
 				.get(key),
 		);
 
-		return record?.response ?? null;
+		return record
+			? { response: record.response, updatedAt: record.updatedAt }
+			: null;
 	}
 
 	async write<TResponse>(

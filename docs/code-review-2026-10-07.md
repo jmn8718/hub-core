@@ -79,14 +79,14 @@ Status legend: `[ ]` open · `[x]` fixed · `[-]` won't fix / accepted.
 
 ## Web client & dates
 
-- [ ] `formatDate` reinterprets string inputs as wall-clock in the target zone (admin dashboard shows UTC as Seoul). `packages/dates/src/format.ts:45`.
-- [ ] Invalid timezone string throws during render; no ErrorBoundary anywhere. `packages/dates/src/format.ts:45, 83`.
-- [ ] Expired Supabase token sent after the 1.5 s session timeout; 401 never retried. `packages/clients/src/supabase.ts:127`, `dataClient/web.ts:680`.
-- [ ] `INITIAL_SESSION` overrides the offline-no-cache boot state. `apps/webapp/src/app.tsx:73`.
-- [ ] Mutations don't invalidate cached reads; no TTL. `dataClient/web.ts:705-836`.
-- [ ] `providerConnect` throws in the web client although the API implements it. `dataClient/web.ts:364`.
-- [ ] `dateWithTimezoneToUTC` differs between IANA and `UTC±HH:MM` for Date inputs. `packages/dates/src/format.ts:80`.
-- [ ] `@repo/clients` resolved via Node `types` entry in the webapp; `@repo/db` listed as a webapp dependency.
+- [x] `formatDate` reinterprets string inputs as wall-clock in the target zone (admin dashboard shows UTC as Seoul). _Fixed: inputs are converted to an instant first (strings with an explicit offset as written, zone-less strings as UTC like every DB text timestamp) and then shifted to the zone; numbers, Dates and strings now agree. Tests added (`packages/dates/src/format.test.ts`, vitest added to the package)._
+- [x] Invalid timezone string throws during render; no ErrorBoundary anywhere. _Fixed: `isValidTimezone` (cached `Intl` probe) and a local-time fallback in both helpers; a page-level `ErrorBoundary`, remounted on every route change, wraps the routes in `packages/app` so a render error shows an inline message with retry instead of blanking the app or following the user to the next page._
+- [x] Expired Supabase token sent after the 1.5 s session timeout; 401 never retried. _Fixed: `_getAccessToken` refuses an expired token and waits for a real refresh, keeping the refresh failure in its error so a network failure still reaches the offline cache fallback (the persisted session still identifies the user for cache reads), and every authorised request refreshes the session and retries once on 401._
+- [x] `INITIAL_SESSION` overrides the offline-no-cache boot state. _Fixed: the auth listener ignores `INITIAL_SESSION` only when the boot state is offline-without-cache; otherwise it applies it, so a sign-out from another tab during the splash is honoured._
+- [x] Mutations don't invalidate cached reads; no TTL. _Fixed: any successful non-read action drops the user's cached reads; online, cached entries older than 6 h are refetched before being shown, falling back to the stale entry when the fetch fails for connectivity reasons (offline always serves any entry)._
+- [x] `providerConnect` throws in the web client although the API implements it. _Fixed: forwarded to the API action._
+- [x] `dateWithTimezoneToUTC` differs between IANA and `UTC±HH:MM` for Date inputs. _Fixed: the parameter is a wall-clock string only. **Found while testing:** the `UTC±HH:MM` branch used `utcOffset(x, true)`, whose result depended on the machine timezone (19:00Z in Seoul, 06:00Z in New York for the same input); it now subtracts the offset. Activities with offset-style zones (COROS imports after the mapper fix, Garmin manual activities with a placeholder GMT) that had their date edited through the app may carry a wrong timestamp._
+- [x] `@repo/clients` resolved via Node `types` entry in the webapp; `@repo/db` listed as a webapp dependency. _Fixed: `customConditions: ["browser"]` in the webapp tsconfig; the unused `@repo/db` dependency removed._
 
 ## UI (packages/app)
 

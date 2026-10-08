@@ -10,6 +10,7 @@ export * from "./settings/ThemeSection.js";
 export * from "./settings/SignOutSection.js";
 export * from "./BottomStatus.js";
 export * from "./Box.js";
+export * from "./ErrorBoundary.js";
 export * from "./H1.js";
 export * from "./H2.js";
 export * from "./Text.js";

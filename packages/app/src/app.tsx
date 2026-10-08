@@ -1,13 +1,15 @@
 import type { Client } from "@repo/clients";
 import { AppType } from "@repo/types";
+import type { ReactNode } from "react";
 import {
 	Navigate,
 	Route,
 	BrowserRouter as Router,
 	Routes,
+	useLocation,
 } from "react-router-dom";
 
-import { BottomStatus, Layout } from "./components/index.js";
+import { BottomStatus, ErrorBoundary, Layout } from "./components/index.js";
 import { Routes as AppRoutes } from "./constants.js";
 import {
 	DataClientProvider,
@@ -16,6 +18,13 @@ import {
 	ThemeProvider,
 } from "./contexts/index.js";
 import * as Pages from "./pages/index.js";
+
+// Remounts the boundary on every route change, so an error on one page is
+// cleared by navigating away instead of sticking to the next page.
+function RouteErrorBoundary({ children }: { children: ReactNode }) {
+	const location = useLocation();
+	return <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>;
+}
 
 export function App({ client, type }: { client: Client; type: AppType }) {
 	if (!client) {
@@ -28,101 +37,112 @@ export function App({ client, type }: { client: Client; type: AppType }) {
 					<LoadingProvider>
 						<Router>
 							<Layout>
-								<Routes>
-									<Route path={AppRoutes.HOME} element={<Pages.HomePage />} />
-									<Route
-										path={AppRoutes.SETTINGS}
-										element={<Pages.SettingsPage />}
-									/>
-									<Route
-										path={AppRoutes.SYNC}
-										element={
-											type === AppType.DESKTOP ? (
-												<Pages.SyncPage />
-											) : (
-												<Navigate to={AppRoutes.SETTINGS} replace />
-											)
-										}
-									/>
-									<Route
-										path={AppRoutes.DATA}
-										element={<Pages.DataListPage />}
-									/>
-									<Route
-										path={AppRoutes.CALENDAR}
-										element={<Pages.CalendarPage />}
-									/>
-									<Route path={AppRoutes.DEBUG} element={<Pages.DebugPage />} />
-									<Route path={AppRoutes.GEAR} element={<Pages.GearsPage />} />
-									<Route
-										path={AppRoutes.GEAR_ADD}
-										element={<Pages.AddGearPage />}
-									/>
-									<Route
-										path={`${AppRoutes.GEAR}/:gearId`}
-										element={<Pages.GearDetailsPage />}
-									/>
-									<Route
-										path={AppRoutes.INBODY}
-										element={<Pages.InbodyPage />}
-									/>
-									<Route
-										path={AppRoutes.INBODY_ADD}
-										element={<Pages.InbodyAddPage />}
-									/>
-									<Route
-										path={AppRoutes.INBODY_HISTORY}
-										element={<Pages.InbodyHistoryPage />}
-									/>
-									<Route
-										path={AppRoutes.INBODY_EDIT}
-										element={<Pages.InbodyEditPage />}
-									/>
-									<Route
-										path={AppRoutes.PROVIDERS}
-										element={<Pages.ProvidersPage />}
-									/>
-									<Route
-										path={AppRoutes.STRAVA_WEBHOOKS}
-										element={<Pages.StravaPage />}
-									/>
-									<Route
-										path={AppRoutes.PROVIDER_DETAILS}
-										element={<Pages.ProviderDetailsPage />}
-									/>
-									<Route
-										path={AppRoutes.PROVIDER_ACTIVITY_SYNC}
-										element={<Pages.ProviderActivitySyncPage />}
-									/>
-									<Route
-										path={AppRoutes.ANALYTICS}
-										element={<Pages.AnalyticsPage />}
-									/>
-									<Route
-										path={AppRoutes.COMPARE}
-										element={<Pages.ComparePage />}
-									/>
-									<Route path={AppRoutes.SHARE} element={<Pages.SharePage />} />
-									<Route
-										path={`${AppRoutes.DETAILS}/:activityId`}
-										element={<Pages.ActivityDetailsPage />}
-									/>
-									<Route
-										path={AppRoutes.ADD}
-										element={<Pages.AddActivityPage />}
-									/>
-									<Route
-										path="*"
-										element={<Navigate to={AppRoutes.HOME} replace />}
-									/>
-									{/* 
+								<RouteErrorBoundary>
+									<Routes>
+										<Route path={AppRoutes.HOME} element={<Pages.HomePage />} />
+										<Route
+											path={AppRoutes.SETTINGS}
+											element={<Pages.SettingsPage />}
+										/>
+										<Route
+											path={AppRoutes.SYNC}
+											element={
+												type === AppType.DESKTOP ? (
+													<Pages.SyncPage />
+												) : (
+													<Navigate to={AppRoutes.SETTINGS} replace />
+												)
+											}
+										/>
+										<Route
+											path={AppRoutes.DATA}
+											element={<Pages.DataListPage />}
+										/>
+										<Route
+											path={AppRoutes.CALENDAR}
+											element={<Pages.CalendarPage />}
+										/>
+										<Route
+											path={AppRoutes.DEBUG}
+											element={<Pages.DebugPage />}
+										/>
+										<Route
+											path={AppRoutes.GEAR}
+											element={<Pages.GearsPage />}
+										/>
+										<Route
+											path={AppRoutes.GEAR_ADD}
+											element={<Pages.AddGearPage />}
+										/>
+										<Route
+											path={`${AppRoutes.GEAR}/:gearId`}
+											element={<Pages.GearDetailsPage />}
+										/>
+										<Route
+											path={AppRoutes.INBODY}
+											element={<Pages.InbodyPage />}
+										/>
+										<Route
+											path={AppRoutes.INBODY_ADD}
+											element={<Pages.InbodyAddPage />}
+										/>
+										<Route
+											path={AppRoutes.INBODY_HISTORY}
+											element={<Pages.InbodyHistoryPage />}
+										/>
+										<Route
+											path={AppRoutes.INBODY_EDIT}
+											element={<Pages.InbodyEditPage />}
+										/>
+										<Route
+											path={AppRoutes.PROVIDERS}
+											element={<Pages.ProvidersPage />}
+										/>
+										<Route
+											path={AppRoutes.STRAVA_WEBHOOKS}
+											element={<Pages.StravaPage />}
+										/>
+										<Route
+											path={AppRoutes.PROVIDER_DETAILS}
+											element={<Pages.ProviderDetailsPage />}
+										/>
+										<Route
+											path={AppRoutes.PROVIDER_ACTIVITY_SYNC}
+											element={<Pages.ProviderActivitySyncPage />}
+										/>
+										<Route
+											path={AppRoutes.ANALYTICS}
+											element={<Pages.AnalyticsPage />}
+										/>
+										<Route
+											path={AppRoutes.COMPARE}
+											element={<Pages.ComparePage />}
+										/>
+										<Route
+											path={AppRoutes.SHARE}
+											element={<Pages.SharePage />}
+										/>
+										<Route
+											path={`${AppRoutes.DETAILS}/:activityId`}
+											element={<Pages.ActivityDetailsPage />}
+										/>
+										<Route
+											path={AppRoutes.ADD}
+											element={<Pages.AddActivityPage />}
+										/>
+										<Route
+											path="*"
+											element={<Navigate to={AppRoutes.HOME} replace />}
+										/>
+										{/* 
                   <Route
                     path={`${AppRoutes.DETAILS}/:activityId`}
                     element={<DetailsPage />}
                   />
                   <Route path={AppRoutes.TABLE} element={<TablePage />} />
                   <Route path={AppRoutes.ADD} element={<AddActivityPage />} /> */}
-								</Routes>
+									</Routes>
+								</RouteErrorBoundary>
 								<BottomStatus />
 							</Layout>
 						</Router>

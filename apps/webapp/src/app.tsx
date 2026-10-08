@@ -70,13 +70,23 @@ export default function WebApp({
 	useEffect(() => {
 		const {
 			data: { subscription },
-		} = supabase.auth.onAuthStateChange((_event, session) => {
+		} = supabase.auth.onAuthStateChange((event, session) => {
+			// INITIAL_SESSION fires on subscribe. Only the offline-without-cache
+			// boot decision made in main.tsx must survive it; otherwise it is the
+			// freshest view of the session (another tab may have signed out
+			// during the splash) and must be applied.
+			if (
+				event === "INITIAL_SESSION" &&
+				initialBootState === "offline-no-cache"
+			) {
+				return;
+			}
 			setUserSession(session);
 			setBootState("ready");
 		});
 
 		return () => subscription.unsubscribe();
-	}, []);
+	}, [initialBootState]);
 
 	useEffect(() => {
 		const handleUpdateAvailable = (event: Event) => {
